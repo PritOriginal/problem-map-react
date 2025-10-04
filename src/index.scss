@@ -1,0 +1,61 @@
+*,
+*::after,
+*::before {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+.add-mark-menu {
+  position: absolute;
+  width: min-content;
+  // height: 100%;
+  top: 8%;
+  right: 10px;
+  background-color: white;
+  z-index: 10;
+
+  padding: 10px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  color: black;
+}
+
+.edit-multiline-text {
+  width: -moz-available;
+  width: -webkit-fill-available;
+  padding: 10px;
+  border: 1px solid #dadada;
+  outline: none;
+
+  svg {
+    transition: all 0.3s ease-in-out;
+  }
+
+  &:hover {
+    border: 1px solid #bebebe;
+
+    svg {
+      transform: scale(1.1);
+    }
+  }
+
+  &-border-rad {
+    border-radius: 8px;
+  }
+}
+
+.camera {
+  display: flex;
+
+  canvas {
+    width: 320px;
+  }
+}

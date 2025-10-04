@@ -13,7 +13,7 @@ import customization from './customization.json'
 import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
 import MapService from './services/MapService';
 import { useEffect, useState } from "react";
-import { VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
+import { PointGeometry, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
 
 interface District {
   district_id: number;
@@ -24,7 +24,7 @@ interface District {
 interface Mark {
   mark_id: number;
   name: string;
-  geom: Geometry,
+  geom: PointGeometry,
   type_mark_id: number;
   user_id: number;
   district_id: number;

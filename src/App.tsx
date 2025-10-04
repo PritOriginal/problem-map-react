@@ -1,15 +1,5 @@
 // import {YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker, reactify} from './lib/ymaps';
-import type { VectorCustomization, YMapLocationRequest } from '@yandex/ymaps3-types';
-import {
-  YMap,
-  YMapDefaultSchemeLayer,
-  YMapDefaultFeaturesLayer,
-  YMapMarker,
-  YMapComponentsProvider,
-  YMapFeature
-  // ...other components
-} from "ymap3-components";
-import "./App.css"
+
 import Header from './components/header/Header';
 import Map from "./Map";
 

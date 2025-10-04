@@ -1,0 +1,27 @@
+header {
+    margin: 0 auto;
+    height: 48px;
+    align-content: center;
+    background-color: #202020;
+    color: white;
+
+    a {
+        color: white;
+    }
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 1280px;
+    margin: 0 auto;
+    font-size: 20px;
+
+    &__menu {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+        font-size: 16px;
+    }
+}

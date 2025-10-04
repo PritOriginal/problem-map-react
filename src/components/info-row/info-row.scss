@@ -1,0 +1,9 @@
+.info-row {
+	display: flex;
+	align-items: center;
+	gap: 25px;
+
+	&.space-between {
+		justify-content: space-between;
+	}
+}

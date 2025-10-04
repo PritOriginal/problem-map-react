@@ -98,22 +98,18 @@ export default function Map() {
       <YMap location={LOCATION}>
         <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
         <YMapDefaultFeaturesLayer />
-
-        {/* <YMapMarker coordinates={[41.452746, 52.722408]} draggable={true}>
-                <section>
-                <h1>You can drag this header</h1>
-                </section>
-            </YMapMarker> */}
         {polygons.map((polygon) => (
           <PolygonItem key={polygon.district_id} geom={polygon.geom} />
         ))}
         {marks.map((mark) => (
           <MarkItem key={mark.district_id} mark={mark} />
         ))}
-        <YMapDefaultMarker
-          coordinates={[userLocation?.longitude, userLocation?.latitude]}
-          color={"white"}
-        />
+        {userLocation &&
+          < YMapDefaultMarker
+            coordinates={[userLocation?.longitude, userLocation?.latitude]}
+            color={"white"}
+          />
+        }
       </YMap>
     </YMapComponentsProvider>
   );

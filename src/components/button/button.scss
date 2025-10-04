@@ -1,0 +1,42 @@
+%color2color {
+	width: 100%;
+	height: 100%;
+	padding: 8px;
+	cursor: pointer;
+	border: 1px solid black;
+	font-size: 16px;
+	// font-family: "Century Gothic";
+	transition: all 0.3s ease-in-out;
+
+	&.mini {
+		font-size: 12px;
+		height: auto;
+	}
+
+	&:disabled {
+		background-color: #e2e2e2 !important;
+		color: black !important;
+	}
+}
+
+.white-2-black {
+	@extend %color2color;
+	background-color: white;
+	color: black;
+
+	&:hover {
+		background-color: black;
+		color: white;
+	}
+}
+
+.black-2-white {
+	@extend %color2color;
+	background-color: black;
+	color: white;
+
+	&:hover {
+		background-color: white;
+		color: black;
+	}
+}

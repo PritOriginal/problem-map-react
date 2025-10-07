@@ -4,7 +4,7 @@ import {
   YMapDefaultFeaturesLayer,
   YMapComponentsProvider,
   YMapFeature,
-  YMapDefaultMarker
+  YMapListener,
   // ...other components
 } from "ymap3-components";
 
@@ -13,7 +13,7 @@ import customization from './customization.json'
 import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
 import MapService from './services/MapService';
 import { useCallback, useEffect, useState } from "react";
-import { Feature, LngLat, MapEventUpdateHandler, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
+import { MapEventUpdateHandler, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
 import MarkItem, { Mark, MarkerItem, MarkerSize } from "./components/mark/mark";
 
 interface District {
@@ -90,18 +90,6 @@ export default function Map() {
       console.error('Geolocation is not supported by this browser.');
     }
   };
-
-
-  // We declare a cluster rendering function that also returns an Entity element. We will transfer the marker and cluster rendering functions to the clusterer settings
-  const cluster = (coordinates: LngLat, features: Feature[]) => (
-    <YMapMarker onClick={() => {}} coordinates={coordinates}>
-      <div className="circle">
-        <div className="circle-content">
-          <span className="circle-text">{features.length}</span>
-        </div>
-      </div>
-    </YMapMarker>
-  );
 
   return (
     <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>

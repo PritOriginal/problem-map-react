@@ -31,7 +31,7 @@ function AddMarkMenu() {
                 video: {},
             })
             .then(stream => {
-                let video = videoRef.current;
+                const video = videoRef.current;
                 if (video) {
                     video.srcObject = stream;
                     video.play();
@@ -43,11 +43,11 @@ function AddMarkMenu() {
     }
 
     const makePhoto = () => {
-        let video = videoRef.current;
-        let photo = photoRef.current;
+        const video = videoRef.current;
+        const photo = photoRef.current;
 
         if (video && photo) {
-            let ctx = photo.getContext("2d");
+            const ctx = photo.getContext("2d");
             ctx!.drawImage(video, 0, 0);
             photo.toBlob((blob) => {
                 console.log(blob);

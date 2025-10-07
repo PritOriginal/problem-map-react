@@ -122,11 +122,11 @@ function PolygonItem({ geom }: { geom: Geometry }) {
         stroke: [
           {
             color: '#36FF58',
-            width: 2,
+            width: 1,
           }
         ],
         fill: '#36FF58',
-        fillOpacity: 0.05,
+        fillOpacity: 0.03,
       }}
       geometry={geom}
     />

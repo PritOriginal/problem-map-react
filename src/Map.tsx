@@ -91,6 +91,18 @@ export default function Map() {
     }
   };
 
+
+  // We declare a cluster rendering function that also returns an Entity element. We will transfer the marker and cluster rendering functions to the clusterer settings
+  const cluster = (coordinates: LngLat, features: Feature[]) => (
+    <YMapMarker onClick={() => {}} coordinates={coordinates}>
+      <div className="circle">
+        <div className="circle-content">
+          <span className="circle-text">{features.length}</span>
+        </div>
+      </div>
+    </YMapMarker>
+  );
+
   return (
     <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
       <YMap location={LOCATION}>

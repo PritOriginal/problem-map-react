@@ -1,0 +1,41 @@
+.mark {
+    cursor: pointer;
+    position: relative;
+
+    // width: 16px;
+    // height: 16px;
+
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+
+    transform: translate(-50%, -50%);
+
+    &.small {
+        width: 12px;    
+        height: 12px;
+    }
+
+    &.medium {
+        width: 16px;
+        height: 16px;
+    }
+
+    &.big {
+        width: 24px;
+        height: 24px;
+    }
+
+    &__number-checks-box {
+        position: absolute;
+
+        border-radius: 50%;
+
+        background-color: rgba(255, 255, 255, 0.3);
+        padding: 2px 8px;
+
+        left: calc(100% + 6px);
+        transform: translateY(-50%);
+        // bottom: 0;
+        top: 25%;
+    }
+}

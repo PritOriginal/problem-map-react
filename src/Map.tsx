@@ -12,8 +12,9 @@ import customization from './customization.json'
 
 import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
 import MapService from './services/MapService';
-import { useEffect, useState } from "react";
-import { PointGeometry, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
+import { useCallback, useEffect, useState } from "react";
+import { Feature, LngLat, MapEventUpdateHandler, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
+import MarkItem, { Mark, MarkerItem, MarkerSize } from "./components/mark/mark";
 
 interface District {
   district_id: number;
@@ -21,35 +22,32 @@ interface District {
   geom: Geometry;
 }
 
-interface Mark {
-  mark_id: number;
-  name: string;
-  geom: PointGeometry,
-  type_mark_id: number;
-  user_id: number;
-  district_id: number;
-  number_votes: number;
-  number_checks: number;
-}
-
-
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],
   zoom: 11
 };
 
-const COLOR_TYPES_MARK = {
-  1: "green",
-  2: "red",
-} as {
-  [index: number]: string
-}
-
+export const ZOOMS = {
+  small: 12,
+  big: 16
+};
 
 export default function Map() {
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
+  const [size, setSize] = useState<MarkerSize>(MarkerSize.big);
+
   const [polygons, setPolygons] = useState<District[]>([]);
   const [marks, setMarks] = useState<Mark[]>([]);
+
+  const onUpdate: MapEventUpdateHandler = useCallback((o) => {
+    if (o.location.zoom <= ZOOMS.small) {
+      setSize(MarkerSize.small);
+    } else if (o.location.zoom <= ZOOMS.big && o.location.zoom >= ZOOMS.small) {
+      setSize(MarkerSize.medium);
+    } else if (o.location.zoom >= ZOOMS.big) {
+      setSize(MarkerSize.big);
+    }
+  }, []);
 
   useEffect(() => {
     MapService.getDistricts()
@@ -102,14 +100,16 @@ export default function Map() {
           <PolygonItem key={polygon.district_id} geom={polygon.geom} />
         ))}
         {marks.map((mark) => (
-          <MarkItem key={mark.district_id} mark={mark} />
+          <MarkItem key={mark.district_id} mark={mark} size={size} />
         ))}
         {userLocation &&
-          < YMapDefaultMarker
+          < MarkerItem
             coordinates={[userLocation?.longitude, userLocation?.latitude]}
             color={"white"}
           />
         }
+        <YMapListener onUpdate={onUpdate} />
+        {/* <YMapClusterer cluster={cluster} /> */}
       </YMap>
     </YMapComponentsProvider>
   );
@@ -129,15 +129,6 @@ function PolygonItem({ geom }: { geom: Geometry }) {
         fillOpacity: 0.03,
       }}
       geometry={geom}
-    />
-  );
-}
-
-function MarkItem({ mark }: { mark: Mark }) {
-  return (
-    <YMapDefaultMarker
-      coordinates={mark.geom.coordinates}
-      color={COLOR_TYPES_MARK[mark.type_mark_id]}
     />
   );
 }

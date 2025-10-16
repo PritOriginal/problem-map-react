@@ -52,7 +52,7 @@ export default function Map() {
   useEffect(() => {
     MapService.getDistricts()
       .then((data) => {
-        setPolygons(data.payload)
+        setPolygons(data.payload.districts)
         console.log(data.payload)
       })
       .catch(function (error) {
@@ -60,7 +60,7 @@ export default function Map() {
       });
     MapService.getMarks()
       .then((data) => {
-        setMarks(data.payload)
+        setMarks(data.payload.marks)
         console.log(data.payload)
       })
       .catch(function (error) {

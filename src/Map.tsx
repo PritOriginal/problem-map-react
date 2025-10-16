@@ -52,7 +52,7 @@ export default function Map() {
   useEffect(() => {
     MapService.getDistricts()
       .then((data) => {
-        setPolygons(data.payload.districts)
+        setPolygons(data.payload)
         console.log(data.payload)
       })
       .catch(function (error) {
@@ -60,7 +60,7 @@ export default function Map() {
       });
     MapService.getMarks()
       .then((data) => {
-        setMarks(data.payload.marks)
+        setMarks(data.payload)
         console.log(data.payload)
       })
       .catch(function (error) {
@@ -115,31 +115,17 @@ export default function Map() {
   );
 }
 
-const colors = [
-  "#36FF58",
-  "#e1ff36ff",
-  "#ffd036ff",
-  "#ff4336ff",
-]
-
-function getRandomInt(min, max) {  
-    min = Math.ceil(min); // округляем до ближайшего большего целого  
-    max = Math.floor(max); // округляем до ближайшего меньшего целого  
-    return Math.floor(Math.random() * (max - min + 1)) + min; // генерируем случайное целое число  
-} 
-
 function PolygonItem({ geom }: { geom: Geometry }) {
-  const color = colors[getRandomInt(0, colors.length - 1)]
   return (
     <YMapFeature
       style={{
         stroke: [
           {
-            color: color,
+            color: '#36FF58',
             width: 1,
           }
         ],
-        fill: color,
+        fill: '#36FF58',
         fillOpacity: 0.03,
       }}
       geometry={geom}

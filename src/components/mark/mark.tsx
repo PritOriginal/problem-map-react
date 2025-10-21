@@ -21,8 +21,8 @@ export enum MarkerSize {
 }
 
 const COLOR_TYPES_MARK = {
-  1: "green",
-  2: "red",
+  1: "#00e500",
+  2: "#e50000",
 } as {
   [index: number]: string
 }
@@ -33,7 +33,7 @@ export default function MarkItem({ mark, size }: { mark: Mark, size: MarkerSize 
       coordinates={mark.geom.coordinates}
     >
       <div className={`mark ${size}`} style={{ backgroundColor: COLOR_TYPES_MARK[mark.type_mark_id] }}>
-        {size != MarkerSize.small &&
+        {size == MarkerSize.big &&
           <div className="mark__number-checks-box">
             {mark.number_checks}
           </div>

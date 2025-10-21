@@ -5,7 +5,8 @@ import {
   YMapComponentsProvider,
   YMapFeature,
   YMapListener,
-  // ...other components
+  YMapMarker,
+  YMapCustomClusterer,
 } from "ymap3-components";
 
 import customization from './customization.json'
@@ -13,9 +14,11 @@ import customization from './customization.json'
 import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
 import MapService from './services/MapService';
 import { useCallback, useEffect, useState } from "react";
-import { MapEventUpdateHandler, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
+import { LngLat, MapEventUpdateHandler, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
 import MarkItem, { Mark, MarkerItem, MarkerSize } from "./components/mark/mark";
+import { Feature } from "@yandex/ymaps3-clusterer";
 
+import convert from 'color-convert';
 interface District {
   district_id: number;
   name: string;
@@ -52,7 +55,7 @@ export default function Map() {
   useEffect(() => {
     MapService.getDistricts()
       .then((data) => {
-        setPolygons(data.payload)
+        setPolygons(data.payload.districts)
         console.log(data.payload)
       })
       .catch(function (error) {
@@ -60,7 +63,7 @@ export default function Map() {
       });
     MapService.getMarks()
       .then((data) => {
-        setMarks(data.payload)
+        setMarks(data.payload.marks)
         console.log(data.payload)
       })
       .catch(function (error) {
@@ -91,6 +94,48 @@ export default function Map() {
     }
   };
 
+  const getColorByFeatues = (features: Feature[]) => {
+    let numsComplete = 0;
+    features.forEach(f => {
+      const mark = f.properties!.mark as Mark;
+      if (mark.type_mark_id == 1) {
+        numsComplete++;
+      }
+    });
+
+    const h = numsComplete / features.length * 120;
+    return convert.hsv.hex(h, 100, 80)
+  }
+
+  // We declare a cluster rendering function that also returns an Entity element. We will transfer the marker and cluster rendering functions to the clusterer settings
+  const cluster = (coordinates: LngLat, features: Feature[]) => (
+    <YMapMarker onClick={() => { }} coordinates={coordinates}>
+      <div className="circle">
+        <div className="circle-content" style={{ backgroundColor: '#' + getColorByFeatues(features) }}>
+          <span className="circle-text">{features.length}</span>
+        </div>
+      </div>
+    </YMapMarker>
+  );
+
+  const marker = (feature: Feature) => (
+    <MarkItem mark={feature.properties!.mark as Mark} size={size} />
+  )
+
+  const points: Feature[] = [];
+  for (let i = 0; i < marks.length; i++) {
+    const mark = marks[i];
+    points.push({
+      geometry: mark.geom,
+      type: "Feature",
+      id: String(mark.mark_id),
+      properties: {
+        mark: mark
+      }
+    })
+  }
+
+
   return (
     <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
       <YMap location={LOCATION}>
@@ -99,9 +144,6 @@ export default function Map() {
         {polygons.map((polygon) => (
           <PolygonItem key={polygon.district_id} geom={polygon.geom} />
         ))}
-        {marks.map((mark) => (
-          <MarkItem key={mark.district_id} mark={mark} size={size} />
-        ))}
         {userLocation &&
           < MarkerItem
             coordinates={[userLocation?.longitude, userLocation?.latitude]}
@@ -109,23 +151,25 @@ export default function Map() {
           />
         }
         <YMapListener onUpdate={onUpdate} />
-        {/* <YMapClusterer cluster={cluster} /> */}
+        <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={64} features={points} />
       </YMap>
     </YMapComponentsProvider>
   );
 }
 
 function PolygonItem({ geom }: { geom: Geometry }) {
+  const color = "#36FF58";
   return (
     <YMapFeature
       style={{
         stroke: [
           {
-            color: '#36FF58',
+            color: "black",
             width: 1,
+            opacity: 0.3,
           }
         ],
-        fill: '#36FF58',
+        fill: color,
         fillOpacity: 0.03,
       }}
       geometry={geom}

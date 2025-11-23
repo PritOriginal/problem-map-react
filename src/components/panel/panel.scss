@@ -1,0 +1,95 @@
+.panel {
+    position: absolute;
+    left: 0;
+    z-index: 1;
+
+    --height-header: 100px;
+
+    height: calc(100dvh - 48px);
+    width: 30dvw;
+
+    background-color: #f9f9f9;
+
+    border-right: 2px solid rgb(201, 201, 201);
+
+    &__header {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        height: var(--height-header);
+        // background-color: rgb(243, 243, 243);
+        // background-color: rgb(130, 149, 255);
+        background-color: rgb(36, 36, 36);
+        color: white;
+
+        padding: 16px;
+
+        &__status {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            font-size: 12px;
+        }
+    }
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+        height: calc(100dvh - 48px - var(--height-header));
+        overflow-y: auto;
+    }
+
+    &__close-button {
+        position: absolute;
+        right: calc(-48px - 16px);
+        top: 16px;
+        padding: 16px;
+
+        cursor: pointer;
+
+        height: 48px;
+        width: 48px;
+
+        background-color: white;
+        border-radius: 50%;
+
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+
+        z-index: 1;
+
+        transition: all 0.2s ease-in-out;
+
+        &:hover {
+            fill: white;
+            background-color: black;
+        }
+    }
+
+    &.hide {
+        width: 0;
+    }
+}
+
+.photo {
+    background-color: #e5e5e5;
+    height: 150px;
+    width: 100px;
+
+    &.add {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 64px;
+
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+
+        &:hover {
+            color: white;
+            background-color: black;
+        }
+    }
+}

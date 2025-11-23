@@ -13,12 +13,17 @@ import customization from './customization.json'
 
 import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
 import MapService from './services/MapService';
-import { useCallback, useEffect, useState } from "react";
-import { LngLat, MapEventUpdateHandler, VectorCustomization, YMapLocationRequest } from "@yandex/ymaps3-types";
-import MarkItem, { Mark, MarkerItem, MarkerSize } from "./components/mark/mark";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
+import MarkItem, { Mark, MarkerItem, MarkerSize, Trash, Trees } from "./components/mark/mark";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
+import * as turf from '@turf/turf'
+import Panel from "./components/panel/panel";
+import PanelRoute from "./components/panel/panel";
+import { useNavigate } from "react-router-dom";
+import { YMapCopyrights } from "@yandex/ymaps3-types/imperative/YMapCopyrights";
 interface District {
   district_id: number;
   name: string;
@@ -30,17 +35,46 @@ const LOCATION: YMapLocationRequest = {
   zoom: 11
 };
 
+const RESTRICT_AREA: LngLatBounds = [[40.96110892973163, 52.54600597551669], [41.91211295805194, 52.90452560092497]];
+
+export const ZOOM_RANGE: ZoomRange = { min: 11, max: 22 };
 export const ZOOMS = {
   small: 12,
   big: 16
 };
 
+// export const getBooleanPointInPolygon = (polygon: LngLat[][], point: LngLat): boolean => {
+//   const pt = turf.point(point);
+//   const poly = turf.polygon(polygon);
+//   return turf.booleanPointInPolygon(pt, poly);
+// };
+
+// function GetPointsInPolygon(polygons: District[], marks: Mark[]) {
+
+//   marks.forEach(mark => {
+//     polygons.forEach((polygon, i) => {
+//       if (getBooleanPointInPolygon(polygon.geom.coordinates, mark.geom)) {
+//         polygon.
+//       }
+//     });
+//   });
+// }
+
 export default function Map() {
+  let navigate = useNavigate();
+
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [size, setSize] = useState<MarkerSize>(MarkerSize.big);
 
   const [polygons, setPolygons] = useState<District[]>([]);
   const [marks, setMarks] = useState<Mark[]>([]);
+
+  const [selectedMark, setSelectedMark] = useState<Mark | null>(null);
+
+  const onClickOnMark = useCallback((mark: Mark) => {
+    navigate(`/problem/${mark.mark_id}`)
+    setSelectedMark(mark);
+  }, [])
 
   const onUpdate: MapEventUpdateHandler = useCallback((o) => {
     if (o.location.zoom <= ZOOMS.small) {
@@ -96,68 +130,89 @@ export default function Map() {
 
   const getColorByFeatues = (features: Feature[]) => {
     let numsComplete = 0;
+    let numsApproved = 0;
     features.forEach(f => {
       const mark = f.properties!.mark as Mark;
-      if (mark.type_mark_id == 1) {
+      if (mark.mark_status_id == 3) {
         numsComplete++;
+      }
+      if (mark.mark_status_id != 1) {
+        numsApproved++;
       }
     });
 
-    const h = numsComplete / features.length * 120;
-    return convert.hsv.hex(h, 100, 80)
+    const h = numsComplete / numsApproved * 120;
+    if (numsApproved > 0) {
+      return convert.hsv.hex(h, 100, 80)
+    } else {
+      return "d3d3d3ff"
+    }
   }
 
-  // We declare a cluster rendering function that also returns an Entity element. We will transfer the marker and cluster rendering functions to the clusterer settings
   const cluster = (coordinates: LngLat, features: Feature[]) => (
     <YMapMarker onClick={() => { }} coordinates={coordinates}>
       <div className="circle">
         <div className="circle-content" style={{ backgroundColor: '#' + getColorByFeatues(features) }}>
-          <span className="circle-text">{features.length}</span>
+          <span className="circle-text">
+            {features.length}
+          </span>
         </div>
       </div>
     </YMapMarker>
   );
 
   const marker = (feature: Feature) => (
-    <MarkItem mark={feature.properties!.mark as Mark} size={size} />
+    <MarkItem mark={feature.properties!.mark as Mark} size={size} selected={(feature.properties!.mark as Mark).mark_id === selectedMark?.mark_id} onClick={onClickOnMark} />
   )
 
-  const points: Feature[] = [];
-  for (let i = 0; i < marks.length; i++) {
-    const mark = marks[i];
-    points.push({
-      geometry: mark.geom,
-      type: "Feature",
-      id: String(mark.mark_id),
-      properties: {
-        mark: mark
-      }
-    })
-  }
-
+  const points = useMemo(() => {
+    const p: Feature[] = [];
+    for (let i = 0; i < marks.length; i++) {
+      const mark = marks[i];
+      p.push({
+        geometry: mark.geom,
+        type: "Feature",
+        id: String(mark.mark_id),
+        properties: {
+          mark: mark
+        }
+      })
+    }
+    return p
+  }, [marks]);
 
   return (
-    <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
-      <YMap location={LOCATION}>
-        <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
-        <YMapDefaultFeaturesLayer />
-        {polygons.map((polygon) => (
-          <PolygonItem key={polygon.district_id} geom={polygon.geom} />
-        ))}
-        {userLocation &&
-          < MarkerItem
-            coordinates={[userLocation?.longitude, userLocation?.latitude]}
-            color={"white"}
-          />
-        }
-        <YMapListener onUpdate={onUpdate} />
-        <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={64} features={points} />
-      </YMap>
-    </YMapComponentsProvider>
+    <>
+      {/* {selectedMark && <PanelRoute />} */}
+      <PanelRoute />
+      <AddMarkButton />
+      <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
+        <YMap
+          location={LOCATION}
+          restrictMapArea={RESTRICT_AREA}
+          zoomRange={ZOOM_RANGE}
+          copyrightsPosition={"top right"}
+        >
+          <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
+          <YMapDefaultFeaturesLayer />
+          {polygons.map((polygon) => (
+            <PolygonItem key={polygon.district_id} geom={polygon.geom} />
+          ))}
+          {userLocation &&
+            < MarkerItem
+              coordinates={[userLocation?.longitude, userLocation?.latitude]}
+              color={"white"}
+            />
+          }
+          <YMapListener onUpdate={onUpdate} />
+          <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
+        </YMap>
+      </YMapComponentsProvider>
+    </>
   );
 }
 
-function PolygonItem({ geom }: { geom: Geometry }) {
+const PolygonItem = memo(function ({ geom }: { geom: Geometry }) {
   const color = "#36FF58";
   return (
     <YMapFeature
@@ -174,5 +229,18 @@ function PolygonItem({ geom }: { geom: Geometry }) {
       }}
       geometry={geom}
     />
+  );
+});
+
+
+function AddMarkButton() {
+  let navigate = useNavigate();
+
+  return (
+    <div className="add-mark-button" onClick={() => navigate("/add")}>
+      <div className="add-mark-button__content">
+        +
+      </div>
+    </div>
   );
 }

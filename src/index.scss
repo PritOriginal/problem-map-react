@@ -100,3 +100,41 @@
   line-height: 20px;
   color: #fff;
 }
+
+.add-mark-button {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 16px;
+
+  cursor: pointer;
+
+  height: 64px;
+  width: 64px;
+
+  color: white;
+
+  background-color: black;
+  border-radius: 50%;
+
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+
+  z-index: 1;
+
+  transition: all 0.2s ease-in-out;
+
+  &__content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-size: 32px;
+    font-weight: bold;
+    line-height: 32px;
+  }
+
+  &:hover {
+    background-color: white;
+    color: black;
+  }
+}

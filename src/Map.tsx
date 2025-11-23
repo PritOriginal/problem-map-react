@@ -175,4 +175,17 @@ function PolygonItem({ geom }: { geom: Geometry }) {
       geometry={geom}
     />
   );
+});
+
+
+function AddMarkButton() {
+  let navigate = useNavigate();
+
+  return (
+    <div className="add-mark-button" onClick={() => navigate("/add")}>
+      <div className="add-mark-button__content">
+        +
+      </div>
+    </div>
+  );
 }

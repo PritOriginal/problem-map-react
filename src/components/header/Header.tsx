@@ -1,22 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "../button/button";
 import "./Header.scss"
 import MapService from "../../services/MapService";
 import InfoRow from "../info-row/info-row";
 
 export default function Header() {
-    const [showAddMenu, setShowAddMenu] = useState(false);
     return (
         <header>
             <div className="header-container">
-                <p>Карта проблем</p>
+                <div style={{display: "flex", gap: "32px"}}>
+                    <p>Карта проблем</p>
+                    <p style={{color: "#bdbdbdff"}}>Задания</p>
+                    <p style={{color: "#bdbdbdff"}}>Рейтинг</p>
+                </div>
                 <div>
-                    <Button style="white-2-black" onClick={() => setShowAddMenu(!showAddMenu)}>
-                        <p>Добавить метку</p>
-                    </Button>
+                    <p style={{color: "#bdbdbdff"}}>Логин</p>
                 </div>
             </div>
-            {showAddMenu && <AddMarkMenu />}
         </header>
     );
 }

@@ -11,7 +11,7 @@
     transform: translate(-50%, -50%);
 
     &.small {
-        width: 12px;    
+        width: 12px;
         height: 12px;
     }
 
@@ -21,8 +21,8 @@
     }
 
     &.big {
-        width: 24px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
     }
 
     &__number-checks-box {
@@ -37,5 +37,9 @@
         transform: translateY(-50%);
         // bottom: 0;
         top: 25%;
+    }
+
+    &.selected {
+        box-shadow: 0px 0px 0px 8px rgba(35, 174, 255, 0.3);
     }
 }

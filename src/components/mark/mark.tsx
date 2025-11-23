@@ -2,6 +2,7 @@ import { LngLat, PointGeometry } from "@yandex/ymaps3-types";
 import { YMapMarker } from "ymap3-components";
 
 import "./marker.scss"
+import { memo } from "react";
 
 export interface Mark {
   mark_id: number;
@@ -19,11 +20,12 @@ export enum MarkerSize {
   small = 'small',
   big = 'big',
   medium = 'medium'
-}
+};
 
-const COLOR_TYPES_MARK = {
-  1: "#00e500",
+export const COLOR_MARK_STATUSES = {
+  1: "#d3d3d3ff",
   2: "#e50000",
+  3: "#00e500",
 } as {
   [index: number]: string
 };
@@ -72,20 +74,32 @@ export function Road({ color }: { color: string }) {
     </svg>
   );
 }
+
+const MarkItem = memo(function ({ mark, size, selected, onClick }: { mark: Mark, size: MarkerSize, selected: boolean, onClick: (mark: Mark) => void }) {
+  const color = COLOR_MARK_STATUSES[mark.mark_status_id];
+
   return (
     <YMapMarker
       coordinates={mark.geom.coordinates}
+      onClick={() => { onClick(mark) }}
     >
-      <div className={`mark ${size}`} style={{ backgroundColor: COLOR_TYPES_MARK[mark.type_mark_id] }}>
+      <div className={`mark ${size} ${selected ? "selected" : ""}`} style={{ backgroundColor: color }}>
         {size == MarkerSize.big &&
-          <div className="mark__number-checks-box">
-            {mark.number_checks}
-          </div>
+          <>
+            <div className="circle-content" style={{ backgroundColor: color }}>
+              {TypeMarkIcons[mark.type_mark_id]({ color: "#fff" })}
+            </div>
+            <div className="mark__number-checks-box">
+              {mark.number_checks}
+            </div>
+          </>
         }
       </div>
     </YMapMarker>
   );
-}
+})
+
+export default MarkItem;
 
 
 

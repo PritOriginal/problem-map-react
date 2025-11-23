@@ -118,7 +118,7 @@ function Check({ res, photos }: { res: boolean, photos: string[] }) {
                 <p style={{ fontSize: 12, color: "red" }}>Опроверг</p>
             }
             <div style={{ display: "flex", gap: "8px" }}>
-                {photos.map((photo, index) => (
+                {photos.map((_, index) => (
                     <Photo key={index} />
                 ))}
             </div>

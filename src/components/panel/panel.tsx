@@ -1,0 +1,46 @@
+import "./panel.scss"
+
+import {
+    Routes,
+    Route,
+    useLocation,
+    Outlet,
+    useNavigate,
+} from "react-router-dom";
+import AboutProblem from "./panels/about-problem";
+import AddProblem from "./panels/add-problem";
+export default function PanelRoute() {
+    return (
+        <Routes>
+            <Route path="/" element={<Panel />}>
+                <Route index element={<></>} />
+                <Route path="/problem/:id" element={<AboutProblem />} />
+                <Route path="/add" element={<AddProblem />} />
+            </Route>
+        </Routes>
+    );
+}
+
+function Panel() {
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    return (
+        <>
+            {location.pathname !== "/" ?
+                <div className="panel">
+                    <div className="panel__close-button" onClick={() => { navigate("/") }}>
+                        <div className="panel__close-button__content">
+                            <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0 14.545L1.455 16 8 9.455 14.545 16 16 14.545 9.455 8 16 1.455 14.545 0 8 6.545 1.455 0 0 1.455 6.545 8z" fillRule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <Outlet />
+                </div>
+                :
+                <></>
+            }
+        </>
+    );
+}

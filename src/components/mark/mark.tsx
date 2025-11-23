@@ -12,6 +12,7 @@ export interface Mark {
   district_id: number;
   number_votes: number;
   number_checks: number;
+  mark_status_id: number;
 }
 
 export enum MarkerSize {

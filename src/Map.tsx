@@ -15,15 +15,12 @@ import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
 import MapService from './services/MapService';
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
-import MarkItem, { Mark, MarkerItem, MarkerSize, Trash, Trees } from "./components/mark/mark";
+import MarkItem, { Mark, MarkerItem, MarkerSize } from "./components/mark/mark";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
-import * as turf from '@turf/turf'
-import Panel from "./components/panel/panel";
 import PanelRoute from "./components/panel/panel";
 import { useNavigate } from "react-router-dom";
-import { YMapCopyrights } from "@yandex/ymaps3-types/imperative/YMapCopyrights";
 interface District {
   district_id: number;
   name: string;

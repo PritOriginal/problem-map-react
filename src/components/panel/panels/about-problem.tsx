@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import MapService, { MarkStatus, MarkType } from "../../../services/MapService";
+import { MarkStatus, MarkType } from "../../../services/MarksService";
 import { Button } from "../../button/button";
 import DoubleProgressBar from "../../double-progress-bar/double-progress-bar";
 import { COLOR_MARK_STATUSES, Mark, TypeMarkIcons } from "../../mark/mark";
 import { useParams } from "react-router-dom";
+import MarksService from "../../../services/MarksService";
 
 const emptyMark: Mark = {
     mark_id: 0,
@@ -36,7 +37,7 @@ export default function AboutProblem() {
     const markStatus = mark.mark_status_id !== 0 ? markStatuses.find((status) => status.mark_status_id == mark.mark_status_id) : { mark_status_id: 0, name: "Статус" };
 
     useEffect(() => {
-        MapService.getMarkById(Number(params.id))
+        MarksService.getMarkById(Number(params.id))
             .then((data) => {
                 console.log(data.payload.mark);
                 setMark(data.payload.mark)
@@ -47,7 +48,7 @@ export default function AboutProblem() {
     }, [params])
 
     useEffect(() => {
-        MapService.getMarkTypes()
+        MarksService.getMarkTypes()
             .then((data) => {
                 console.log(data.payload.mark_types);
                 setMarkTypes(data.payload.mark_types)
@@ -55,7 +56,7 @@ export default function AboutProblem() {
             .catch((error) => {
                 console.log(error);
             })
-        MapService.getMarkStatuses()
+        MarksService.getMarkStatuses()
             .then((data) => {
                 console.log(data.payload.mark_statuses);
                 setMarkStatuses(data.payload.mark_statuses)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import MapService, { MarkType } from "../../../services/MapService";
+import MarksService, { MarkType } from "../../../services/MarksService";
 import Select from 'react-select';
 import { Button } from "../../button/button";
 
@@ -18,7 +18,7 @@ export default function AddProblem() {
     const [description, setDescription] = useState("")
 
     useEffect(() => {
-        MapService.getMarkTypes()
+        MarksService.getMarkTypes()
             .then((data) => {
                 console.log(data.payload.mark);
                 setMarkTypes(data.payload.mark_types)

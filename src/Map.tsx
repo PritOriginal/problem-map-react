@@ -21,6 +21,7 @@ import { Feature } from "@yandex/ymaps3-clusterer";
 import convert from 'color-convert';
 import PanelRoute from "./components/panel/panel";
 import { useNavigate } from "react-router-dom";
+import MarksService from "./services/MarksService";
 interface District {
   district_id: number;
   name: string;
@@ -92,7 +93,7 @@ export default function Map() {
       .catch(function (error) {
         console.log(error);
       });
-    MapService.getMarks()
+    MarksService.getMarks()
       .then((data) => {
         setMarks(data.payload.marks)
         console.log(data.payload)

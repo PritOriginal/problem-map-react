@@ -1,3 +1,4 @@
+import user from "../store/user"
 import BaseService, { IResponse } from "./BaseService"
 
 export type SignUpRequest = {
@@ -37,7 +38,7 @@ class AuthService extends BaseService {
     public signUp(req: SignUpRequest): Promise<IResponse> {
         return fetch("/api/auth/signup", {
             method: "POST",
-             headers: {
+            headers: {
                 'Content-Type': 'application/json;charset=utf-8',
             },
             body: JSON.stringify(req),
@@ -47,21 +48,39 @@ class AuthService extends BaseService {
     public signIn(req: SignInRequest): Promise<SignInResponse> {
         return fetch("/api/auth/signin", {
             method: "POST",
-             headers: {
+            headers: {
                 'Content-Type': 'application/json;charset=utf-8',
             },
             body: JSON.stringify(req),
         }).then(this.getResponse)
     }
 
-    public refreshTokens(req: RefreshTokensRequest): Promise<RefreshTokensResponse> {
-        return fetch("/api/auth/tokens/refresh", {
-            method: "POST",
-             headers: {
-                'Content-Type': 'application/json;charset=utf-8',
-            },
-            body: JSON.stringify(req),
-        }).then(this.getResponse)
+    public async refreshTokens() {
+        const refresh_token = localStorage.getItem('refresh_token');
+        if (refresh_token !== null) {
+            const req: RefreshTokensRequest = {
+                refresh_token: refresh_token
+            };
+
+            try {
+                const response = await fetch("/api/auth/tokens/refresh", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json;charset=utf-8',
+                    },
+                    body: JSON.stringify(req),
+                });
+
+                const data: RefreshTokensResponse = await this.getResponse(response);
+                localStorage.setItem('access_token', data.payload.access_token);
+                localStorage.setItem('refresh_token', data.payload.refresh_token);
+                return true;
+            } catch (error) {
+                console.log(error);
+                user.resetUser();
+            }
+        }
+        return false;
     }
 }
 

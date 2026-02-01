@@ -9,6 +9,9 @@ import {
 } from "react-router-dom";
 import AboutProblem from "./panels/about-problem";
 import AddProblem from "./panels/add-problem";
+import SignIn from "../../SignIn";
+import SignUp from "../../SignUp";
+import SignOut from "../../SignOut";
 export default function PanelRoute() {
     return (
         <Routes>
@@ -17,6 +20,9 @@ export default function PanelRoute() {
                 <Route path="/problem/:id" element={<AboutProblem />} />
                 <Route path="/add" element={<AddProblem />} />
             </Route>
+            <Route path='/signin' element={<SignIn />} />
+            <Route path='/signup' element={<SignUp />} />
+            <Route path='/signout' element={<SignOut />} />
         </Routes>
     );
 }

@@ -1,18 +1,18 @@
 import user from "../store/user"
 import BaseService, { IResponse } from "./BaseService"
 
-export type SignUpRequest = {
+export interface SignUpRequest {
     username: string
     login: string
     password: string
 }
 
-export type SignInRequest = {
+export interface SignInRequest {
     login: string
     password: string
 }
 
-export type SignInResponsePayload = {
+export interface SignInResponsePayload {
     access_token: string
     refresh_token: string
 }
@@ -21,7 +21,7 @@ export interface SignInResponse extends IResponse {
     payload: SignInResponsePayload;
 }
 
-export type RefreshTokensRequest = {
+export interface RefreshTokensRequest {
     refresh_token: string
 }
 
@@ -29,7 +29,7 @@ export interface RefreshTokensResponse extends IResponse {
     payload: RefreshTokensResponsePayload;
 }
 
-export type RefreshTokensResponsePayload = {
+export interface RefreshTokensResponsePayload {
     access_token: string
     refresh_token: string
 }

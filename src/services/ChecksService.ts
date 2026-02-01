@@ -16,7 +16,7 @@ export interface GetCheckByIdResponse extends IResponse {
     payload: GetCheckByIdResponsePayload;
 }
 
-export type GetCheckByIdResponsePayload = {
+export interface GetCheckByIdResponsePayload {
     check: Check
 }
 
@@ -24,7 +24,7 @@ export interface GetChecksByMarkIdResponse extends IResponse {
     payload: GetChecksByMarkIdResponsePayload;
 }
 
-export type GetChecksByMarkIdResponsePayload = {
+export interface GetChecksByMarkIdResponsePayload {
     checks: Check[]
 }
 
@@ -32,11 +32,11 @@ export interface GetChecksByUserIdResponse extends IResponse {
     payload: GetChecksByUserIdResponsePayload;
 }
 
-export type GetChecksByUserIdResponsePayload = {
+export interface GetChecksByUserIdResponsePayload {
     checks: Check[]
 }
 
-export type AddCheckRequest = {
+export interface AddCheckRequest {
     mark_id: number;
     result: boolean;
     comment: string;

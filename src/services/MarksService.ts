@@ -87,14 +87,15 @@ class MarksService extends BaseService {
         this.AuthService = AuthService;
     }
 
+    public getMarks(): Promise<GetMarksResponse> {
         return fetch("/api/marks").then(this.getResponse)
     }
 
-    public getMarkById(id: number) {
+    public getMarkById(id: number): Promise<GetMarkByIdResponse> {
         return fetch(`/api/marks/${id}`).then(this.getResponse)
     }
 
-    public getMarksByUserId(userId: number) {
+    public getMarksByUserId(userId: number): Promise<GetMarksByUserIdResponse> {
         return fetch(`/api/marks/user/${userId}`).then(this.getResponse)
     }
 
@@ -124,11 +125,11 @@ class MarksService extends BaseService {
         }
     }
 
-    public getMarkTypes() {
+    public getMarkTypes(): Promise<GetMarkTypesResponse> {
         return fetch("/api/marks/types").then(this.getResponse)
     }
 
-    public getMarkStatuses() {
+    public getMarkStatuses(): Promise<GetMarkStatusesResponse> {
         return fetch("/api/marks/statuses").then(this.getResponse)
     }
 

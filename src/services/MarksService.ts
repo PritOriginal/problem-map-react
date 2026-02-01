@@ -1,4 +1,9 @@
+import { jwtDecode } from "jwt-decode";
+import BaseService, { IResponse } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
+import AuthService from "./AuthService";
+
+
 export interface Mark {
     mark_id: number;
     name: string;

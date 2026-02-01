@@ -75,7 +75,13 @@ export interface GetMarkStatusesResponsePayload {
 }
 
 class MarksService extends BaseService {
-    public getMarks() {
+    AuthService: typeof AuthService;
+
+    constructor() {
+        super();
+        this.AuthService = AuthService;
+    }
+
         return fetch("/api/marks").then(this.getResponse)
     }
 
@@ -87,8 +93,30 @@ class MarksService extends BaseService {
         return fetch(`/api/marks/user/${userId}`).then(this.getResponse)
     }
 
-    public addMark() {
-        return fetch("/api/marks").then(this.getResponse)
+    public async addMark(req: AddMarkRequest, photos: File[]): Promise<IResponse> {
+        var userIsAuthorized = true;
+        if (!this.checkAccessToken()) {
+            userIsAuthorized = await this.AuthService.refreshTokens();
+        }
+        if (userIsAuthorized) {
+            const bearer = 'Bearer ' + localStorage.getItem('access_token');
+
+            const form = new FormData();
+            form.append("data", JSON.stringify(req))
+            photos.forEach(photo => {
+                form.append("photos", photo)
+            });
+
+            return fetch("/api/marks", {
+                method: "POST",
+                headers: {
+                    'Authorization': bearer,
+                },
+                body: form
+            }).then(this.getResponse)
+        } else {
+            return Promise.reject();
+        }
     }
 
     public getMarkTypes() {

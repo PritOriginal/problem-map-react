@@ -14,7 +14,7 @@ export interface Mark {
 }
 
 export interface MarkType {
-    type_mark_id: number;
+    mark_type_id: number;
     name: string;
 }
 

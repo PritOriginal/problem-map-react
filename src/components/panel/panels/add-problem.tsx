@@ -41,7 +41,7 @@ export default function AddProblem() {
                     options={markTypesOptions}
                     value={selectedMarkTypeOption === undefined ? null : selectedMarkTypeOption}
                     placeholder={"Выберите категорию проблемы"}
-                    onChange={(val) => { setSelectedMarkType(markTypes.find(type => type.type_mark_id === val?.value)) }}
+                    onChange={(val) => { setSelectedMarkType(markTypes.find(type => type.mark_type_id === val?.value)) }}
                     isDisabled={markTypes.length === 0}
                 />
                 <p><b>Описание</b></p>

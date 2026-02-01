@@ -98,6 +98,20 @@ class MarksService extends BaseService {
     public getMarkStatuses() {
         return fetch("/api/marks/statuses").then(this.getResponse)
     }
+
+    public checkAccessToken(): boolean {
+        const access_token = localStorage.getItem('access_token');
+        if (access_token) {
+            const payload = jwtDecode(access_token);
+            const dateNow = new Date();
+            if (payload.exp! < dateNow.getTime()) {
+                return false
+            }
+        } else {
+            return false
+        }
+        return true
+    }
 }
 
 export default new MarksService();

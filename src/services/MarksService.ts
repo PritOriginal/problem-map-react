@@ -23,6 +23,56 @@ export interface MarkStatus {
     name: string;
 }
 
+export interface AddMarkRequest {
+    point: Point
+    mark_type_id: number
+    description: string
+}
+
+export interface Point {
+    longitude: number
+    latitude: number
+}
+
+export interface GetMarksResponse extends IResponse {
+    payload: GetMarksResponsePayload;
+}
+
+export interface GetMarksResponsePayload {
+    marks: Mark[]
+}
+
+export interface GetMarkByIdResponse extends IResponse {
+    payload: GetMarkByIdResponsePayload;
+}
+
+export interface GetMarkByIdResponsePayload {
+    mark: Mark
+}
+
+export interface GetMarksByUserIdResponse extends IResponse {
+    payload: GetMarksByUserIdResponsePayload;
+}
+
+export interface GetMarksByUserIdResponsePayload {
+    marks: Mark[]
+}
+
+export interface GetMarkTypesResponse extends IResponse {
+    payload: GetMarkTypesResponsePayload;
+}
+
+export interface GetMarkTypesResponsePayload {
+    mark_types: MarkType[]
+}
+
+export interface GetMarkStatusesResponse extends IResponse {
+    payload: GetMarkStatusesResponsePayload;
+}
+
+export interface GetMarkStatusesResponsePayload {
+    mark_statuses: MarkStatus[]
+}
 
 class MarksService extends BaseService {
     public getMarks() {

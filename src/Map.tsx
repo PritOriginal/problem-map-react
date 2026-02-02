@@ -20,8 +20,8 @@ import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
 import PanelRoute from "./components/panel/panel";
-import { useNavigate } from "react-router-dom";
-import MarksService from "./services/MarksService";
+import selectedPoint from "./store/selected_point";
+import { observer } from "mobx-react-lite";
 interface District {
   district_id: number;
   name: string;
@@ -202,13 +202,34 @@ export default function Map() {
               color={"white"}
             />
           }
+          <SelectedPoint />
           <YMapListener onUpdate={onUpdate} />
           <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
         </YMap>
       </YMapComponentsProvider>
     </>
   );
-}
+});
+
+const SelectedPoint = observer(() => {
+  const handleDragMoveHandler = useCallback((coordinates: LngLat) => {
+    selectedPoint.setCoords(coordinates);
+  }, []);
+
+  return (
+    <>
+      {selectedPoint.visibility ?
+        <YMapDefaultMarker
+          coordinates={selectedPoint.coords}
+          onDragMove={handleDragMoveHandler}
+          zIndex={1}
+        />
+        :
+        <></>
+      }
+    </>
+  );
+})
 
 const PolygonItem = memo(function ({ geom }: { geom: Geometry }) {
   const color = "#36FF58";

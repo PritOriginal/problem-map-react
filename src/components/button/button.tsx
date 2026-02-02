@@ -3,7 +3,7 @@ import "./button.scss"
 
 interface ButtonProps {
     children: React.ReactNode;
-    style: "white-2-black" | "black-2-white";
+    style: "white-2-black" | "black-2-white" | "green" | "red";
     isMini?: boolean;
     disabled?: boolean;
     

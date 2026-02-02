@@ -1,0 +1,88 @@
+import { Outlet, useParams } from "react-router-dom";
+import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
+import { createContext, useEffect, useState } from "react";
+import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
+
+export const emptyMark: Mark = {
+    mark_id: 0,
+    name: "",
+    geom: {
+        type: "Point",
+        coordinates: [0, 0]
+    },
+    mark_type_id: 1,
+    user_id: 0,
+    district_id: 0,
+    number_votes: 0,
+    number_checks: 0,
+    mark_status_id: 0,
+    created_at: "",
+    updated_at: ""
+}
+
+export const MarkContext = createContext<Mark>(emptyMark)
+
+export default function ProblemPanel() {
+    const params = useParams();
+
+    const [mark, setMark] = useState<Mark>(emptyMark);
+    const [markTypes, setMarkTypes] = useState<MarkType[]>([])
+    const [markStatuses, setMarkStatuses] = useState<MarkStatus[]>([])
+
+    const markType: MarkType | undefined = mark.mark_type_id !== 0 ? markTypes.find((type) => type.mark_type_id == mark.mark_type_id) : { mark_type_id: 0, name: "" } as MarkType;
+    const markStatus = mark.mark_status_id !== 0 ? markStatuses.find((status) => status.mark_status_id == mark.mark_status_id) : { mark_status_id: 0, name: "Статус" };
+
+
+    useEffect(() => {
+        const markIdParam = Number(params.id);
+        if (mark.mark_id === 0 || mark.mark_id !== markIdParam)
+            MarksService.getMarkById(markIdParam)
+                .then((data) => {
+                    console.log(data.payload.mark);
+                    setMark(data.payload.mark)
+                })
+                .catch((error) => {
+                    console.log(error);
+                })
+    }, [params])
+
+    useEffect(() => {
+        MarksService.getMarkTypes()
+            .then((data) => {
+                console.log(data.payload.mark_types);
+                setMarkTypes(data.payload.mark_types)
+            })
+            .catch((error) => {
+                console.log(error);
+            })
+        MarksService.getMarkStatuses()
+            .then((data) => {
+                console.log(data.payload.mark_statuses);
+                setMarkStatuses(data.payload.mark_statuses)
+            })
+            .catch((error) => {
+                console.log(error);
+            })
+    }, [])
+
+    return (
+        <MarkContext.Provider value={mark}>
+            <div className="panel__header">
+                <p style={{ fontSize: "12px" }}>№{mark.mark_id}</p>
+                <div className="panel__header__status">
+                    <div style={{ border: `2px solid ${COLOR_MARK_STATUSES[markStatus?.mark_status_id!]}`, backgroundColor: "#fff", borderRadius: "4px", padding: "4px" }}>
+                        <p style={{ color: "#000" }}><b>{markStatus?.name}</b></p>
+                    </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
+                    <p style={{ fontSize: 18 }}><b>{markType?.name}</b></p>
+                </div>
+                <p style={{ fontSize: 12 }}>Координаты: <b>{mark.geom.coordinates[1]}, {mark.geom.coordinates[0]}</b></p>
+            </div>
+            <div className="panel__content">
+                <Outlet />
+            </div>
+        </MarkContext.Provider>
+    );
+}

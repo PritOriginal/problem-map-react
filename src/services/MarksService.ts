@@ -1,7 +1,25 @@
-import BaseService from "./BaseService"
+import { jwtDecode } from "jwt-decode";
+import BaseService, { IResponse } from "./BaseService"
+import { PointGeometry } from "@yandex/ymaps3-types";
+import AuthService from "./AuthService";
+
+
+export interface Mark {
+    mark_id: number;
+    name: string;
+    geom: PointGeometry,
+    mark_type_id: number;
+    user_id: number;
+    district_id: number;
+    number_votes: number;
+    number_checks: number;
+    mark_status_id: number;
+    created_at: string;
+    updated_at: string;
+}
 
 export interface MarkType {
-    type_mark_id: number;
+    mark_type_id: number;
     name: string;
 }
 
@@ -10,30 +28,131 @@ export interface MarkStatus {
     name: string;
 }
 
+export interface AddMarkRequest {
+    point: Point
+    mark_type_id: number
+    description: string
+}
+
+export interface AddMarkResponse extends IResponse {
+    payload: AddMarkResponsePayload;
+}
+
+export interface AddMarkResponsePayload {
+    mark_id: number;
+}
+
+export interface Point {
+    longitude: number
+    latitude: number
+}
+
+export interface GetMarksResponse extends IResponse {
+    payload: GetMarksResponsePayload;
+}
+
+export interface GetMarksResponsePayload {
+    marks: Mark[]
+}
+
+export interface GetMarkByIdResponse extends IResponse {
+    payload: GetMarkByIdResponsePayload;
+}
+
+export interface GetMarkByIdResponsePayload {
+    mark: Mark
+}
+
+export interface GetMarksByUserIdResponse extends IResponse {
+    payload: GetMarksByUserIdResponsePayload;
+}
+
+export interface GetMarksByUserIdResponsePayload {
+    marks: Mark[]
+}
+
+export interface GetMarkTypesResponse extends IResponse {
+    payload: GetMarkTypesResponsePayload;
+}
+
+export interface GetMarkTypesResponsePayload {
+    mark_types: MarkType[]
+}
+
+export interface GetMarkStatusesResponse extends IResponse {
+    payload: GetMarkStatusesResponsePayload;
+}
+
+export interface GetMarkStatusesResponsePayload {
+    mark_statuses: MarkStatus[]
+}
 
 class MarksService extends BaseService {
-    public getMarks() {
+    AuthService: typeof AuthService;
+
+    constructor() {
+        super();
+        this.AuthService = AuthService;
+    }
+
+    public getMarks(): Promise<GetMarksResponse> {
         return fetch("/api/marks").then(this.getResponse)
     }
 
-    public getMarkById(id: number) {
+    public getMarkById(id: number): Promise<GetMarkByIdResponse> {
         return fetch(`/api/marks/${id}`).then(this.getResponse)
     }
 
-    public getMarksByUserId(userId: number) {
+    public getMarksByUserId(userId: number): Promise<GetMarksByUserIdResponse> {
         return fetch(`/api/marks/user/${userId}`).then(this.getResponse)
     }
 
-    public addMark() {
-        return fetch("/api/marks").then(this.getResponse)
+    public async addMark(req: AddMarkRequest, photos: File[]): Promise<AddMarkResponse> {
+        let userIsAuthorized = true;
+        if (!this.checkAccessToken()) {
+            userIsAuthorized = await this.AuthService.refreshTokens();
+        }
+        if (userIsAuthorized) {
+            const bearer = 'Bearer ' + localStorage.getItem('access_token');
+
+            const form = new FormData();
+            form.append("data", JSON.stringify(req))
+            photos.forEach(photo => {
+                form.append("photos", photo)
+            });
+
+            return fetch("/api/marks", {
+                method: "POST",
+                headers: {
+                    'Authorization': bearer,
+                },
+                body: form
+            }).then(this.getResponse)
+        } else {
+            return Promise.reject();
+        }
     }
 
-    public getMarkTypes() {
+    public getMarkTypes(): Promise<GetMarkTypesResponse> {
         return fetch("/api/marks/types").then(this.getResponse)
     }
 
-    public getMarkStatuses() {
+    public getMarkStatuses(): Promise<GetMarkStatusesResponse> {
         return fetch("/api/marks/statuses").then(this.getResponse)
+    }
+
+    public checkAccessToken(): boolean {
+        const access_token = localStorage.getItem('access_token');
+        if (access_token) {
+            const payload = jwtDecode(access_token);
+            const dateNow = new Date();
+            if (payload.exp! < dateNow.getTime()) {
+                return false
+            }
+        } else {
+            return false
+        }
+        return true
     }
 }
 

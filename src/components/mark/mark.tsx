@@ -1,20 +1,10 @@
-import { LngLat, PointGeometry } from "@yandex/ymaps3-types";
+import { LngLat } from "@yandex/ymaps3-types";
 import { YMapMarker } from "ymap3-components";
 
 import "./marker.scss"
 import { memo } from "react";
+import { Mark } from "../../services/MarksService";
 
-export interface Mark {
-  mark_id: number;
-  name: string;
-  geom: PointGeometry,
-  type_mark_id: number;
-  user_id: number;
-  district_id: number;
-  number_votes: number;
-  number_checks: number;
-  mark_status_id: number;
-}
 
 export enum MarkerSize {
   small = 'small',
@@ -87,10 +77,7 @@ const MarkItem = memo(function ({ mark, size, selected, onClick }: { mark: Mark,
         {size == MarkerSize.big &&
           <>
             <div className="circle-content" style={{ backgroundColor: color }}>
-              {TypeMarkIcons[mark.type_mark_id]({ color: "#fff" })}
-            </div>
-            <div className="mark__number-checks-box">
-              {mark.number_checks}
+              {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
             </div>
           </>
         }

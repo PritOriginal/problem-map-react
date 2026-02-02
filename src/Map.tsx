@@ -7,6 +7,7 @@ import {
   YMapListener,
   YMapMarker,
   YMapCustomClusterer,
+  YMapDefaultMarker,
 } from "ymap3-components";
 
 import customization from './customization.json'
@@ -14,14 +15,17 @@ import customization from './customization.json'
 import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
 import MapService from './services/MapService';
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
-import MarkItem, { Mark, MarkerItem, MarkerSize } from "./components/mark/mark";
+import { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
+import MarkItem, { MarkerItem, MarkerSize } from "./components/mark/mark";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
-import PanelRoute from "./components/panel/panel";
 import { useNavigate } from "react-router-dom";
-import MarksService from "./services/MarksService";
+import { Mark } from "./services/MarksService";
+import selectedPoint from "./store/selected_point";
+import selectedMark from "./store/selected_mark";
+import { observer } from "mobx-react-lite";
+import marksStore from "./store/marks";
 interface District {
   district_id: number;
   name: string;
@@ -58,20 +62,20 @@ export const ZOOMS = {
 //   });
 // }
 
-export default function Map() {
-  let navigate = useNavigate();
+const Map = observer(() => {
+  const navigate = useNavigate();
 
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [size, setSize] = useState<MarkerSize>(MarkerSize.big);
 
   const [polygons, setPolygons] = useState<District[]>([]);
-  const [marks, setMarks] = useState<Mark[]>([]);
 
-  const [selectedMark, setSelectedMark] = useState<Mark | null>(null);
+  const { marks } = marksStore;
 
   const onClickOnMark = useCallback((mark: Mark) => {
-    navigate(`/problem/${mark.mark_id}`)
-    setSelectedMark(mark);
+    // setSelectedMarkId(mark.mark_id);
+    selectedMark.setId(mark.mark_id);
+    navigate(`/problem/${mark.mark_id}`);
   }, [])
 
   const onUpdate: MapEventUpdateHandler = useCallback((o) => {
@@ -82,6 +86,7 @@ export default function Map() {
     } else if (o.location.zoom >= ZOOMS.big) {
       setSize(MarkerSize.big);
     }
+    selectedPoint.setCoords(o.location.center);
   }, []);
 
   useEffect(() => {
@@ -93,16 +98,10 @@ export default function Map() {
       .catch(function (error) {
         console.log(error);
       });
-    MarksService.getMarks()
-      .then((data) => {
-        setMarks(data.payload.marks)
-        console.log(data.payload)
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+    marksStore.fetchMarks();
     getUserLocation();
-  }, [])
+    selectedPoint.setCoords((LOCATION as YMapCenterLocation).center)
+  }, []);
 
   const getUserLocation = () => {
     // if geolocation is supported by the users browser
@@ -126,7 +125,7 @@ export default function Map() {
     }
   };
 
-  const getColorByFeatues = (features: Feature[]) => {
+  const getColorByFeatues = useCallback((features: Feature[]) => {
     let numsComplete = 0;
     let numsApproved = 0;
     features.forEach(f => {
@@ -145,10 +144,10 @@ export default function Map() {
     } else {
       return "d3d3d3ff"
     }
-  }
+  }, [])
 
-  const cluster = (coordinates: LngLat, features: Feature[]) => (
-    <YMapMarker onClick={() => { }} coordinates={coordinates}>
+  const cluster = useCallback((coordinates: LngLat, features: Feature[]) => (
+    <YMapMarker coordinates={coordinates}>
       <div className="circle">
         <div className="circle-content" style={{ backgroundColor: '#' + getColorByFeatues(features) }}>
           <span className="circle-text">
@@ -157,11 +156,11 @@ export default function Map() {
         </div>
       </div>
     </YMapMarker>
-  );
+  ), []);
 
-  const marker = (feature: Feature) => (
-    <MarkItem mark={feature.properties!.mark as Mark} size={size} selected={(feature.properties!.mark as Mark).mark_id === selectedMark?.mark_id} onClick={onClickOnMark} />
-  )
+  const marker = useCallback((feature: Feature) => (
+    <MarkItem mark={feature.properties!.mark as Mark} size={size} selected={(feature.properties!.mark as Mark).mark_id === selectedMark.id} onClick={onClickOnMark} />
+  ), [size, selectedMark]);
 
   const points = useMemo(() => {
     const p: Feature[] = [];
@@ -181,8 +180,6 @@ export default function Map() {
 
   return (
     <>
-      {/* {selectedMark && <PanelRoute />} */}
-      <PanelRoute />
       <AddMarkButton />
       <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
         <YMap
@@ -202,13 +199,34 @@ export default function Map() {
               color={"white"}
             />
           }
+          <SelectedPoint />
           <YMapListener onUpdate={onUpdate} />
           <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
         </YMap>
       </YMapComponentsProvider>
     </>
   );
-}
+});
+
+const SelectedPoint = observer(() => {
+  const handleDragMoveHandler = useCallback((coordinates: LngLat) => {
+    selectedPoint.setCoords(coordinates);
+  }, []);
+
+  return (
+    <>
+      {selectedPoint.visibility ?
+        <YMapDefaultMarker
+          coordinates={selectedPoint.coords}
+          onDragMove={handleDragMoveHandler}
+          zIndex={1}
+        />
+        :
+        <></>
+      }
+    </>
+  );
+})
 
 const PolygonItem = memo(function ({ geom }: { geom: Geometry }) {
   const color = "#36FF58";
@@ -232,7 +250,7 @@ const PolygonItem = memo(function ({ geom }: { geom: Geometry }) {
 
 
 function AddMarkButton() {
-  let navigate = useNavigate();
+  const navigate = useNavigate();
 
   return (
     <div className="add-mark-button" onClick={() => navigate("/add")}>
@@ -242,3 +260,5 @@ function AddMarkButton() {
     </div>
   );
 }
+
+export default Map;

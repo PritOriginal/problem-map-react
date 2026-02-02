@@ -7,6 +7,14 @@ export interface SignUpRequest {
     password: string
 }
 
+export interface SignUpResponse extends IResponse {
+    payload: SignUpResponsePayload;
+}
+
+export interface SignUpResponsePayload {
+    user_id: number;
+}
+
 export interface SignInRequest {
     login: string
     password: string
@@ -35,7 +43,7 @@ export interface RefreshTokensResponsePayload {
 }
 
 class AuthService extends BaseService {
-    public signUp(req: SignUpRequest): Promise<IResponse> {
+    public signUp(req: SignUpRequest): Promise<SignUpResponse> {
         return fetch("/api/auth/signup", {
             method: "POST",
             headers: {

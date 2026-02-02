@@ -34,6 +34,14 @@ export interface AddMarkRequest {
     description: string
 }
 
+export interface AddMarkResponse extends IResponse {
+    payload: AddMarkResponsePayload;
+}
+
+export interface AddMarkResponsePayload {
+    mark_id: number;
+}
+
 export interface Point {
     longitude: number
     latitude: number
@@ -99,7 +107,7 @@ class MarksService extends BaseService {
         return fetch(`/api/marks/user/${userId}`).then(this.getResponse)
     }
 
-    public async addMark(req: AddMarkRequest, photos: File[]): Promise<IResponse> {
+    public async addMark(req: AddMarkRequest, photos: File[]): Promise<AddMarkResponse> {
         var userIsAuthorized = true;
         if (!this.checkAccessToken()) {
             userIsAuthorized = await this.AuthService.refreshTokens();

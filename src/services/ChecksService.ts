@@ -42,6 +42,14 @@ export interface AddCheckRequest {
     comment: string;
 }
 
+export interface AddCheckResponse extends IResponse {
+    payload: AddCheckResponsePayload;
+}
+
+export interface AddCheckResponsePayload {
+    check_id: number;
+}
+
 
 class СhecksService extends BaseService {
     public getCheckById(id: number): Promise<GetCheckByIdResponse> {
@@ -56,7 +64,7 @@ class СhecksService extends BaseService {
         return fetch(`/api/checks/user/${userId}`).then(this.getResponse)
     }
 
-    public addCheck(req: AddCheckRequest, photos: File[]): Promise<IResponse> {
+    public addCheck(req: AddCheckRequest, photos: File[]): Promise<AddCheckResponse> {
         const bearer = 'Bearer ' + localStorage.getItem('access_token');
 
         const form = new FormData();

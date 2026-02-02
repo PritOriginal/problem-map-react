@@ -1,9 +1,14 @@
-// import {YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapMarker, reactify} from './lib/ymaps';
-
+import { useEffect } from 'react';
 import Header from './components/header/Header';
 import Map from "./Map";
+import AuthService from './services/AuthService';
 
 export default function App() {
+
+  useEffect(() => {
+    AuthService.refreshTokens();
+  }, [])
+
   return (
     <div className='main'>
       <Header />

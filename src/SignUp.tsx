@@ -47,7 +47,8 @@ export default function SignUp() {
                 const payload = jwtDecode(data.payload.access_token)
                 localStorage.setItem('access_token', data.payload.access_token);
                 localStorage.setItem('refresh_token', data.payload.refresh_token);
-                user.setUser("", Number(payload.sub));
+                user.setUser(login, Number(payload.sub));
+                navigate("/");
             })
             .catch(function (error) {
                 console.log(error);

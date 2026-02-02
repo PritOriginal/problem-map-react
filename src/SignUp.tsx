@@ -90,7 +90,7 @@ export default function SignUp() {
                 />
                 <div>
                     <Button style="white-2-black" onClick={onClick}>
-                        <p>Войти</p>
+                        <p>Зарегистрироваться</p>
                     </Button>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center"}}>

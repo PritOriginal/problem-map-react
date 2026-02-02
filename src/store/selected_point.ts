@@ -3,6 +3,7 @@ import { makeAutoObservable } from 'mobx';
 
 class SelectedPoint {
     coords: LngLat = [1, 2];
+    visibility: boolean = false;
 
     constructor() {
         makeAutoObservable(this);
@@ -10,6 +11,14 @@ class SelectedPoint {
 
     setCoords = (coords: LngLat) => {
         this.coords = coords;
+    }
+
+    showPoint = () => {
+        this.visibility = true;
+    }
+    
+    hidePoint = () => {
+        this.visibility = false;
     }
 }
 

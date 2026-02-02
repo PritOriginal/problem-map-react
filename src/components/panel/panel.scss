@@ -75,10 +75,11 @@
 
 .photo {
     background-color: #e5e5e5;
-    height: 150px;
-    width: 100px;
+    max-height: 150px;
+    min-height: 150px;
 
     &.add {
+        width: 100px;
         display: flex;
         justify-content: center;
         align-items: center;

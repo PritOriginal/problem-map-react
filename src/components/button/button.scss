@@ -40,3 +40,24 @@
 		color: black;
 	}
 }
+
+.green {
+	@extend %color2color;
+	background-color: rgb(194, 253, 183);
+	color: black;
+
+	&:hover {
+		background-color: rgb(56, 230, 21);
+	}
+}
+
+.red {
+	@extend %color2color;
+	background-color: rgb(255, 160, 160);
+	color: black;
+
+	&:hover {
+		background-color: rgb(211, 12, 12);
+		color: white;
+	}
+}

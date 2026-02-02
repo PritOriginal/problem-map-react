@@ -2,7 +2,7 @@
 import "./double-progress-bar.scss"
 
 const DoubleProgressBar = ({ negative, positive }: { negative: number, positive: number }) => {
-    var sum = negative + positive;
+    let sum = negative + positive;
     if (sum < 5) {
         sum = 5
     }

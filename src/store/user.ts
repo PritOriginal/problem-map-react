@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { makePersistable } from 'mobx-persist-store';
 
 class User {
@@ -15,13 +15,18 @@ class User {
     }
 
     setUser = (username: string, id: number) => {
-        this.username = username;
-        this.id = id;
+        runInAction(() => {
+            this.username = username;
+            this.id = id;
+        });
+
     }
 
     resetUser = () => {
-        this.username = "";
-        this.id = 0;
+        runInAction(() => {
+            this.username = "";
+            this.id = 0;
+        });
     }
 }
 

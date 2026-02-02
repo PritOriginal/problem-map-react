@@ -6,6 +6,7 @@ import {
     useLocation,
     Outlet,
     useNavigate,
+    useParams,
 } from "react-router-dom";
 import AboutProblem from "./panels/problem/about-problem";
 import AddProblem from "./panels/add-problem";
@@ -14,6 +15,9 @@ import SignUp from "../../SignUp";
 import SignOut from "../../SignOut";
 import AddCheck from "./panels/problem/add-check";
 import ProblemPanel from "./panels/problem/problem";
+import { useEffect } from "react";
+import selectedMark from "../../store/selected_mark";
+import selectedPoint from "../../store/selected_point";
 export default function PanelRoute() {
     return (
         <Routes>
@@ -35,6 +39,20 @@ export default function PanelRoute() {
 function Panel() {
     const location = useLocation();
     const navigate = useNavigate();
+    const params = useParams();
+
+    useEffect(() => {
+        const markIdParam = params.id;
+        selectedMark.setId(markIdParam ? Number(markIdParam) : 0);
+    }, [params.id])
+
+    useEffect(() => {
+        if (location.pathname == "/add") {
+            selectedPoint.showPoint();
+        } else {
+            selectedPoint.hidePoint();
+        }
+    }, [location])
 
     return (
         <>

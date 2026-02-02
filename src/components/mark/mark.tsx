@@ -79,9 +79,6 @@ const MarkItem = memo(function ({ mark, size, selected, onClick }: { mark: Mark,
             <div className="circle-content" style={{ backgroundColor: color }}>
               {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
             </div>
-            <div className="mark__number-checks-box">
-              {mark.number_checks}
-            </div>
           </>
         }
       </div>

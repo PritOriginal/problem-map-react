@@ -64,7 +64,7 @@ export const ZOOMS = {
 
 const Map = observer(() => {
   const navigate = useNavigate();
-  
+
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [size, setSize] = useState<MarkerSize>(MarkerSize.big);
 
@@ -250,7 +250,7 @@ const PolygonItem = memo(function ({ geom }: { geom: Geometry }) {
 
 
 function AddMarkButton() {
-  let navigate = useNavigate();
+  const navigate = useNavigate();
 
   return (
     <div className="add-mark-button" onClick={() => navigate("/add")}>

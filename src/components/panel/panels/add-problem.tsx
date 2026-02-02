@@ -42,7 +42,7 @@ const AddProblem = observer(function AddProblem() {
 
     const addMark = () => {
         if (selectedMarkType && photos.length > 0) {
-            var req: AddMarkRequest = {
+            const req: AddMarkRequest = {
                 point: {
                     longitude: selectedPoint.coords[1],
                     latitude: selectedPoint.coords[0]

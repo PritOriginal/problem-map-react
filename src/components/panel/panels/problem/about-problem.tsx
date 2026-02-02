@@ -32,7 +32,7 @@ export default function AboutProblem() {
 
     const [checks, setChecks] = useState<Check[]>([])
 
-    var createdAtStr = ""
+    let createdAtStr = ""
     if (mark.created_at !== "") {
         const createdAt = new Date(mark.created_at)
         createdAtStr = `${createdAt.toLocaleDateString()} ${createdAt.getHours()}:${createdAt.getMinutes()}`

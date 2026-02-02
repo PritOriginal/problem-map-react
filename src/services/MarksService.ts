@@ -108,7 +108,7 @@ class MarksService extends BaseService {
     }
 
     public async addMark(req: AddMarkRequest, photos: File[]): Promise<AddMarkResponse> {
-        var userIsAuthorized = true;
+        let userIsAuthorized = true;
         if (!this.checkAccessToken()) {
             userIsAuthorized = await this.AuthService.refreshTokens();
         }

@@ -1,10 +1,8 @@
 import { useContext, useEffect, useState } from "react";
-import { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
+import { Mark } from "../../../../services/MarksService";
 import { Button } from "../../../button/button";
 import DoubleProgressBar from "../../../double-progress-bar/double-progress-bar";
-import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
-import { useNavigate, useParams } from "react-router-dom";
-import MarksService from "../../../../services/MarksService";
+import { useNavigate } from "react-router-dom";
 import ChecksService, { Check } from "../../../../services/ChecksService";
 import { MarkContext } from "./problem";
 

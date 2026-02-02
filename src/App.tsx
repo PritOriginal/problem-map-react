@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Header from './components/header/Header';
 import Map from "./Map";
 import AuthService from './services/AuthService';
+import PanelRoute from './components/panel/panel';
 
 export default function App() {
 
@@ -13,6 +14,7 @@ export default function App() {
     <div className='main'>
       <Header />
       <div style={{ width: '100%', height: 'calc(100vh - 48px)' }}>
+        <PanelRoute />
         <Map />
       </div>
     </div>

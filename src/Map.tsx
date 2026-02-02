@@ -181,8 +181,6 @@ export default function Map() {
 
   return (
     <>
-      {/* {selectedMark && <PanelRoute />} */}
-      <PanelRoute />
       <AddMarkButton />
       <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
         <YMap

@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import MarksService, { AddMarkRequest, MarkType } from "../../../services/MarksService";
 import Select from 'react-select';
 import { Button } from "../../button/button";
@@ -6,6 +6,7 @@ import { observer } from "mobx-react-lite";
 import selectedPoint from "../../../store/selected_point";
 import { useNavigate } from "react-router-dom";
 import SelectFiles from "../../SelectFiles";
+import marksStore from "../../../store/marks";
 
 const AddProblem = observer(function AddProblem() {
     const navigate = useNavigate();
@@ -53,7 +54,8 @@ const AddProblem = observer(function AddProblem() {
             MarksService.addMark(req, photos)
                 .then((data) => {
                     console.log(data.payload);
-                    navigate(`/`) // TODO: redirect to the mark page
+                    marksStore.fetchMarks();
+                    navigate(`/problem/${data.payload.mark_id}`);
                 })
                 .catch((error) => {
                     console.log(error);

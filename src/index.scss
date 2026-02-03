@@ -155,7 +155,7 @@ a {
   align-items: center;
   justify-content: center;
 
-  &__content {
+  &__container {
     margin: auto;
     padding: 16px;
     width: 30%;
@@ -164,5 +164,16 @@ a {
     display: flex;
     flex-direction: column;
     gap: 8px;
+
+    &__header {
+      text-align: center;
+      font-weight: bold;
+    }
+
+    &__content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
   }
 }

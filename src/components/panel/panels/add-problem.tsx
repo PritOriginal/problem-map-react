@@ -7,6 +7,8 @@ import selectedPoint from "../../../store/selected_point";
 import { useNavigate } from "react-router-dom";
 import SelectFiles from "../../SelectFiles";
 import marksStore from "../../../store/marks";
+import user from "../../../store/user";
+import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 
 const AddProblem = observer(function AddProblem() {
     const navigate = useNavigate();
@@ -59,7 +61,7 @@ const AddProblem = observer(function AddProblem() {
                 })
                 .catch((error) => {
                     console.log(error);
-                }) 
+                })
         }
     }
 
@@ -69,35 +71,40 @@ const AddProblem = observer(function AddProblem() {
                 <p style={{ fontSize: 18 }}>Отметить проблему</p>
             </div>
             <div className="panel__content">
-                {/* <p>Вы не авторизаваны</p>
-                <p>Для того чтобы отметить проблему авторизуйтесь или создайте новый аккаунт</p> */}
+                {user.id === 0 ?
+                    <UnauthorizedBlock
+                        text="Для того чтобы отметить проблему, авторизуйтесь или создайте новый аккаунт"
+                    />
+                    :
+                    <>
+                        <p style={{ fontSize: 12 }}>Координаты: {selectedPoint.coords[1]}, {selectedPoint.coords[0]}</p>
 
-                <p style={{ fontSize: 12 }}>Координаты: {selectedPoint.coords[1]}, {selectedPoint.coords[0]}</p>
-
-                <p><b>Категория</b></p>
-                <Select
-                    options={markTypesOptions}
-                    value={selectedMarkTypeOption === undefined ? null : selectedMarkTypeOption}
-                    placeholder={"Выберите категорию проблемы"}
-                    onChange={(val) => { setSelectedMarkType(markTypes.find(type => type.mark_type_id === val?.value)) }}
-                    isDisabled={markTypes.length === 0}
-                />
-                <p><b>Описание</b></p>
-                <textarea
-                    className="edit-multiline-text"
-                    name="description"
-                    value={description}
-                    onChange={(e) => { setDescription(e.target.value) }}
-                ></textarea>
-                <p><b>Фотографии</b></p>
-                <div style={{ display: "flex", gap: "8px" }}>
-                    <SelectFiles onSelectedFiles={onSelectedFile} />
-                </div>
-                <div>
-                    <Button style="white-2-black" onClick={addMark}>
-                        <p>Отметить</p>
-                    </Button>
-                </div>
+                        <p><b>Категория</b></p>
+                        <Select
+                            options={markTypesOptions}
+                            value={selectedMarkTypeOption === undefined ? null : selectedMarkTypeOption}
+                            placeholder={"Выберите категорию проблемы"}
+                            onChange={(val) => { setSelectedMarkType(markTypes.find(type => type.mark_type_id === val?.value)) }}
+                            isDisabled={markTypes.length === 0}
+                        />
+                        <p><b>Описание</b></p>
+                        <textarea
+                            className="edit-multiline-text"
+                            name="description"
+                            value={description}
+                            onChange={(e) => { setDescription(e.target.value) }}
+                        ></textarea>
+                        <p><b>Фотографии</b></p>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                            <SelectFiles onSelectedFiles={onSelectedFile} />
+                        </div>
+                        <div>
+                            <Button style="white-2-black" onClick={addMark}>
+                                <p>Отметить</p>
+                            </Button>
+                        </div>
+                    </>
+                }
             </div>
         </>
     )

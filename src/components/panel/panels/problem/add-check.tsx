@@ -5,6 +5,8 @@ import ChecksService, { AddCheckRequest } from "../../../../services/ChecksServi
 import { MarkContext } from "./problem";
 import { useNavigate } from "react-router-dom";
 import SelectFiles from "../../../SelectFiles";
+import user from "../../../../store/user";
+import UnauthorizedBlock from "../../../unauthorized-block/unauthorized-block";
 
 const AddCheck = observer(function AddProblem() {
     const navigate = useNavigate();
@@ -47,46 +49,54 @@ const AddCheck = observer(function AddProblem() {
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>Провести проверку</b></p>
+            {user.id === 0 ?
+                <UnauthorizedBlock
+                    text="Для того чтобы провести проверку, авторизуйтесь или создайте новый аккаунт"
+                />
+                :
+                <>
+                    <p style={{ fontSize: 18 }}><b>Провести проверку</b></p>
 
-            <p><b>Фотографии</b></p>
-            <div style={{ display: "flex", gap: "8px" }}>
-                <SelectFiles onSelectedFiles={onSelectedFile} />
-            </div>
+                    <p><b>Фотографии</b></p>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                        <SelectFiles onSelectedFiles={onSelectedFile} />
+                    </div>
 
-            <p><b>Комментарий</b></p>
-            <textarea
-                className="edit-multiline-text"
-                name="comment"
-                value={comment}
-                maxLength={256}
-                onChange={(e) => { setComment(e.target.value) }}
-            ></textarea>
-            <div style={{ display: "flex", gap: "16px" }}>
-                <Button
-                    style="red"
-                    onClick={() => addCheck(false)}
-                    disabled={!checkValidate()}
-                >
-                    <p>Опровергнуть</p>
-                </Button>
-                <Button
-                    style="green"
-                    onClick={() => addCheck(true)}
-                    disabled={!checkValidate()}
-                >
-                    <p>Подтвердить</p>
-                </Button>
-            </div>
-            <div>
+                    <p><b>Комментарий</b></p>
+                    <textarea
+                        className="edit-multiline-text"
+                        name="comment"
+                        value={comment}
+                        maxLength={256}
+                        onChange={(e) => { setComment(e.target.value) }}
+                    ></textarea>
+                    <div style={{ display: "flex", gap: "16px" }}>
+                        <Button
+                            style="red"
+                            onClick={() => addCheck(false)}
+                            disabled={!checkValidate()}
+                        >
+                            <p>Опровергнуть</p>
+                        </Button>
+                        <Button
+                            style="green"
+                            onClick={() => addCheck(true)}
+                            disabled={!checkValidate()}
+                        >
+                            <p>Подтвердить</p>
+                        </Button>
+                    </div>
+                    <div>
 
-                <Button
-                    style="white-2-black"
-                    onClick={handleOnClickCancle}
-                >
-                    <p>Отмена</p>
-                </Button>
-            </div>
+                        <Button
+                            style="white-2-black"
+                            onClick={handleOnClickCancle}
+                        >
+                            <p>Отмена</p>
+                        </Button>
+                    </div>
+                </>
+            }
         </>
     )
 });

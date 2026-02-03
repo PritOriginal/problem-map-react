@@ -39,38 +39,44 @@ export default function SignIn() {
 
     return (
         <div className="modal" onClick={handleCloseClick}>
-            <div className="modal__content">
-                <p><b>Логин</b></p>
-                <input
-                    id="sku_edit"
-                    className="edit-multiline-text"
-                    name="sku"
-                    value={login}
-                    onChange={(e) => {
-                        setLogin(e.target.value)
-                    }}
-                />
-                <p><b>Пароль</b></p>
-                <input
-                    id="sku_edit"
-                    className="edit-multiline-text"
-                    name="sku"
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                        setPassword(e.target.value)
-                    }}
-                />
-                <div>
-                    <Button style="white-2-black" onClick={onClick}>
-                        <p>Войти</p>
-                    </Button>
+            <div className="modal__container">
+                <div className="modal__container__header">
+                    <p>Вход в аккаунт</p>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center"}}>
-                    <p>Нет аккаунта?</p>
-                    <Link to={"/signup"}>
-                        Зарегистрироваться
-                    </Link>
+                <div className="modal__container__content">
+                    <p><b>Логин</b></p>
+                    <input
+                        id="sku_edit"
+                        className="edit-multiline-text"
+                        name="sku"
+                        value={login}
+                        placeholder="login"
+                        onChange={(e) => {
+                            setLogin(e.target.value)
+                        }}
+                    />
+                    <p><b>Пароль</b></p>
+                    <input
+                        id="sku_edit"
+                        className="edit-multiline-text"
+                        name="sku"
+                        type="password"
+                        value={password}
+                        onChange={(e) => {
+                            setPassword(e.target.value)
+                        }}
+                    />
+                    <div>
+                        <Button style="white-2-black" onClick={onClick}>
+                            <p>Войти</p>
+                        </Button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <p>Нет аккаунта?</p>
+                        <Link to={"/signup"}>
+                            Зарегистрироваться
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

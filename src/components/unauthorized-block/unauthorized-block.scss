@@ -1,0 +1,11 @@
+.unauthorized-block {
+    display: flex; 
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+
+    &__buttons {
+        display: flex;
+        gap: 16px;
+    }
+}

@@ -50,6 +50,7 @@
 
         &__text {
             color: white;
+            font-weight: bold;
         }
     }
 
@@ -66,5 +67,9 @@
         text-align: right;
         padding-right: 10px;
 
+        &__text {
+            color: white;
+            font-weight: bold;
+        }
     }
 }

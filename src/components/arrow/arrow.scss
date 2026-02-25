@@ -1,0 +1,6 @@
+.arrow {
+	width: 16px;
+    &.open {
+        transform: rotate(180deg);
+    }
+}

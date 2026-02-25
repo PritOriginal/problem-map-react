@@ -10,7 +10,7 @@ class MarksStore {
         makeAutoObservable(this);
     }
 
-    fetchMarks = async () => {
+    fetch = async () => {
         this.isLoading = true;
         this.error = null;
         try {

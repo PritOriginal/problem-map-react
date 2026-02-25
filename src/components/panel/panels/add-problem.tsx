@@ -56,7 +56,7 @@ const AddProblem = observer(function AddProblem() {
             MarksService.addMark(req, photos)
                 .then((data) => {
                     console.log(data.payload);
-                    marksStore.fetchMarks();
+                    marksStore.fetch();
                     navigate(`/problem/${data.payload.mark_id}`);
                 })
                 .catch((error) => {

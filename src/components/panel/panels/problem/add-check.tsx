@@ -60,7 +60,7 @@ const AddCheck = observer(function AddProblem() {
                     <p style={{ fontSize: 18 }}><b>Провести проверку</b></p>
 
                     <p><b>Фотографии</b></p>
-                    <div style={{ display: "flex", gap: "8px" }}>
+                    <div style={{ display: "flex", gap: "8px", width: "100%", overflow: "scroll" }}>
                         <SelectFiles onSelectedFiles={onSelectedFile} />
                     </div>
 

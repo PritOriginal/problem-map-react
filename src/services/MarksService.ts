@@ -29,6 +29,15 @@ export interface MarkStatus {
     parent_id: number | undefined;
 }
 
+export enum MarkStatusType {
+    UnconfirmedStatus = 1,
+	ConfirmedStatus,
+	UnderReviewStatus,
+	RediscoveredStatus,
+	ClosedStatus,
+	RefutedStatus
+}
+
 export interface AddMarkRequest {
     point: Point
     mark_type_id: number

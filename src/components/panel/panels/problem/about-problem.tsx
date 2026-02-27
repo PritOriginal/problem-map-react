@@ -80,7 +80,7 @@ export default function AboutProblem() {
             <p style={{ fontSize: 18 }}><b>История</b></p>
             <hr />
             {groups.map((group, index) => (
-                <HistoryItem key={index} group={group} />
+                <HistoryGroup key={index} group={group} />
             ))}
             {possibilityAddCheck &&
                 <div style={{ position: "sticky", bottom: "0" }}>
@@ -123,7 +123,7 @@ function getDate(dateStr: string): string {
     return `${date.toLocaleDateString()} ${date.getHours()}:${date.getMinutes()}`;
 }
 
-function HistoryItem({ group }: { group: MarkStatusHistoryItem[] }) {
+function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
     const [showChecks, setShowChecks] = useState(false);
 
     const allChecks: Check[] = [];
@@ -133,13 +133,8 @@ function HistoryItem({ group }: { group: MarkStatusHistoryItem[] }) {
 
     return (
         <>
-            {group.map((item, index) => (
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <p>{getTitle(item.new_mark_status_id)}</p>
-                        <p style={{ fontSize: 12 }}>{getDate(item.changed_at)}</p>
-                    </div>
-                </div>
+            {group.map((item) => (
+                <HistoryItem key={item.id} item={item} />
             ))}
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
                 <DoubleProgressBar
@@ -176,6 +171,17 @@ function HistoryItem({ group }: { group: MarkStatusHistoryItem[] }) {
             </div>
             <hr />
         </>
+    )
+}
+
+function HistoryItem({ item }: { item: MarkStatusHistoryItem }) {
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <p>{getTitle(item.new_mark_status_id)}</p>
+                <p style={{ fontSize: 12 }}>{getDate(item.changed_at)}</p>
+            </div>
+        </div>
     )
 }
 

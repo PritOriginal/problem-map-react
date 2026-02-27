@@ -101,3 +101,18 @@
     min-height: 100px;
 }
 
+.show-button {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 4px;
+    border: none;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+
+    &:hover {
+        fill: white;
+        background-color: rgb(36, 36, 36);
+    }
+}

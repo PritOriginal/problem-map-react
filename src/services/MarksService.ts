@@ -26,6 +26,7 @@ export interface MarkType {
 export interface MarkStatus {
     mark_status_id: number;
     name: string;
+    parent_id: number | undefined;
 }
 
 export interface AddMarkRequest {

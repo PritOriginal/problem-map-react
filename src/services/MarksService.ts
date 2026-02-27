@@ -2,6 +2,7 @@ import { jwtDecode } from "jwt-decode";
 import BaseService, { IResponse } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
 import AuthService from "./AuthService";
+import { Check } from "./ChecksService";
 
 
 export interface Mark {
@@ -97,6 +98,23 @@ export interface GetMarkStatusesResponsePayload {
     mark_statuses: MarkStatus[]
 }
 
+export interface MarkStatusHistoryItem {
+    id: number;
+    mark_id: number;
+    old_mark_status_id: number;
+    new_mark_status_id: number;
+    changed_at: string;
+    checks?: Check[]; 
+}
+
+export interface GetMarkStatusHistoryByMarkIdResponse extends IResponse {
+    payload: GetMarkStatusHistoryByMarkIdResponsePayload
+}
+
+export interface GetMarkStatusHistoryByMarkIdResponsePayload {
+    items: MarkStatusHistoryItem[];
+}
+
 class MarksService extends BaseService {
     AuthService: typeof AuthService;
 
@@ -149,6 +167,10 @@ class MarksService extends BaseService {
 
     public getMarkStatuses(): Promise<GetMarkStatusesResponse> {
         return fetch("/api/marks/statuses").then(this.getResponse)
+    }
+
+    public getMarkStatusHistoryByMarkId(id: number, withChecks: boolean): Promise<GetMarkStatusHistoryByMarkIdResponse> {
+        return fetch(`/api/marks/${id}/status-history?withChecks=${withChecks}`).then(this.getResponse)
     }
 
     public checkAccessToken(): boolean {

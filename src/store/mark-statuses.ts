@@ -1,8 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import MarksService, { Mark } from '../services/MarksService';
+import MarksService, { MarkStatus } from '../services/MarksService';
 
-class MarksStore {
-    marks: Mark[] = [];
+class MarkStatusesStore {
+    statuses: MarkStatus[] = [];
     isLoading: boolean = false;
     error: string | null = null;
 
@@ -14,19 +14,19 @@ class MarksStore {
         this.isLoading = true;
         this.error = null;
         try {
-            const response = await MarksService.getMarks();
+            const response = await MarksService.getMarkStatuses();
             runInAction(() => {
-                this.marks = response.payload.marks;
+                this.statuses = response.payload.mark_statuses;
                 this.isLoading = false;
             });
         } catch (error) {
             console.log(error);
-            this.error = 'Ошибка загрузки меток';
+            this.error = 'Ошибка загрузки типов меток';
             this.isLoading = false;
         }
     }
 }
 
-const marksStore = new MarksStore();
+const markStatusesStore = new MarkStatusesStore();
 
-export default marksStore;
+export default markStatusesStore;

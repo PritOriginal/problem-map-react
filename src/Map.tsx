@@ -98,7 +98,7 @@ const Map = observer(() => {
       .catch(function (error) {
         console.log(error);
       });
-    marksStore.fetchMarks();
+    marksStore.fetch();
     getUserLocation();
     selectedPoint.setCoords((LOCATION as YMapCenterLocation).center)
   }, []);

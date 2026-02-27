@@ -1,10 +1,13 @@
 import { useContext, useEffect, useState } from "react";
-import { Mark } from "../../../../services/MarksService";
+import MarksService, { Mark, MarkStatusHistoryItem, MarkStatusType } from "../../../../services/MarksService";
 import { Button } from "../../../button/button";
 import DoubleProgressBar from "../../../double-progress-bar/double-progress-bar";
 import { useNavigate } from "react-router-dom";
-import ChecksService, { Check } from "../../../../services/ChecksService";
+import { Check } from "../../../../services/ChecksService";
 import { MarkContext } from "./problem";
+import user from "../../../../store/user";
+import Arrow from "../../../arrow/arrow";
+import markStatusesStore from "../../../../store/mark-statuses";
 
 export const emptyMark: Mark = {
     mark_id: 0,
@@ -27,21 +30,40 @@ export default function AboutProblem() {
     const navigate = useNavigate();
 
     const mark = useContext(MarkContext)
+    const [historyItems, setHistoryItems] = useState<MarkStatusHistoryItem[]>([])
 
-    const [checks, setChecks] = useState<Check[]>([])
+    const groups: MarkStatusHistoryItem[][] = []
+    let groupHistoryItems: MarkStatusHistoryItem[] = []
+    for (let index = historyItems.length - 1; index >= 0; index--) {
+        const historyItem = historyItems[index];
+        const markStatus = markStatusesStore.statuses.find((satus) => satus.mark_status_id == historyItem.new_mark_status_id);
 
-    let createdAtStr = ""
-    if (mark.created_at !== "") {
-        const createdAt = new Date(mark.created_at)
-        createdAtStr = `${createdAt.toLocaleDateString()} ${createdAt.getHours()}:${createdAt.getMinutes()}`
+        groupHistoryItems.unshift(historyItem);
+        if (markStatus && markStatus.parent_id) {
+        } else {
+            groups.unshift(groupHistoryItems);
+            groupHistoryItems = [];
+        }
+    }
+
+    var possibilityAddCheck = true;
+    if (user.id != 0 && historyItems.length > 0) {
+        const lastGroupHistoryItems = groups[groups.length - 1]
+        lastGroupHistoryItems.forEach(item => {
+            const checks = item.checks;
+            const findCheck = checks?.find((check) => { return check.user_id == user.id })
+            if (findCheck) {
+                possibilityAddCheck = false
+            }
+        });
     }
 
     useEffect(() => {
         if (mark.mark_id !== 0) {
-            ChecksService.getChecksByMarkId(mark.mark_id)
+            MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true)
                 .then((data) => {
-                    console.log(data.payload.checks);
-                    setChecks(data.payload.checks)
+                    console.log(data.payload.items);
+                    setHistoryItems(data.payload.items);
                 })
                 .catch((error) => {
                     console.log(error);
@@ -57,29 +79,122 @@ export default function AboutProblem() {
         <>
             <p style={{ fontSize: 18 }}><b>История</b></p>
             <hr />
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <p>Проблема создана</p>
-                    <p style={{ fontSize: 12 }}>{createdAtStr}</p>
-                </div>
-                <DoubleProgressBar
-                    negative={checks.filter(check => check.result == false).length}
-                    positive={checks.filter(check => check.result == true).length}
-                />
-                <Button style="white-2-black" onClick={handleOnClickNewCheck}>
-                    Опровергнуть | Подтвердить
-                </Button>
-            </div>
-
-            <hr />
-
-            {checks.map((check, index) => (
-                <CheckItem key={index} check={check} />
+            {groups.map((group, index) => (
+                <HistoryGroup key={index} group={group} />
             ))}
+            {possibilityAddCheck &&
+                <div style={{ position: "sticky", bottom: "0" }}>
+                    <Button style="white-2-black" onClick={handleOnClickNewCheck}>
+                        Опровергнуть | Подтвердить
+                    </Button>
+                </div>
+            }
         </>
     );
 }
 
+function getTitle(mark_status_id: number): string {
+    let title: string = "";
+    switch (mark_status_id) {
+        case MarkStatusType.UnconfirmedStatus:
+            title = "Проблема отмечена";
+            break;
+        case MarkStatusType.ConfirmedStatus:
+            title = "Проблема подтверждена";
+            break;
+        case MarkStatusType.UnderReviewStatus:
+            title = "Проблема на проверке";
+            break;
+        case MarkStatusType.RediscoveredStatus:
+            title = "Проблема переоткрыта";
+            break;
+        case MarkStatusType.ClosedStatus:
+            title = "Проблема решена";
+            break;
+        case MarkStatusType.RefutedStatus:
+            title = "Проблема опровергнута";
+            break;
+    }
+    return title
+}
+
+function getDate(dateStr: string): string {
+    const date = new Date(dateStr)
+    return `${date.toLocaleDateString()} ${date.getHours()}:${date.getMinutes()}`;
+}
+
+function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
+    const [showChecks, setShowChecks] = useState(false);
+
+    const allChecks: Check[] = [];
+    group.forEach(item => {
+        allChecks.push(...item.checks!)
+    });
+
+    return (
+        <>
+            {group.map((item) => (
+                <HistoryItem key={item.id} item={item} />
+            ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
+                <DoubleProgressBar
+                    negative={allChecks.filter(check => check.result == false).length}
+                    positive={allChecks.filter(check => check.result == true).length}
+                />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
+                <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
+                    <p>Проверки</p>
+                </div>
+
+                {!showChecks ?
+                    <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
+                        {allChecks.map((check) => (
+                            check.photos.map((photo) => (
+                                <ThumbPhoto src={photo} />
+                            ))
+                        ))}
+                    </div>
+                    :
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "#f9f9f9" }}>
+                        {showChecks && allChecks.map((check) => (
+                            <CheckItem key={check.check_id} check={check} />
+                        ))}
+                    </div>
+                }
+                < div >
+                    <ShowButton
+                        isShow={showChecks}
+                        onClick={() => setShowChecks(!showChecks)}
+                    />
+                </div >
+            </div>
+            <hr />
+        </>
+    )
+}
+
+function HistoryItem({ item }: { item: MarkStatusHistoryItem }) {
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <p>{getTitle(item.new_mark_status_id)}</p>
+                <p style={{ fontSize: 12 }}>{getDate(item.changed_at)}</p>
+            </div>
+        </div>
+    )
+}
+
+function ShowButton({ isShow, onClick }: { isShow: boolean, onClick: React.MouseEventHandler }) {
+    return (
+        <button
+            className="show-button"
+            onClick={onClick}
+        >
+            <Arrow className="arrow" isOpen={isShow} />
+        </button>
+    )
+}
 function CheckItem({ check }: { check: Check }) {
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
@@ -97,7 +212,7 @@ function CheckItem({ check }: { check: Check }) {
                 <p>Комментарий</p>
                 <p style={{ fontSize: 14 }}>{check.comment}</p>
             </>}
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
                 {check.photos.map((src, index) => (
                     <Photo key={index} src={src} />
                 ))}
@@ -106,8 +221,14 @@ function CheckItem({ check }: { check: Check }) {
     )
 }
 
+function ThumbPhoto({ src }: { src: string }) {
+    return (
+        <img className="thumb-photo" src={src} alt="" />
+    )
+}
+
 function Photo({ src }: { src: string }) {
     return (
         <img className="photo" src={src} alt="" />
     )
-}
+}   

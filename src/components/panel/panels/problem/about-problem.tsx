@@ -58,12 +58,6 @@ export default function AboutProblem() {
         });
     }
 
-    let createdAtStr = ""
-    if (mark.created_at !== "") {
-        const createdAt = new Date(mark.created_at)
-        createdAtStr = `${createdAt.toLocaleDateString()} ${createdAt.getHours()}:${createdAt.getMinutes()}`
-    }
-
     useEffect(() => {
         if (mark.mark_id !== 0) {
             MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true)

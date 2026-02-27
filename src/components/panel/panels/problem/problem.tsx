@@ -1,7 +1,7 @@
 import { Outlet, useParams } from "react-router-dom";
 import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
 import { createContext, useEffect, useState } from "react";
-import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
+import MarksService, { Mark, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
 

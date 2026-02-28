@@ -1,7 +1,9 @@
 import { Outlet, useParams } from "react-router-dom";
 import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
 import { createContext, useEffect, useState } from "react";
-import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
+import MarksService, { Mark, MarkType } from "../../../../services/MarksService";
+import markTypesStore from "../../../../store/mark-types";
+import markStatusesStore from "../../../../store/mark-statuses";
 
 export const emptyMark: Mark = {
     mark_id: 0,
@@ -26,11 +28,9 @@ export default function ProblemPanel() {
     const params = useParams();
 
     const [mark, setMark] = useState<Mark>(emptyMark);
-    const [markTypes, setMarkTypes] = useState<MarkType[]>([])
-    const [markStatuses, setMarkStatuses] = useState<MarkStatus[]>([])
 
-    const markType: MarkType | undefined = mark.mark_type_id !== 0 ? markTypes.find((type) => type.mark_type_id == mark.mark_type_id) : { mark_type_id: 0, name: "" } as MarkType;
-    const markStatus = mark.mark_status_id !== 0 ? markStatuses.find((status) => status.mark_status_id == mark.mark_status_id) : { mark_status_id: 0, name: "Статус" };
+    const markType: MarkType | undefined = mark.mark_type_id !== 0 ? markTypesStore.types.find((type) => type.mark_type_id == mark.mark_type_id) : { mark_type_id: 0, name: "" } as MarkType;
+    const markStatus = mark.mark_status_id !== 0 ? markStatusesStore.statuses.find((status) => status.mark_status_id == mark.mark_status_id) : { mark_status_id: 0, name: "Статус" };
 
 
     useEffect(() => {
@@ -47,22 +47,8 @@ export default function ProblemPanel() {
     }, [params])
 
     useEffect(() => {
-        MarksService.getMarkTypes()
-            .then((data) => {
-                console.log(data.payload.mark_types);
-                setMarkTypes(data.payload.mark_types)
-            })
-            .catch((error) => {
-                console.log(error);
-            })
-        MarksService.getMarkStatuses()
-            .then((data) => {
-                console.log(data.payload.mark_statuses);
-                setMarkStatuses(data.payload.mark_statuses)
-            })
-            .catch((error) => {
-                console.log(error);
-            })
+        markTypesStore.fetch();
+        markStatusesStore.fetch();
     }, [])
 
     return (

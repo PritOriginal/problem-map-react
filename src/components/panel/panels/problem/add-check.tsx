@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import SelectFiles from "../../../SelectFiles";
 import user from "../../../../store/user";
 import UnauthorizedBlock from "../../../unauthorized-block/unauthorized-block";
+import marksStore from "../../../../store/marks";
 
 const AddCheck = observer(function AddProblem() {
     const navigate = useNavigate();
@@ -35,6 +36,7 @@ const AddCheck = observer(function AddProblem() {
             ChecksService.addCheck(req, photos)
                 .then((data) => {
                     console.log(data.payload);
+                    marksStore.fetch();
                     navigate(`/problem/${mark.mark_id}`)
                 })
                 .catch((error) => {
@@ -58,7 +60,7 @@ const AddCheck = observer(function AddProblem() {
                     <p style={{ fontSize: 18 }}><b>Провести проверку</b></p>
 
                     <p><b>Фотографии</b></p>
-                    <div style={{ display: "flex", gap: "8px" }}>
+                    <div style={{ display: "flex", gap: "8px", width: "100%", overflow: "scroll" }}>
                         <SelectFiles onSelectedFiles={onSelectedFile} />
                     </div>
 

@@ -9,13 +9,12 @@ import SelectFiles from "../../SelectFiles";
 import marksStore from "../../../store/marks";
 import user from "../../../store/user";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
+import markTypesStore from "../../../store/mark-types";
 
 const AddProblem = observer(function AddProblem() {
     const navigate = useNavigate();
 
-    const [markTypes, setMarkTypes] = useState<MarkType[]>([])
-
-    const markTypesOptions = markTypes.map((type) => ({
+    const markTypesOptions = markTypesStore.types.map((type) => ({
         value: type.mark_type_id,
         label: type.name,
     }))
@@ -28,14 +27,9 @@ const AddProblem = observer(function AddProblem() {
 
 
     useEffect(() => {
-        MarksService.getMarkTypes()
-            .then((data) => {
-                console.log(data.payload.mark_types);
-                setMarkTypes(data.payload.mark_types)
-            })
-            .catch((error) => {
-                console.log(error);
-            })
+        if (markTypesStore.types.length === 0) {
+            markTypesStore.fetch();
+        }
     }, [])
 
     const onSelectedFile = (files: File[]) => {
@@ -56,7 +50,7 @@ const AddProblem = observer(function AddProblem() {
             MarksService.addMark(req, photos)
                 .then((data) => {
                     console.log(data.payload);
-                    marksStore.fetchMarks();
+                    marksStore.fetch();
                     navigate(`/problem/${data.payload.mark_id}`);
                 })
                 .catch((error) => {
@@ -84,8 +78,8 @@ const AddProblem = observer(function AddProblem() {
                             options={markTypesOptions}
                             value={selectedMarkTypeOption === undefined ? null : selectedMarkTypeOption}
                             placeholder={"Выберите категорию проблемы"}
-                            onChange={(val) => { setSelectedMarkType(markTypes.find(type => type.mark_type_id === val?.value)) }}
-                            isDisabled={markTypes.length === 0}
+                            onChange={(val) => { setSelectedMarkType(markTypesStore.types.find(type => type.mark_type_id === val?.value)) }}
+                            isDisabled={markTypesStore.types.length === 0}
                         />
                         <p><b>Описание</b></p>
                         <textarea
@@ -95,7 +89,7 @@ const AddProblem = observer(function AddProblem() {
                             onChange={(e) => { setDescription(e.target.value) }}
                         ></textarea>
                         <p><b>Фотографии</b></p>
-                        <div style={{ display: "flex", gap: "8px" }}>
+                        <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
                             <SelectFiles onSelectedFiles={onSelectedFile} />
                         </div>
                         <div>

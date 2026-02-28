@@ -4,6 +4,7 @@ import { createContext, useEffect, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
+import { observer } from "mobx-react-lite";
 
 export const emptyMark: Mark = {
     mark_id: 0,
@@ -24,7 +25,7 @@ export const emptyMark: Mark = {
 
 export const MarkContext = createContext<Mark>(emptyMark)
 
-export default function ProblemPanel() {
+const ProblemPanel = observer (() => {
     const params = useParams();
 
     const [mark, setMark] = useState<Mark>(emptyMark);
@@ -84,4 +85,6 @@ export default function ProblemPanel() {
             </div>
         </MarkContext.Provider>
     );
-}
+});
+
+export default ProblemPanel;

@@ -1,7 +1,7 @@
 import { Outlet, useParams } from "react-router-dom";
 import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
 import { createContext, useEffect, useState } from "react";
-import MarksService, { Mark, MarkType } from "../../../../services/MarksService";
+import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
 
@@ -29,8 +29,21 @@ export default function ProblemPanel() {
 
     const [mark, setMark] = useState<Mark>(emptyMark);
 
-    const markType: MarkType | undefined = mark.mark_type_id !== 0 ? markTypesStore.types.find((type) => type.mark_type_id == mark.mark_type_id) : { mark_type_id: 0, name: "" } as MarkType;
-    const markStatus = mark.mark_status_id !== 0 ? markStatusesStore.statuses.find((status) => status.mark_status_id == mark.mark_status_id) : { mark_status_id: 0, name: "Статус" };
+    let markType: MarkType = { mark_type_id: 0, name: "" };
+    if (markTypesStore.types.length > 0 && mark.mark_type_id !== 0) {
+        const findType = markTypesStore.types.find((type) => type.mark_type_id == mark.mark_type_id);
+        if (findType) {
+            markType = findType
+        }
+    }
+
+    let markStatus: MarkStatus = { mark_status_id: 0, parent_id: 0, name: "Статус" };
+    if (markStatusesStore.statuses.length > 0 && mark.mark_status_id !== 0) {
+        const findStatus = markStatusesStore.statuses.find((status) => status.mark_status_id == mark.mark_status_id);
+        if (findStatus) {
+            markStatus = findStatus;
+        }
+    }
 
 
     useEffect(() => {

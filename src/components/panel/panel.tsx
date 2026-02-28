@@ -18,6 +18,7 @@ import ProblemPanel from "./panels/problem/problem";
 import { useEffect } from "react";
 import selectedMark from "../../store/selected_mark";
 import selectedPoint from "../../store/selected_point";
+import { observer } from "mobx-react-lite";
 export default function PanelRoute() {
     return (
         <Routes>
@@ -36,7 +37,7 @@ export default function PanelRoute() {
     );
 }
 
-function Panel() {
+const Panel = observer(() => {
     const location = useLocation();
     const navigate = useNavigate();
     const params = useParams();
@@ -72,4 +73,4 @@ function Panel() {
             }
         </>
     );
-}
+});

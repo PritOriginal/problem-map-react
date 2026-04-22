@@ -1,6 +1,8 @@
 export interface IResponse {
-    status: 'succeeded' | 'failed';
-    message?: string;
+    success: boolean;
+    error?: {
+        message: string;
+    };
     payload?: {
         [key: string]: any;
     }

@@ -68,7 +68,9 @@ class СhecksService extends BaseService {
         const bearer = 'Bearer ' + localStorage.getItem('access_token');
 
         const form = new FormData();
-        form.append("data", JSON.stringify(req))
+        form.append("mark_id", req.mark_id.toString())
+        form.append("result", req.result ? "true" : "false")
+        form.append("comment", req.comment)
         photos.forEach(photo => {
             form.append("photos", photo)
         });

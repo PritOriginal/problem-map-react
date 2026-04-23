@@ -12,8 +12,7 @@ import {
 
 import customization from './customization.json'
 
-import { Geometry } from '@yandex/ymaps3-types/imperative/YMapFeature/types';
-import MapService from './services/MapService';
+import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
 import MarkItem, { MarkerItem, MarkerSize } from "./components/mark/mark";
@@ -26,11 +25,9 @@ import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
 import { observer } from "mobx-react-lite";
 import marksStore from "./store/marks";
-interface District {
-  district_id: number;
-  name: string;
-  geom: Geometry;
-}
+import adminBoundariesStore from "./store/admin-boudaries";
+
+import AddIcon from "./assets/plus.svg?react"
 
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],
@@ -45,35 +42,54 @@ export const ZOOMS = {
   big: 16
 };
 
-// export const getBooleanPointInPolygon = (polygon: LngLat[][], point: LngLat): boolean => {
-//   const pt = turf.point(point);
-//   const poly = turf.polygon(polygon);
-//   return turf.booleanPointInPolygon(pt, poly);
-// };
+const getColorByFeatues = (features: Feature[]) => {
+  let numsComplete = 0;
+  let numsApproved = 0;
+  features.forEach(f => {
+    const mark = f.properties!.mark as Mark;
+    if (mark.mark_status_id == 3) {
+      numsComplete++;
+    }
+    if (mark.mark_status_id != 1) {
+      numsApproved++;
+    }
+  });
 
-// function GetPointsInPolygon(polygons: District[], marks: Mark[]) {
+  const h = numsComplete / numsApproved * 120;
+  if (numsApproved > 0) {
+    return convert.hsv.hex(h, 100, 80)
+  } else {
+    return "d3d3d3ff"
+  }
+}
 
-//   marks.forEach(mark => {
-//     polygons.forEach((polygon, i) => {
-//       if (getBooleanPointInPolygon(polygon.geom.coordinates, mark.geom)) {
-//         polygon.
-//       }
-//     });
-//   });
-// }
+const getColorPolygon = (count: AdminBoundaryMarksCount) => {
+  const allCount = count.confirmed_count + count.under_review_count + count.closed_count;
+  if (allCount > 0) {
+    const h = count.closed_count / allCount * 120;
+    return convert.hsv.hex(h, 100, 80)
+  } else {
+    return "00cc00"
+  }
+}
 
 const Map = observer(() => {
   const navigate = useNavigate();
 
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
-  const [size, setSize] = useState<MarkerSize>(MarkerSize.big);
+  const [size, setSize] = useState<MarkerSize>(MarkerSize.small);
 
-  const [polygons, setPolygons] = useState<District[]>([]);
+  const filteredBoundaries = adminBoundariesStore.boundaries.filter((boundary) => {
+    if (size === MarkerSize.small) {
+      return boundary.admin_level <= 9;
+    } else {
+      return boundary.admin_level <= 10;
+    }
+  });
 
   const { marks } = marksStore;
 
   const onClickOnMark = useCallback((mark: Mark) => {
-    // setSelectedMarkId(mark.mark_id);
     selectedMark.setId(mark.mark_id);
     navigate(`/problem/${mark.mark_id}`);
   }, [])
@@ -90,14 +106,12 @@ const Map = observer(() => {
   }, []);
 
   useEffect(() => {
-    MapService.getDistricts()
-      .then((data) => {
-        setPolygons(data.payload.districts)
-        console.log(data.payload)
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+    adminBoundariesStore.fetchBoundaries({
+      admin_levels: [6, 9, 10]
+    });
+    adminBoundariesStore.fetchMarksCount({
+      admin_levels: [6, 9, 10]
+    });
     marksStore.fetch();
     getUserLocation();
     selectedPoint.setCoords((LOCATION as YMapCenterLocation).center)
@@ -124,27 +138,6 @@ const Map = observer(() => {
       console.error('Geolocation is not supported by this browser.');
     }
   };
-
-  const getColorByFeatues = useCallback((features: Feature[]) => {
-    let numsComplete = 0;
-    let numsApproved = 0;
-    features.forEach(f => {
-      const mark = f.properties!.mark as Mark;
-      if (mark.mark_status_id == 3) {
-        numsComplete++;
-      }
-      if (mark.mark_status_id != 1) {
-        numsApproved++;
-      }
-    });
-
-    const h = numsComplete / numsApproved * 120;
-    if (numsApproved > 0) {
-      return convert.hsv.hex(h, 100, 80)
-    } else {
-      return "d3d3d3ff"
-    }
-  }, [])
 
   const cluster = useCallback((coordinates: LngLat, features: Feature[]) => (
     <YMapMarker coordinates={coordinates}>
@@ -190,8 +183,12 @@ const Map = observer(() => {
         >
           <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
           <YMapDefaultFeaturesLayer />
-          {polygons.map((polygon) => (
-            <PolygonItem key={polygon.district_id} geom={polygon.geom} />
+          {filteredBoundaries.map((boundary) => (
+            <BoundaryItem
+              key={boundary.id}
+              boundary={boundary}
+              count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
+            />
           ))}
           {userLocation &&
             < MarkerItem
@@ -228,8 +225,8 @@ const SelectedPoint = observer(() => {
   );
 })
 
-const PolygonItem = memo(function ({ geom }: { geom: Geometry }) {
-  const color = "#36FF58";
+const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBoundary, count: AdminBoundaryMarksCount }) {
+  const color = '#' + getColorPolygon(count);
   return (
     <YMapFeature
       style={{
@@ -237,13 +234,13 @@ const PolygonItem = memo(function ({ geom }: { geom: Geometry }) {
           {
             color: "black",
             width: 1,
-            opacity: 0.3,
+            opacity: 0.5,
           }
         ],
         fill: color,
-        fillOpacity: 0.03,
+        fillOpacity: 0.01 + 0.09 * Math.exp(boundary.admin_level - 10),
       }}
-      geometry={geom}
+      geometry={boundary.geom}
     />
   );
 });
@@ -255,7 +252,7 @@ function AddMarkButton() {
   return (
     <div className="add-mark-button" onClick={() => navigate("/add")}>
       <div className="add-mark-button__content">
-        +
+        <AddIcon />
       </div>
     </div>
   );

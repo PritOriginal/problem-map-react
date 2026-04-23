@@ -252,7 +252,7 @@ function AddMarkButton() {
   return (
     <div className="add-mark-button" onClick={() => navigate("/add")}>
       <div className="add-mark-button__content">
-        +
+        <AddIcon />
       </div>
     </div>
   );

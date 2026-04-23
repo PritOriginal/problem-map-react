@@ -111,11 +111,15 @@ a {
   bottom: 16px;
   padding: 16px;
 
+  align-content: center;
+
   cursor: pointer;
 
   height: 64px;
   width: 64px;
 
+  fill: white;
+  stroke: white;
   color: white;
 
   background-color: black;
@@ -140,6 +144,8 @@ a {
   &:hover {
     background-color: white;
     color: black;
+    stroke: black;
+    fill: black;
   }
 }
 

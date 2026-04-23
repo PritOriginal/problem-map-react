@@ -8,6 +8,7 @@ import SelectFiles from "../../../SelectFiles";
 import user from "../../../../store/user";
 import UnauthorizedBlock from "../../../unauthorized-block/unauthorized-block";
 import marksStore from "../../../../store/marks";
+import adminBoundariesStore from "../../../../store/admin-boudaries";
 
 const AddCheck = observer(function AddProblem() {
     const navigate = useNavigate();
@@ -37,6 +38,9 @@ const AddCheck = observer(function AddProblem() {
                 .then((data) => {
                     console.log(data.payload);
                     marksStore.fetch();
+                    adminBoundariesStore.fetchMarksCount({
+                        admin_levels: [6, 9, 10]
+                    })
                     navigate(`/problem/${mark.mark_id}`)
                 })
                 .catch((error) => {

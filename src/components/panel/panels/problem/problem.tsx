@@ -16,8 +16,6 @@ export const emptyMark: Mark = {
     mark_type_id: 1,
     user_id: 0,
     district_id: 0,
-    number_votes: 0,
-    number_checks: 0,
     mark_status_id: 0,
     created_at: "",
     updated_at: ""

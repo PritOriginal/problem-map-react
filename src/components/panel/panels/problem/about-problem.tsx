@@ -249,9 +249,9 @@ function CheckItem({ check }: { check: Check }) {
     )
 }
 
-function ThumbPhoto({ src }: { src: string }) {
+function ThumbPhoto({ src, confirmed}: { src: string, confirmed: boolean }) {
     return (
-        <img className="thumb-photo" src={src} alt="" />
+        <img className={`thumb-photo ${confirmed ? "confirm" : "reject"}`} src={src} alt="" />
     )
 }
 

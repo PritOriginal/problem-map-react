@@ -46,20 +46,28 @@ export const ZOOMS = {
 };
 
 const getColorByFeatues = (features: Feature[]) => {
-  let numsComplete = 0;
-  let numsApproved = 0;
+  let numsUnconfirmed = 0;
+  let numsConfirmed = 0;
+  let numsUnderReview = 0;
+  let numsClosed = 0;
   features.forEach(f => {
     const mark = f.properties!.mark as Mark;
-    if (mark.mark_status_id == 3) {
-      numsComplete++;
-    }
-    if (mark.mark_status_id != 1) {
-      numsApproved++;
+    if (mark.mark_status_id == MarkStatusType.UnconfirmedStatus) {
+      numsUnconfirmed++;
+    } else if (mark.mark_status_id == MarkStatusType.ConfirmedStatus ||
+      mark.mark_status_id == MarkStatusType.RediscoveredStatus) {
+      numsConfirmed++;
+    } else if (mark.mark_status_id == MarkStatusType.UnderReviewStatus) {
+      numsUnderReview++;
+    } else if (mark.mark_status_id == MarkStatusType.ClosedStatus) {
+      numsClosed++;
     }
   });
 
-  const h = numsComplete / numsApproved * 120;
-  if (numsApproved > 0) {
+  let allNums = numsUnconfirmed + numsConfirmed + numsUnderReview + numsClosed
+
+  const h = (numsClosed + numsUnderReview / 2) / allNums * 120;
+  if (allNums > 0) {
     return convert.hsv.hex(h, 100, 80)
   } else {
     return "d3d3d3ff"

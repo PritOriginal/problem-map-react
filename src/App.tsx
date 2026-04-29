@@ -11,12 +11,12 @@ export default function App() {
   }, [])
 
   return (
-    <div className='main'>
+    <>
       <Header />
-      <div style={{ width: '100%', height: 'calc(100vh - 48px)' }}>
+      <section className='main'>
         <PanelRoute />
         <Map />
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

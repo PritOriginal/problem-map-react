@@ -46,6 +46,11 @@ export default function AboutProblem() {
 
     var possibilityAddCheck = true;
     if (user.id != 0 && historyItems.length > 0) {
+        if (mark.mark_status_id == MarkStatusType.ClosedStatus ||
+            mark.mark_status_id == MarkStatusType.RefutedStatus) {
+            possibilityAddCheck = false;
+        }
+
         const lastGroupHistoryItems = groups[groups.length - 1]
         lastGroupHistoryItems.forEach(item => {
             const checks = item.checks;

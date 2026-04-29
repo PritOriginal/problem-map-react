@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsgo -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest --environment jsdom",
@@ -29,6 +29,7 @@
     "@types/node": "^24.6.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260429.1",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "@yandex/ymaps3-types": "^1.0.15194938",
     "eslint": "^9.13.0",

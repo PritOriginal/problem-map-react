@@ -60,11 +60,6 @@ const ProblemPanel = observer (() => {
                 })
     }, [params])
 
-    useEffect(() => {
-        markTypesStore.fetch();
-        markStatusesStore.fetch();
-    }, [])
-
     return (
         <MarkContext.Provider value={mark}>
             <div className="panel__header">

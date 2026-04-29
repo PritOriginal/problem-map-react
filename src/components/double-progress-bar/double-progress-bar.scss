@@ -1,4 +1,10 @@
 .double-progress-bar {
+    &__title {
+        padding: 0 10px;
+        font-size: 12px;
+        text-align: center;
+    }
+
     &__scale {
         position: relative;
         min-height: 1rem;
@@ -6,7 +12,7 @@
         background-color: whitesmoke;
         border-radius: 12px;
         margin: 0.5rem;
-        color: white;
+        color: white; 
         font-size: 12px;
 
         &__left__zone {

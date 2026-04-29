@@ -19,8 +19,6 @@ export const emptyMark: Mark = {
     mark_type_id: 1,
     user_id: 0,
     district_id: 0,
-    number_votes: 0,
-    number_checks: 0,
     mark_status_id: 0,
     created_at: "",
     updated_at: ""
@@ -48,6 +46,11 @@ export default function AboutProblem() {
 
     var possibilityAddCheck = true;
     if (user.id != 0 && historyItems.length > 0) {
+        if (mark.mark_status_id == MarkStatusType.ClosedStatus ||
+            mark.mark_status_id == MarkStatusType.RefutedStatus) {
+            possibilityAddCheck = false;
+        }
+
         const lastGroupHistoryItems = groups[groups.length - 1]
         lastGroupHistoryItems.forEach(item => {
             const checks = item.checks;
@@ -118,6 +121,25 @@ function getTitle(mark_status_id: number): string {
     return title
 }
 
+function getQuestion(mark_status_id: number): string {
+    let question: string = "";
+    switch (mark_status_id) {
+        case MarkStatusType.UnconfirmedStatus:
+            question = "Проблема существует?";
+            break;
+        case MarkStatusType.ConfirmedStatus:
+            question = "Проблема существует?";
+            break;
+        case MarkStatusType.UnderReviewStatus:
+            question = "Проблема решена?";
+            break;
+        case MarkStatusType.RediscoveredStatus:
+            question = "Проблема существует?";
+            break;
+    }
+    return question
+}
+
 function getDate(dateStr: string): string {
     const date = new Date(dateStr)
     return `${date.toLocaleDateString()} ${date.getHours()}:${date.getMinutes()}`;
@@ -131,44 +153,53 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
         allChecks.push(...item.checks!)
     });
 
+    const question = getQuestion(group[group.length - 1].new_mark_status_id);
+
     return (
         <>
             {group.map((item) => (
                 <HistoryItem key={item.id} item={item} />
             ))}
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
-                <DoubleProgressBar
-                    negative={allChecks.filter(check => check.result == false).length}
-                    positive={allChecks.filter(check => check.result == true).length}
-                />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
-                <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
-                    <p>Проверки</p>
-                </div>
+            {question !== "" &&
+                <>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
+                        <DoubleProgressBar
+                            question={question}
+                            negative={allChecks.filter(check => check.result == false).length}
+                            positive={allChecks.filter(check => check.result == true).length}
+                        />
+                    </div>
+                    {allChecks.length > 0 &&
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
+                            <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
+                                <p>Проверки</p>
+                            </div>
 
-                {!showChecks ?
-                    <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-                        {allChecks.map((check) => (
-                            check.photos.map((photo) => (
-                                <ThumbPhoto src={photo} />
-                            ))
-                        ))}
-                    </div>
-                    :
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "#f9f9f9" }}>
-                        {showChecks && allChecks.map((check) => (
-                            <CheckItem key={check.check_id} check={check} />
-                        ))}
-                    </div>
-                }
-                < div >
-                    <ShowButton
-                        isShow={showChecks}
-                        onClick={() => setShowChecks(!showChecks)}
-                    />
-                </div >
-            </div>
+                            {!showChecks ?
+                                <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
+                                    {allChecks.map((check) => (
+                                        check.photos.map((photo) => (
+                                            <ThumbPhoto src={photo} confirmed={check.result} />
+                                        ))
+                                    ))}
+                                </div>
+                                :
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "#f9f9f9" }}>
+                                    {showChecks && allChecks.map((check) => (
+                                        <CheckItem key={check.check_id} check={check} />
+                                    ))}
+                                </div>
+                            }
+                            < div >
+                                <ShowButton
+                                    isShow={showChecks}
+                                    onClick={() => setShowChecks(!showChecks)}
+                                />
+                            </div >
+                        </div>
+                    }
+                </>
+            }
             <hr />
         </>
     )
@@ -221,9 +252,9 @@ function CheckItem({ check }: { check: Check }) {
     )
 }
 
-function ThumbPhoto({ src }: { src: string }) {
+function ThumbPhoto({ src, confirmed}: { src: string, confirmed: boolean }) {
     return (
-        <img className="thumb-photo" src={src} alt="" />
+        <img className={`thumb-photo ${confirmed ? "confirm" : "reject"}`} src={src} alt="" />
     )
 }
 

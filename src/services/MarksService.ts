@@ -12,8 +12,6 @@ export interface Mark {
     mark_type_id: number;
     user_id: number;
     district_id: number;
-    number_votes: number;
-    number_checks: number;
     mark_status_id: number;
     created_at: string;
     updated_at: string;

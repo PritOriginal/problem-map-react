@@ -99,6 +99,12 @@
     background-color: #e5e5e5;
     max-height: 100px;
     min-height: 100px;
+    &.confirm {
+        border-bottom: 1px solid rgb(83, 237, 124);
+    }
+    &.reject {
+        border-bottom: 1px solid rgb(255, 31, 31);
+    }
 }
 
 .show-button {

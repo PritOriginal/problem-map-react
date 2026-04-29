@@ -13,9 +13,9 @@ import {
 import customization from './customization.json'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useState } from "react";
 import { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
-import MarkItem, { MarkerItem, MarkerSize } from "./components/mark/mark";
+import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeMarkIcons } from "./components/mark/mark";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
@@ -28,6 +28,9 @@ import marksStore from "./store/marks";
 import adminBoundariesStore from "./store/admin-boudaries";
 
 import AddIcon from "./assets/plus.svg?react"
+import FilterIcon from "./assets/filter.svg?react"
+import markStatusesStore from "./store/mark-statuses";
+import markTypesStore from "./store/mark-types";
 
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],
@@ -174,12 +177,13 @@ const Map = observer(() => {
   return (
     <>
       <AddMarkButton />
+      <Filters />
       <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
         <YMap
           location={LOCATION}
           restrictMapArea={RESTRICT_AREA}
           zoomRange={ZOOM_RANGE}
-          copyrightsPosition={"top right"}
+          copyrightsPosition={"bottom right"}
         >
           <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
           <YMapDefaultFeaturesLayer />
@@ -256,6 +260,76 @@ function AddMarkButton() {
       </div>
     </div>
   );
+}
+
+const Filters = observer(() => {
+  const [showFilters, setShowFilters] = useState(false);
+  return (
+    <>
+      <div className="circle-button filters-button" onClick={() => setShowFilters(!showFilters)}>
+        <div className="circle-button__content">
+          <FilterIcon style={{ width: "24px", transform: "translate(0, 2px)" }} />
+        </div>
+      </div>
+
+      {showFilters &&
+        <div className="filters">
+          <div className="filters__content">
+            <div className="filters__content__title">
+              <p>Фильтры проблем</p>
+            </div>
+            <div className="filters__content__block">
+              <p><b>Статусы</b></p>
+              {markStatusesStore.statuses.map((status) => (
+                <FilterItem
+                  icon={
+                    <div style={{ height: "12px", width: "12px", border: "1px solid gray", borderRadius: "50%", backgroundColor: COLOR_MARK_STATUSES[status.mark_status_id] }}>
+                    </div>
+                  }
+                  name={status.name}
+                  checked={marksStore.filters.mark_status_ids.includes(status.mark_status_id)}
+                  onClick={() => {
+                    marksStore.updateMarkStatus(status.mark_status_id);
+                  }}
+                />
+              ))}
+            </div>
+            <div className="filters__content__block">
+              <p><b>Категории</b></p>
+              {markTypesStore.types.map((type) => (
+                <FilterItem
+                  icon={TypeMarkIcons[type.mark_type_id]({ color: "#00" })}
+                  name={type.name}
+                  checked={marksStore.filters.mark_type_ids.includes(type.mark_type_id)}
+                  onClick={() => {
+                    marksStore.updateMarkType(type.mark_type_id);
+                    adminBoundariesStore.fetchMarksCount();
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      }
+    </>
+  )
+});
+
+function FilterItem({ icon, name, checked, onClick }: { icon: JSX.Element, name: string, checked: boolean, onClick: () => void }) {
+  const id = useId();
+  return (
+    <label className="filters__content__block__item" htmlFor={id}>
+      <input
+        type="checkbox"
+        name=""
+        id={id}
+        checked={checked}
+        onClick={onClick}
+      />
+      {icon}
+      <p>{name}</p>
+    </label>
+  )
 }
 
 export default Map;

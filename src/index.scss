@@ -121,7 +121,7 @@ a {
   position: absolute;
   right: 16px;
   top: 88px;
-  width: 240px;
+  width: 250px;
   background-color: #f9f9f9;
   padding: 8px;
   border: 2px solid rgb(201, 201, 201);
@@ -144,14 +144,24 @@ a {
     }
 
     &__block {
+      display: grid;
+      gap: 2px;
+      padding: 2px;
       background-color: white;
 
       &__item {
         display: flex;
         gap: 8px;
         align-items: center;
+
+        font-size: 14px;
+
         user-select: none;
         cursor: pointer;
+
+        &:nth-child(even) {
+          background-color: #f9f9f9;
+        }
       }
     }
   }

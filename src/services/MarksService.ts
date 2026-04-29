@@ -58,6 +58,11 @@ export interface Point {
     latitude: number
 }
 
+export interface GetMarksRequest {
+    mark_type_ids: number[];
+    mark_status_ids: number[];
+}
+
 export interface GetMarksResponse extends IResponse {
     payload: GetMarksResponsePayload;
 }
@@ -123,8 +128,16 @@ class MarksService extends BaseService {
         this.AuthService = AuthService;
     }
 
-    public getMarks(): Promise<GetMarksResponse> {
-        return fetch("/api/marks").then(this.getResponse)
+    public getMarks(req: GetMarksRequest): Promise<GetMarksResponse> {
+        const params = new URLSearchParams();
+        if (req.mark_type_ids.length > 0) {
+            params.append("mark_type_ids", req.mark_type_ids.join(","));
+        }
+        if (req.mark_status_ids.length > 0) {
+            params.append("mark_status_ids", req.mark_status_ids.join(","));
+        }
+
+        return fetch(`/api/marks?${params}`).then(this.getResponse)
     }
 
     public getMarkById(id: number): Promise<GetMarkByIdResponse> {

@@ -25,13 +25,6 @@ const AddProblem = observer(function AddProblem() {
     const [description, setDescription] = useState("")
     const [photos, setPhotos] = useState<File[]>([]);
 
-
-    useEffect(() => {
-        if (markTypesStore.types.length === 0) {
-            markTypesStore.fetch();
-        }
-    }, [])
-
     const onSelectedFile = (files: File[]) => {
         setPhotos(files);
     }

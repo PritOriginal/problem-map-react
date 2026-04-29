@@ -1,7 +1,7 @@
 
 import "./double-progress-bar.scss"
 
-const DoubleProgressBar = ({ negative, positive }: { negative: number, positive: number }) => {
+const DoubleProgressBar = ({ question, negative, positive }: { question: string, negative: number, positive: number }) => {
     let sum = negative + positive;
     if (sum < 3) {
         sum = 3
@@ -9,6 +9,7 @@ const DoubleProgressBar = ({ negative, positive }: { negative: number, positive:
 
     return (
         <div className="double-progress-bar">
+            <p className="double-progress-bar__title">{question}</p>
             <div className="double-progress-bar__scale">
                 <div className="double-progress-bar__scale__left__zone"></div>
                 <div className="double-progress-bar__scale__left" style={{ width: `${Math.min(1, negative / sum) * 50}%` }}>

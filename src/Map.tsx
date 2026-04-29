@@ -109,12 +109,8 @@ const Map = observer(() => {
   }, []);
 
   useEffect(() => {
-    adminBoundariesStore.fetchBoundaries({
-      admin_levels: [6, 9, 10]
-    });
-    adminBoundariesStore.fetchMarksCount({
-      admin_levels: [6, 9, 10]
-    });
+    adminBoundariesStore.fetchBoundaries();
+    adminBoundariesStore.fetchMarksCount();
     marksStore.fetch();
     getUserLocation();
     selectedPoint.setCoords((LOCATION as YMapCenterLocation).center)

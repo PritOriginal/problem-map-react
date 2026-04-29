@@ -38,9 +38,7 @@ const AddCheck = observer(function AddProblem() {
                 .then((data) => {
                     console.log(data.payload);
                     marksStore.fetch();
-                    adminBoundariesStore.fetchMarksCount({
-                        admin_levels: [6, 9, 10]
-                    })
+                    adminBoundariesStore.fetchMarksCount()
                     navigate(`/problem/${mark.mark_id}`)
                 })
                 .catch((error) => {

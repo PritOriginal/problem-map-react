@@ -15,7 +15,10 @@ export enum MarkerSize {
 export const COLOR_MARK_STATUSES = {
   1: "#d3d3d3ff",
   2: "#e50000",
-  3: "#00e500",
+  4: "#e50000",
+  3: "#e5d600",
+  5: "#00e500",
+  6: "#000",
 } as {
   [index: number]: string
 };

@@ -112,6 +112,8 @@ const Map = observer(() => {
     adminBoundariesStore.fetchBoundaries();
     adminBoundariesStore.fetchMarksCount();
     marksStore.fetch();
+    markTypesStore.fetch();
+    markStatusesStore.fetch();
     getUserLocation();
     selectedPoint.setCoords((LOCATION as YMapCenterLocation).center)
   }, []);

@@ -20,7 +20,7 @@ import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
 import { useNavigate } from "react-router-dom";
-import { Mark } from "./services/MarksService";
+import { Mark, MarkStatusType } from "./services/MarksService";
 import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
 import { observer } from "mobx-react-lite";
@@ -75,9 +75,13 @@ const getColorByFeatues = (features: Feature[]) => {
 }
 
 const getColorPolygon = (count: AdminBoundaryMarksCount) => {
+  if (!count) {
+    return "00cc00"
+  }
+
   const allCount = count.confirmed_count + count.under_review_count + count.closed_count;
   if (allCount > 0) {
-    const h = count.closed_count / allCount * 120;
+    const h = (count.closed_count + count.under_review_count / 2) / allCount * 120;
     return convert.hsv.hex(h, 100, 80)
   } else {
     return "00cc00"

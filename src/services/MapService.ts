@@ -5,11 +5,11 @@ export interface AdminBoundary {
     id: number;
     name: string;
     admin_level: number;
-    geom: MultiPolygonGeometry;    
+    geom: MultiPolygonGeometry;
 }
 
 export interface GetAdminBoundariesRequest {
-    admin_levels: number[];    
+    admin_levels: number[];
 }
 
 export interface GetAdminBoundariesResponse extends IResponse {
@@ -31,7 +31,8 @@ export interface AdminBoundaryMarksCount {
 }
 
 export interface GetAdminBoundariesMarksCountRequest {
-    admin_levels: number[];    
+    admin_levels: number[];
+    mark_type_ids: number[];
 }
 
 export interface GetAdminBoundariesMarksCountResponse extends IResponse {
@@ -46,18 +47,21 @@ export interface GetAdminBoundariesMarksCountResponsePayload {
 class MapService extends BaseService {
     public getAdminBoundaries(req: GetAdminBoundariesRequest): Promise<GetAdminBoundariesResponse> {
         const params = new URLSearchParams();
-        req.admin_levels.forEach(level => {
-            params.append("admin_levels", level.toString())
-        });
+        if (req.admin_levels.length > 0) {
+            params.append("admin_levels", req.admin_levels.join(","));
+        }
 
         return fetch(`/api/map/admin-boundaries?${params}`).then(this.getResponse);
     }
 
-     public getAdminBoundariesMarksCount(req: GetAdminBoundariesMarksCountRequest): Promise<GetAdminBoundariesMarksCountResponse> {
+    public getAdminBoundariesMarksCount(req: GetAdminBoundariesMarksCountRequest): Promise<GetAdminBoundariesMarksCountResponse> {
         const params = new URLSearchParams();
-        req.admin_levels.forEach(level => {
-            params.append("admin_levels", level.toString())
-        });
+        if (req.admin_levels.length > 0) {
+            params.append("admin_levels", req.admin_levels.join(","));
+        }
+        if (req.admin_levels.length > 0) {
+            params.append("mark_type_ids", req.mark_type_ids.join(","));
+        }
 
         return fetch(`/api/map/admin-boundaries/marks/count?${params}`).then(this.getResponse);
     }

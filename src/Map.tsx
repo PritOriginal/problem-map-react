@@ -254,8 +254,8 @@ function AddMarkButton() {
   const navigate = useNavigate();
 
   return (
-    <div className="add-mark-button" onClick={() => navigate("/add")}>
-      <div className="add-mark-button__content">
+    <div className="circle-button add-mark-button" onClick={() => navigate("/add")}>
+      <div className="circle-button__content">
         <AddIcon />
       </div>
     </div>

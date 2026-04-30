@@ -19,7 +19,7 @@ export enum MarkerSize {
 };
 
 export const COLOR_MARK_STATUSES = {
-  1: "#d3d3d3ff",
+  1: "#d3d3d3",
   2: "#e50000",
   4: "#e50000",
   3: "#e5d600",

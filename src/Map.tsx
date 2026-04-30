@@ -64,13 +64,13 @@ const getColorByFeatues = (features: Feature[]) => {
     }
   });
 
-  let allNums = numsUnconfirmed + numsConfirmed + numsUnderReview + numsClosed
+  let allNums =  numsConfirmed + numsUnderReview + numsClosed
 
   const h = (numsClosed + numsUnderReview / 2) / allNums * 120;
   if (allNums > 0) {
     return convert.hsv.hex(h, 100, 80)
   } else {
-    return "d3d3d3ff"
+    return "d3d3d3"
   }
 }
 

@@ -66,7 +66,7 @@ const getColorByFeatues = (features: Feature[]) => {
     }
   });
 
-  let allNums =  numsConfirmed + numsUnderReview + numsClosed
+  let allNums = numsConfirmed + numsUnderReview + numsClosed
 
   const h = (numsClosed + numsUnderReview / 2) / allNums * 120;
   if (allNums > 0) {

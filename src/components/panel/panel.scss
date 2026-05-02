@@ -6,7 +6,7 @@
     --height-header: 100px;
 
     height: calc(100dvh - 48px);
-    width: 30dvw;
+    width: var(--panel-width);
 
     background-color: #f9f9f9;
 

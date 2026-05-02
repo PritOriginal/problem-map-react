@@ -29,10 +29,10 @@ export default function PanelRoute() {
                     <Route path="add-check" element={<AddCheck />} />
                 </Route>
                 <Route path="/add" element={<AddProblem />} />
+                <Route path='/signin' element={<SignIn />} />
+                <Route path='/signup' element={<SignUp />} />
+                <Route path='/profile' element={<Profile />} />
             </Route>
-            <Route path='/signin' element={<SignIn />} />
-            <Route path='/signup' element={<SignUp />} />
-            <Route path='/signout' element={<SignOut />} />
         </Routes>
     );
 }

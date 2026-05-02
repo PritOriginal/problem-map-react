@@ -17,5 +17,12 @@ export default defineConfig(({ mode }) => {
       }
     },
     plugins: [react(), svgr()],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          api: 'modern-compiler'
+        }
+      }
+    }
   }
 })

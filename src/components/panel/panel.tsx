@@ -10,15 +10,17 @@ import {
 } from "react-router-dom";
 import AboutProblem from "./panels/problem/about-problem";
 import AddProblem from "./panels/add-problem";
-import SignIn from "../../SignIn";
-import SignUp from "../../SignUp";
-import SignOut from "../../SignOut";
+import SignIn from "./panels/sign-in";
+import SignUp from "./panels/sign-up";
+import Profile from "./panels/sign-out";
 import AddCheck from "./panels/problem/add-check";
 import ProblemPanel from "./panels/problem/problem";
 import { useEffect } from "react";
 import selectedMark from "../../store/selected_mark";
 import selectedPoint from "../../store/selected_point";
 import { observer } from "mobx-react-lite";
+import panelStore from "../../store/panel";
+import { useDeviceDetect } from "../../utils/hooks";
 export default function PanelRoute() {
     return (
         <Routes>
@@ -29,15 +31,17 @@ export default function PanelRoute() {
                     <Route path="add-check" element={<AddCheck />} />
                 </Route>
                 <Route path="/add" element={<AddProblem />} />
+                <Route path='/signin' element={<SignIn />} />
+                <Route path='/signup' element={<SignUp />} />
+                <Route path='/profile' element={<Profile />} />
             </Route>
-            <Route path='/signin' element={<SignIn />} />
-            <Route path='/signup' element={<SignUp />} />
-            <Route path='/signout' element={<SignOut />} />
         </Routes>
     );
 }
 
 const Panel = observer(() => {
+    const { isMobile } = useDeviceDetect();
+
     const location = useLocation();
     const navigate = useNavigate();
     const params = useParams();
@@ -53,21 +57,34 @@ const Panel = observer(() => {
         } else {
             selectedPoint.hidePoint();
         }
+        if (location.pathname == "/") {
+            panelStore.setHeight(0);
+        }
     }, [location])
+
+    const showCloseButton = !isMobile || (isMobile && !panelStore.isOpen);
 
     return (
         <>
             {location.pathname !== "/" ?
-                <div className="panel">
-                    <div className="panel__close-button" onClick={() => { navigate("/") }}>
-                        <div className="panel__close-button__content">
-                            <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0 14.545L1.455 16 8 9.455 14.545 16 16 14.545 9.455 8 16 1.455 14.545 0 8 6.545 1.455 0 0 1.455 6.545 8z" fillRule="evenodd" />
-                            </svg>
+                <div
+                    className={`panel ${panelStore.isOpen ? "open" : ""}`}
+                >
+                    {showCloseButton &&
+                        < div className="panel__close-button" onClick={() => {
+                            {
+                                navigate("/");
+                            }
+                        }}>
+                            <div className="panel__close-button__content">
+                                <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0 14.545L1.455 16 8 9.455 14.545 16 16 14.545 9.455 8 16 1.455 14.545 0 8 6.545 1.455 0 0 1.455 6.545 8z" fillRule="evenodd" />
+                                </svg>
+                            </div>
                         </div>
-                    </div>
+                    }
                     <Outlet />
-                </div>
+                </div >
                 :
                 <></>
             }

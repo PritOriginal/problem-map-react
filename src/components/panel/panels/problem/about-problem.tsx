@@ -44,7 +44,7 @@ export default function AboutProblem() {
         }
     }
 
-    var possibilityAddCheck = true;
+    let possibilityAddCheck = true;
     if (user.id != 0 && historyItems.length > 0) {
         if (mark.mark_status_id == MarkStatusType.ClosedStatus ||
             mark.mark_status_id == MarkStatusType.RefutedStatus) {

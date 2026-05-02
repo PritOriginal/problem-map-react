@@ -1,3 +1,5 @@
+@use "mixins" as *;
+
 *,
 *::after,
 *::before {
@@ -8,6 +10,8 @@
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --panel-width: 420px;
+  --header-height: 48px;
 }
 
 a {
@@ -18,6 +22,20 @@ a {
   width: 100%;
   height: calc(100vh - 48px);
   position: relative;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+
+  &.panel-open {
+    padding-left: var(--panel-width);
+
+    @include mobile {
+      padding-left: 0;
+      padding-bottom: var(--panel-header-height);
+    }
+  }
 }
 
 .add-mark-menu {
@@ -114,13 +132,13 @@ a {
 .filters-button {
   position: absolute;
   right: 16px;
-  top: 16px;
+  top: 42px;
 }
 
 .filters {
   position: absolute;
   right: 16px;
-  top: 88px;
+  top: 102px;
   width: 250px;
   background-color: #f9f9f9;
   padding: 8px;
@@ -171,8 +189,12 @@ a {
 .add-mark-button {
   position: absolute;
   right: 16px;
-  bottom: 48px;
+  bottom: 16px;
   padding: 16px;
+
+  @include mobile {
+    bottom: calc(16px + var(--panel-header-height));
+  }
 }
 
 .circle-button {
@@ -196,6 +218,11 @@ a {
 
   transition: all 0.2s ease-in-out;
 
+  @include mobile {
+    width: 48px;
+    height: 48px;
+  }
+
   &__content {
     display: flex;
     justify-content: center;
@@ -204,7 +231,48 @@ a {
     font-size: 32px;
     font-weight: bold;
     line-height: 32px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+
+      @include mobile {
+        width: 16px;
+        height: 16px;
+      }
+    }
   }
+
+  &:hover {
+    background-color: white;
+    color: black;
+    stroke: black;
+    fill: black;
+  }
+}
+
+.center-button {
+  align-content: center;
+
+  cursor: pointer;
+
+  position: absolute;
+  right: 50%;
+  bottom: calc(16px + var(--panel-header-height));
+  padding: 16px;
+
+  transform: translateX(50%);
+
+  background-color: red;
+  color: white;
+
+  border-radius: 32px;
+
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+
+  z-index: 1;
+
+  transition: all 0.2s ease-in-out;
 
   &:hover {
     background-color: white;

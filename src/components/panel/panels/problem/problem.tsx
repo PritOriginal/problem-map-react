@@ -1,10 +1,11 @@
 import { Outlet, useParams } from "react-router-dom";
 import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
-import { createContext, useEffect, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
 import { observer } from "mobx-react-lite";
+import panelStore from "../../../../store/panel";
 
 export const emptyMark: Mark = {
     mark_id: 0,
@@ -23,10 +24,18 @@ export const emptyMark: Mark = {
 
 export const MarkContext = createContext<Mark>(emptyMark)
 
-const ProblemPanel = observer (() => {
+const ProblemPanel = observer(() => {
     const params = useParams();
 
+    const panelHeaderRef = useRef<HTMLDivElement>(null);
+
     const [mark, setMark] = useState<Mark>(emptyMark);
+
+    useEffect(() => {
+        if (panelHeaderRef.current) {
+            panelStore.setHeight(panelHeaderRef.current.offsetHeight)
+        }
+    }, [mark]);
 
     let markType: MarkType = { mark_type_id: 0, name: "" };
     if (markTypesStore.types.length > 0 && mark.mark_type_id !== 0) {
@@ -60,18 +69,22 @@ const ProblemPanel = observer (() => {
 
     return (
         <MarkContext.Provider value={mark}>
-            <div className="panel__header">
-                <p style={{ fontSize: "12px" }}>№{mark.mark_id}</p>
+            <div
+                ref={panelHeaderRef}
+                className="panel__header"
+                onClick={() => panelStore.toggle()}
+            >
                 <div className="panel__header__status">
                     <div style={{ border: `2px solid ${COLOR_MARK_STATUSES[markStatus?.mark_status_id!]}`, backgroundColor: "#fff", borderRadius: "4px", padding: "4px" }}>
                         <p style={{ color: "#000" }}><b>{markStatus?.name}</b></p>
                     </div>
                 </div>
+                <p style={{ fontSize: "12px" }}>№{mark.mark_id}</p>
+                <p style={{ fontSize: 12 }}>Координаты: <b>{mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}</b></p>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
-                    <p style={{ fontSize: 18 }}><b>{markType?.name}</b></p>
+                    <p style={{ fontSize: 14 }}><b>{markType?.name}</b></p>
                 </div>
-                <p style={{ fontSize: 12 }}>Координаты: <b>{mark.geom.coordinates[1]}, {mark.geom.coordinates[0]}</b></p>
             </div>
             <div className="panel__content">
                 <Outlet />

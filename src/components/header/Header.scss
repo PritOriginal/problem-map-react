@@ -1,6 +1,8 @@
+@use "../../mixins" as *;
+
 header {
     margin: 0 auto;
-    height: 48px;
+    height: var(--header-height);
     align-content: center;
     background-color: #202020;
     color: white;
@@ -20,13 +22,23 @@ header {
 
     &__menu {
         display: flex;
-        gap: 2rem;
+        gap: 1rem;
         align-items: center;
-        font-size: 16px;
     }
 
     &__user-info {
         display: flex;
-        gap: 32px;
+        gap: 1rem;
+        align-items: center;
+
+        &__item {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+    }
+
+    @include mobile {
+        font-size: 12px;
     }
 }

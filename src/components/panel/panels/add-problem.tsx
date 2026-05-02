@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MarksService, { AddMarkRequest, MarkType } from "../../../services/MarksService";
 import Select from 'react-select';
 import { Button } from "../../button/button";
@@ -10,8 +10,23 @@ import marksStore from "../../../store/marks";
 import user from "../../../store/user";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import markTypesStore from "../../../store/mark-types";
+import panelStore from "../../../store/panel";
+import { useDeviceDetect } from "../../../utils/hooks";
 
 const AddProblem = observer(function AddProblem() {
+    const { isMobile } = useDeviceDetect();
+
+    const panelHeaderRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (panelHeaderRef.current) {
+            if (isMobile) {
+                panelStore.setHeight(0)
+            } else {
+                panelStore.setHeight(panelHeaderRef.current.offsetHeight);
+            }
+        }
+    }, [isMobile]);
+
     const navigate = useNavigate();
 
     const markTypesOptions = markTypesStore.types.map((type) => ({
@@ -44,6 +59,7 @@ const AddProblem = observer(function AddProblem() {
                 .then((data) => {
                     console.log(data.payload);
                     marksStore.fetch();
+                    panelStore.setOpen(false);
                     navigate(`/problem/${data.payload.mark_id}`);
                 })
                 .catch((error) => {
@@ -54,8 +70,12 @@ const AddProblem = observer(function AddProblem() {
 
     return (
         <>
-            <div className="panel__header">
-                <p style={{ fontSize: 18 }}>Отметить проблему</p>
+            <div
+                ref={panelHeaderRef}
+                className="panel__header"
+                onClick={() => panelStore.toggle()}
+            >
+                <p><b>Отметить проблему</b></p>
             </div>
             <div className="panel__content">
                 {user.id === 0 ?
@@ -64,7 +84,7 @@ const AddProblem = observer(function AddProblem() {
                     />
                     :
                     <>
-                        <p style={{ fontSize: 12 }}>Координаты: {selectedPoint.coords[1]}, {selectedPoint.coords[0]}</p>
+                        <p style={{ fontSize: 12 }}>Координаты: {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}</p>
 
                         <p><b>Категория</b></p>
                         <Select

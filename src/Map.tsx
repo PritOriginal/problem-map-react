@@ -19,7 +19,7 @@ import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeMarkIcons } 
 import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Mark, MarkStatusType } from "./services/MarksService";
 import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
@@ -31,6 +31,8 @@ import AddIcon from "./assets/plus.svg?react"
 import FilterIcon from "./assets/filter.svg?react"
 import markStatusesStore from "./store/mark-statuses";
 import markTypesStore from "./store/mark-types";
+import panelStore from "./store/panel";
+import { useDeviceDetect } from "./utils/hooks";
 
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],
@@ -64,7 +66,7 @@ const getColorByFeatues = (features: Feature[]) => {
     }
   });
 
-  let allNums =  numsConfirmed + numsUnderReview + numsClosed
+  const allNums = numsConfirmed + numsUnderReview + numsClosed
 
   const h = (numsClosed + numsUnderReview / 2) / allNums * 120;
   if (allNums > 0) {
@@ -89,7 +91,17 @@ const getColorPolygon = (count: AdminBoundaryMarksCount) => {
 }
 
 const Map = observer(() => {
+  const { isMobile } = useDeviceDetect();
+
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const [panelIsOpen, setPanelIsOpen] = useState(false);
+  const [showNewMarkButton, setShowNewMarkButton] = useState(false);
+  useEffect(() => {
+    setPanelIsOpen(location.pathname !== "/");
+    setShowNewMarkButton(location.pathname === "/add")
+  }, [location.pathname])
 
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [size, setSize] = useState<MarkerSize>(MarkerSize.small);
@@ -131,22 +143,18 @@ const Map = observer(() => {
   }, []);
 
   const getUserLocation = () => {
-    // if geolocation is supported by the users browser
     if (navigator.geolocation) {
-      // get the current users location
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           console.log(latitude, longitude);
           setUserLocation(position.coords);
         },
-        // if there was an error getting the users location
         (error) => {
           console.error('Error getting user location:', error);
         }
       );
     }
-    // if geolocation is not supported by the users browser
     else {
       console.error('Geolocation is not supported by this browser.');
     }
@@ -186,35 +194,38 @@ const Map = observer(() => {
 
   return (
     <>
-      <AddMarkButton />
+      {showNewMarkButton && isMobile ? <></> : < AddMarkButton />}
+      {showNewMarkButton && isMobile && <OpenPanelButton />}
       <Filters />
-      <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
-        <YMap
-          location={LOCATION}
-          restrictMapArea={RESTRICT_AREA}
-          zoomRange={ZOOM_RANGE}
-          copyrightsPosition={"bottom right"}
-        >
-          <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
-          <YMapDefaultFeaturesLayer />
-          {filteredBoundaries.map((boundary) => (
-            <BoundaryItem
-              key={boundary.id}
-              boundary={boundary}
-              count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
-            />
-          ))}
-          {userLocation &&
-            < MarkerItem
-              coordinates={[userLocation?.longitude, userLocation?.latitude]}
-              color={"white"}
-            />
-          }
-          <SelectedPoint />
-          <YMapListener onUpdate={onUpdate} />
-          <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
-        </YMap>
-      </YMapComponentsProvider>
+      <div className={`map ${panelIsOpen && "panel-open"}`}>
+        <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
+          <YMap
+            location={LOCATION}
+            restrictMapArea={RESTRICT_AREA}
+            zoomRange={ZOOM_RANGE}
+            copyrightsPosition={"top right"}
+          >
+            <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
+            <YMapDefaultFeaturesLayer />
+            {filteredBoundaries.map((boundary) => (
+              <BoundaryItem
+                key={boundary.id}
+                boundary={boundary}
+                count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
+              />
+            ))}
+            {userLocation &&
+              < MarkerItem
+                coordinates={[userLocation?.longitude, userLocation?.latitude]}
+                color={"white"}
+              />
+            }
+            <SelectedPoint />
+            <YMapListener onUpdate={onUpdate} />
+            <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
+          </YMap>
+        </YMapComponentsProvider>
+      </div>
     </>
   );
 });
@@ -260,6 +271,14 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
 });
 
 
+function OpenPanelButton() {
+  return (
+    <div className="center-button" onClick={() => panelStore.setOpen(true)}>
+      Отметить
+    </div>
+  )
+}
+
 function AddMarkButton() {
   const navigate = useNavigate();
 
@@ -278,7 +297,7 @@ const Filters = observer(() => {
     <>
       <div className="circle-button filters-button" onClick={() => setShowFilters(!showFilters)}>
         <div className="circle-button__content">
-          <FilterIcon style={{ width: "24px", transform: "translate(0, 2px)" }} />
+          <FilterIcon style={{ transform: "translate(0, 2px)" }} />
         </div>
       </div>
 

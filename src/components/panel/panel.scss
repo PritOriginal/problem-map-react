@@ -1,45 +1,74 @@
+@use "../../mixins" as *;
+
+:root {
+    --panel-header-height: 0px;
+}
+
 .panel {
     position: absolute;
     left: 0;
-    z-index: 1;
+    z-index: 2;
 
-    --height-header: 100px;
-
-    height: calc(100dvh - 48px);
+    height: calc(100dvh - var(--header-height));
     width: var(--panel-width);
 
     background-color: #f9f9f9;
 
     border-right: 2px solid rgb(201, 201, 201);
 
+    transition: transform .3s ease-in-out 0s;
+
+    @include mobile {
+        &.open {
+            transform: translateY(0);
+            overflow: auto;
+        }
+
+        width: 100%;
+        position: fixed;
+        right: 0;
+        bottom: 0;
+
+        transform: translateY(calc(100dvh - var(--panel-header-height) - var(--header-height) + 1px));
+    }
+
     &__header {
         display: flex;
         flex-direction: column;
         gap: 8px;
-
-        height: var(--height-header);
-        // background-color: rgb(243, 243, 243);
-        // background-color: rgb(130, 149, 255);
+        height: fit-content;
         background-color: rgb(36, 36, 36);
         color: white;
 
         padding: 16px;
+
+        @include mobile {
+            cursor: pointer;
+        }
 
         &__status {
             position: absolute;
             right: 16px;
             top: 16px;
             font-size: 12px;
+
+            @include mobile {
+                font-size: 10px;
+            }
         }
     }
 
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 8px;
         padding: 16px;
-        height: calc(100dvh - 48px - var(--height-header));
+        height: calc(100dvh - var(--header-height) - var(--panel-header-height));
         overflow-y: auto;
+
+        @include mobile {
+            height: fit-content;
+        }
     }
 
     &__close-button {
@@ -47,6 +76,11 @@
         right: calc(-48px - 16px);
         top: 16px;
         padding: 16px;
+
+        @include mobile {
+            top: calc(-48px - 16px);
+            left: 16px;
+        }
 
         cursor: pointer;
 
@@ -99,9 +133,11 @@
     background-color: #e5e5e5;
     max-height: 100px;
     min-height: 100px;
+
     &.confirm {
         border-bottom: 1px solid rgb(83, 237, 124);
     }
+
     &.reject {
         border-bottom: 1px solid rgb(255, 31, 31);
     }

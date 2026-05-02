@@ -189,8 +189,12 @@ a {
 .add-mark-button {
   position: absolute;
   right: 16px;
-  bottom: 48px;
+  bottom: 16px;
   padding: 16px;
+
+  @include mobile {
+    bottom: calc(16px + var(--panel-header-height));
+  }
 }
 
 .circle-button {
@@ -214,6 +218,11 @@ a {
 
   transition: all 0.2s ease-in-out;
 
+  @include mobile {
+    width: 48px;
+    height: 48px;
+  }
+
   &__content {
     display: flex;
     justify-content: center;
@@ -222,6 +231,16 @@ a {
     font-size: 32px;
     font-weight: bold;
     line-height: 32px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+
+      @include mobile {
+        width: 16px;
+        height: 16px;
+      }
+    }
   }
 
   &:hover {

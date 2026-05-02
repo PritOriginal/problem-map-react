@@ -131,22 +131,18 @@ const Map = observer(() => {
   }, []);
 
   const getUserLocation = () => {
-    // if geolocation is supported by the users browser
     if (navigator.geolocation) {
-      // get the current users location
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           console.log(latitude, longitude);
           setUserLocation(position.coords);
         },
-        // if there was an error getting the users location
         (error) => {
           console.error('Error getting user location:', error);
         }
       );
     }
-    // if geolocation is not supported by the users browser
     else {
       console.error('Geolocation is not supported by this browser.');
     }

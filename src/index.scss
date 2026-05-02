@@ -251,6 +251,37 @@ a {
   }
 }
 
+.center-button {
+  align-content: center;
+
+  cursor: pointer;
+
+  position: absolute;
+  right: 50%;
+  bottom: calc(16px + var(--panel-header-height));
+  padding: 16px;
+
+  transform: translateX(50%);
+
+  background-color: red;
+  color: white;
+
+  border-radius: 32px;
+
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+
+  z-index: 1;
+
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: white;
+    color: black;
+    stroke: black;
+    fill: black;
+  }
+}
+
 .modal {
   position: absolute;
   top: 0;

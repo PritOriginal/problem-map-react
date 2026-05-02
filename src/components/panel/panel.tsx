@@ -10,9 +10,9 @@ import {
 } from "react-router-dom";
 import AboutProblem from "./panels/problem/about-problem";
 import AddProblem from "./panels/add-problem";
-import SignIn from "../../SignIn";
-import SignUp from "../../SignUp";
-import SignOut from "../../SignOut";
+import SignIn from "./panels/sign-in";
+import SignUp from "./panels/sign-up";
+import Profile from "./panels/sign-out";
 import AddCheck from "./panels/problem/add-check";
 import ProblemPanel from "./panels/problem/problem";
 import { useEffect } from "react";

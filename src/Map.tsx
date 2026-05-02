@@ -31,6 +31,7 @@ import AddIcon from "./assets/plus.svg?react"
 import FilterIcon from "./assets/filter.svg?react"
 import markStatusesStore from "./store/mark-statuses";
 import markTypesStore from "./store/mark-types";
+import panelStore from "./store/panel";
 import { useDeviceDetect } from "./utils/hooks";
 
 const LOCATION: YMapLocationRequest = {
@@ -269,6 +270,14 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
   );
 });
 
+
+function OpenPanelButton() {
+  return (
+    <div className="center-button" onClick={() => panelStore.setOpen(true)}>
+      Отметить
+    </div>
+  )
+}
 
 function AddMarkButton() {
   const navigate = useNavigate();

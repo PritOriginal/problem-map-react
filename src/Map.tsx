@@ -184,33 +184,35 @@ const Map = observer(() => {
     <>
       <AddMarkButton />
       <Filters />
-      <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
-        <YMap
-          location={LOCATION}
-          restrictMapArea={RESTRICT_AREA}
-          zoomRange={ZOOM_RANGE}
-          copyrightsPosition={"bottom right"}
-        >
-          <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
-          <YMapDefaultFeaturesLayer />
-          {filteredBoundaries.map((boundary) => (
-            <BoundaryItem
-              key={boundary.id}
-              boundary={boundary}
-              count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
-            />
-          ))}
-          {userLocation &&
-            < MarkerItem
-              coordinates={[userLocation?.longitude, userLocation?.latitude]}
-              color={"white"}
-            />
-          }
-          <SelectedPoint />
-          <YMapListener onUpdate={onUpdate} />
-          <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
-        </YMap>
-      </YMapComponentsProvider>
+      <div className={`map ${panelIsOpen && "panel-open"}`}>
+        <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
+          <YMap
+            location={LOCATION}
+            restrictMapArea={RESTRICT_AREA}
+            zoomRange={ZOOM_RANGE}
+            copyrightsPosition={"top right"}
+          >
+            <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
+            <YMapDefaultFeaturesLayer />
+            {filteredBoundaries.map((boundary) => (
+              <BoundaryItem
+                key={boundary.id}
+                boundary={boundary}
+                count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
+              />
+            ))}
+            {userLocation &&
+              < MarkerItem
+                coordinates={[userLocation?.longitude, userLocation?.latitude]}
+                color={"white"}
+              />
+            }
+            <SelectedPoint />
+            <YMapListener onUpdate={onUpdate} />
+            <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
+          </YMap>
+        </YMapComponentsProvider>
+      </div>
     </>
   );
 });

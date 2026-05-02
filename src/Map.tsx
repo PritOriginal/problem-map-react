@@ -274,7 +274,7 @@ const Filters = observer(() => {
     <>
       <div className="circle-button filters-button" onClick={() => setShowFilters(!showFilters)}>
         <div className="circle-button__content">
-          <FilterIcon style={{ width: "24px", transform: "translate(0, 2px)" }} />
+          <FilterIcon style={{ transform: "translate(0, 2px)" }} />
         </div>
       </div>
 

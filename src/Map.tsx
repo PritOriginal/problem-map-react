@@ -19,7 +19,7 @@ import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeMarkIcons } 
 import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Mark, MarkStatusType } from "./services/MarksService";
 import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
@@ -31,6 +31,7 @@ import AddIcon from "./assets/plus.svg?react"
 import FilterIcon from "./assets/filter.svg?react"
 import markStatusesStore from "./store/mark-statuses";
 import markTypesStore from "./store/mark-types";
+import { useDeviceDetect } from "./utils/hooks";
 
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],
@@ -89,7 +90,17 @@ const getColorPolygon = (count: AdminBoundaryMarksCount) => {
 }
 
 const Map = observer(() => {
+  const { isMobile } = useDeviceDetect();
+
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const [panelIsOpen, setPanelIsOpen] = useState(false);
+  const [showNewMarkButton, setShowNewMarkButton] = useState(false);
+  useEffect(() => {
+    setPanelIsOpen(location.pathname !== "/");
+    setShowNewMarkButton(location.pathname === "/add")
+  }, [location.pathname])
 
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [size, setSize] = useState<MarkerSize>(MarkerSize.small);
@@ -182,7 +193,8 @@ const Map = observer(() => {
 
   return (
     <>
-      <AddMarkButton />
+      {showNewMarkButton && isMobile ? <></> : < AddMarkButton />}
+      {showNewMarkButton && isMobile && <OpenPanelButton />}
       <Filters />
       <div className={`map ${panelIsOpen && "panel-open"}`}>
         <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>

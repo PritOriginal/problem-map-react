@@ -1,50 +1,45 @@
-# React + TypeScript + Vite
+# problem-map-react
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![wakatime](https://wakatime.com/badge/github/PritOriginal/problem-map-react.svg)](https://wakatime.com/badge/github/PritOriginal/problem-map-react)
 
-Currently, two official plugins are available:
+В даннои репозитории представлено React SPA для дипломной работы по теме "Разработка краудсорсинговой системы мониторинга городских проблем с оптимизацией процессов модерации".
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## О проекте
 
-## Expanding the ESLint configuration
+[problem-map.pritoriginal.ru](https://problem-map.pritoriginal.ru/) - сайт с развёрнутым приложением.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+[problem-map-server](https://github.com/PritOriginal/problem-map-server) - Backend репозиторий.
 
-- Configure the top-level `parserOptions` property like this:
+> [!NOTE]  
+> Этот проект находится в процессе активной разработки. В настоящее время в нём реализовано не всё запланированное, поэтому не исключено наличие ошибок.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Стек
+
+- `TypeScript`
+- `React` - Фреймворк
+- [`mobx-react`](https://github.com/mobxjs/mobx) - Управление состоянием
+- [`react-router`](https://reactrouter.com/) - Маршрутизация
+- `SCSS` - Препроцессор CSS
+- [`Яндекс карты JavaScript API`](https://yandex.ru/maps-api/products/js-api) - Карта
+
+## Подготовка
+
+Создайте конфиг
+
+```bash
+cp ./.env.example ./.env
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Запуск
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Запуск `dev` сервера для разработки
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```bash
+npm run dev
+```
+
+Билд приложения для `prod`
+
+```bash
+npm run build
 ```

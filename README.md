@@ -30,6 +30,16 @@
 cp ./.env.example ./.env
 ```
 
+### Переменные окружения
+
+| Переменная | Описание |
+| --- | --- |
+| `APP_HOST`, `APP_PORT` | Хост и порт dev-сервера Vite |
+| `API_HOST`, `API_PORT` | Адрес backend-а, на который проксируются запросы `/api` |
+| `VITE_YMAPS_API_KEY` | Ключ API Яндекс.Карт (JavaScript API 3.0). Переменные с префиксом `VITE_` попадают в клиентский бандл |
+
+Файл `.env` не коммитится (см. `.gitignore`).
+
 ## Запуск
 
 Запуск `dev` сервера для разработки
@@ -42,4 +52,12 @@ npm run dev
 
 ```bash
 npm run build
+```
+
+## Проверки
+
+```bash
+npm run lint   # ESLint
+npm test       # vitest
+npm run build  # tsc + vite build
 ```

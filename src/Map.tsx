@@ -25,7 +25,7 @@ import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
 import { observer } from "mobx-react-lite";
 import marksStore from "./store/marks";
-import adminBoundariesStore from "./store/admin-boudaries";
+import adminBoundariesStore from "./store/admin-boundaries";
 
 import AddIcon from "./assets/plus.svg?react"
 import FilterIcon from "./assets/filter.svg?react"
@@ -33,6 +33,8 @@ import markStatusesStore from "./store/mark-statuses";
 import markTypesStore from "./store/mark-types";
 import panelStore from "./store/panel";
 import { useDeviceDetect } from "./utils/hooks";
+
+const YMAPS_API_KEY: string = import.meta.env.VITE_YMAPS_API_KEY ?? "";
 
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],
@@ -48,15 +50,12 @@ export const ZOOMS = {
 };
 
 const getColorByFeatues = (features: Feature[]) => {
-  let numsUnconfirmed = 0;
   let numsConfirmed = 0;
   let numsUnderReview = 0;
   let numsClosed = 0;
   features.forEach(f => {
     const mark = f.properties!.mark as Mark;
-    if (mark.mark_status_id == MarkStatusType.UnconfirmedStatus) {
-      numsUnconfirmed++;
-    } else if (mark.mark_status_id == MarkStatusType.ConfirmedStatus ||
+    if (mark.mark_status_id == MarkStatusType.ConfirmedStatus ||
       mark.mark_status_id == MarkStatusType.RediscoveredStatus) {
       numsConfirmed++;
     } else if (mark.mark_status_id == MarkStatusType.UnderReviewStatus) {
@@ -146,8 +145,6 @@ const Map = observer(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log(latitude, longitude);
           setUserLocation(position.coords);
         },
         (error) => {
@@ -198,7 +195,7 @@ const Map = observer(() => {
       {showNewMarkButton && isMobile && <OpenPanelButton />}
       <Filters />
       <div className={`map ${panelIsOpen && "panel-open"}`}>
-        <YMapComponentsProvider apiKey={'fcce59dc-11d5-48d7-8b83-8ade1dba34df'}>
+        <YMapComponentsProvider apiKey={YMAPS_API_KEY}>
           <YMap
             location={LOCATION}
             restrictMapArea={RESTRICT_AREA}

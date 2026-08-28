@@ -8,7 +8,8 @@ import SelectFiles from "../../../SelectFiles";
 import user from "../../../../store/user";
 import UnauthorizedBlock from "../../../unauthorized-block/unauthorized-block";
 import marksStore from "../../../../store/marks";
-import adminBoundariesStore from "../../../../store/admin-boudaries";
+import adminBoundariesStore from "../../../../store/admin-boundaries";
+import notificationsStore from "../../../../store/notifications";
 
 const AddCheck = observer(function AddProblem() {
     const navigate = useNavigate();
@@ -35,14 +36,15 @@ const AddCheck = observer(function AddProblem() {
             }
 
             ChecksService.addCheck(req, photos)
-                .then((data) => {
-                    console.log(data.payload);
+                .then(() => {
+                    notificationsStore.clear();
                     marksStore.fetch();
                     adminBoundariesStore.fetchMarksCount()
                     navigate(`/problem/${mark.mark_id}`)
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
+                    notificationsStore.showError(error, "Не удалось отправить проверку");
                 })
         }
     }

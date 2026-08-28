@@ -51,22 +51,20 @@ export interface AddCheckResponsePayload {
 }
 
 
-class СhecksService extends BaseService {
+class ChecksService extends BaseService {
     public getCheckById(id: number): Promise<GetCheckByIdResponse> {
-        return fetch(`/api/checks/${id}`).then(this.getResponse)
+        return fetch(`/api/checks/${id}`).then((response) => this.getResponse<GetCheckByIdResponse>(response))
     }
 
     public getChecksByMarkId(markId: number): Promise<GetChecksByMarkIdResponse> {
-        return fetch(`/api/checks/mark/${markId}`).then(this.getResponse)
+        return fetch(`/api/checks/mark/${markId}`).then((response) => this.getResponse<GetChecksByMarkIdResponse>(response))
     }
 
     public getChecksByUserId(userId: number): Promise<GetChecksByUserIdResponse> {
-        return fetch(`/api/checks/user/${userId}`).then(this.getResponse)
+        return fetch(`/api/checks/user/${userId}`).then((response) => this.getResponse<GetChecksByUserIdResponse>(response))
     }
 
     public addCheck(req: AddCheckRequest, photos: File[]): Promise<AddCheckResponse> {
-        const bearer = 'Bearer ' + localStorage.getItem('access_token');
-
         const form = new FormData();
         form.append("mark_id", req.mark_id.toString())
         form.append("result", req.result ? "true" : "false")
@@ -75,14 +73,11 @@ class СhecksService extends BaseService {
             form.append("photos", photo)
         });
 
-        return fetch("/api/checks", {
+        return this.fetchWithAuth("/api/checks", {
             method: "POST",
-            headers: {
-                'Authorization': bearer,
-            },
             body: form
-        }).then(this.getResponse)
+        }).then((response) => this.getResponse<AddCheckResponse>(response))
     }
 }
 
-export default new СhecksService();
+export default new ChecksService();

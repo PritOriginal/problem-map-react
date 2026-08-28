@@ -32,6 +32,7 @@ describe("parseFilters", () => {
 
     it("drops garbage and duplicates", () => {
         expect(parseFilters("?types=1,x,,-2,1.5,3,3&statuses=abc", defaults)).toEqual({ mark_type_ids: [1, 3], mark_status_ids: [] });
+        expect(parseFilters("?types=0x10,1e2,0,%202,Infinity,99999999999999999999", defaults)).toEqual({ mark_type_ids: [2], mark_status_ids: [1, 2, 3, 4, 5] });
     });
 
     it("does not alias the defaults arrays", () => {

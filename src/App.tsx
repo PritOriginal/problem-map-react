@@ -11,10 +11,13 @@ export default function App() {
   useEffect(() => {
     const token = getAccessToken();
     if (isAccessTokenValid(token)) {
-      // keep the persisted role in sync with the token (e.g. role changed server-side)
-      if (user.id !== 0) {
-        user.setRole(getRoleFromToken(token));
-      }
+      // keep the persisted role in sync with the token (e.g. role changed server-side);
+      // wait for hydration, otherwise the persisted (possibly stale) role would overwrite ours
+      user.hydrated.then(() => {
+        if (user.id !== 0) {
+          user.setRole(getRoleFromToken(token));
+        }
+      });
     } else {
       refreshTokens().catch(console.error);
     }

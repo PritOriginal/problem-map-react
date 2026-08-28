@@ -10,9 +10,9 @@ function parseIds(raw: string | null): number[] | null {
     const ids = raw
         .split(",")
         .map((s) => s.trim())
-        .filter((s) => s !== "")
+        .filter((s) => /^\d+$/.test(s))
         .map(Number)
-        .filter((n) => Number.isInteger(n) && n > 0);
+        .filter((n) => Number.isSafeInteger(n) && n > 0);
     return Array.from(new Set(ids));
 }
 

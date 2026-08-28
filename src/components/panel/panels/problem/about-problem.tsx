@@ -168,8 +168,8 @@ function ShareButton() {
         try {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(url);
-            } else {
-                window.prompt("Скопируйте ссылку", url);
+            } else if (window.prompt("Скопируйте ссылку", url) === null) {
+                return;
             }
             setCopied(true);
             window.clearTimeout(timer.current);

@@ -100,6 +100,10 @@ const Map = observer(() => {
   const location = useLocation();
   const navigate = useNavigateKeepSearch();
   const [, setSearchParams] = useSearchParams();
+  // the reaction below lives for the whole component lifetime, but setSearchParams (and the `prev`
+  // it passes to a functional updater) is rebuilt on every location change — always call the latest one
+  const setSearchParamsRef = useRef(setSearchParams);
+  setSearchParamsRef.current = setSearchParams;
 
   const mapRef = useRef<YMapInstance | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -163,7 +167,7 @@ const Map = observer(() => {
     const dispose = reaction(
       () => serializeFilters(marksStore.filters).toString(),
       () => {
-        setSearchParams((prev) => serializeFilters(marksStore.filters, prev), { replace: true });
+        setSearchParamsRef.current((prev) => serializeFilters(marksStore.filters, prev), { replace: true });
       },
       { fireImmediately: true },
     );
@@ -344,7 +348,20 @@ function OpenPanelButton() {
 
 function LocateButton({ onClick }: { onClick: () => void }) {
   return (
-    <div className="circle-button locate-button" title="Я здесь" onClick={onClick}>
+    <div
+      className="circle-button locate-button"
+      title="Я здесь"
+      role="button"
+      tabIndex={0}
+      aria-label="Показать моё местоположение"
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
       <div className="circle-button__content">
         <LocateIcon />
       </div>

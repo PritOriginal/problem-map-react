@@ -6,14 +6,16 @@ class User {
     username: string = "";
     id: number = 0;
     role: Role = "user";
+    /** Resolves once the persisted state has been read from localStorage (hydration is async). */
+    readonly hydrated: Promise<void>;
 
     constructor() {
-        makeAutoObservable(this);
-        makePersistable(this, {
+        makeAutoObservable(this, { hydrated: false });
+        this.hydrated = makePersistable(this, {
             name: 'user',
             properties: ['username', "id", "role"],
             storage: window.localStorage,
-        });
+        }).then(() => undefined);
     }
 
     get isModerator(): boolean {

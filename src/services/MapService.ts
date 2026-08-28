@@ -51,7 +51,7 @@ class MapService extends BaseService {
             params.append("admin_levels", req.admin_levels.join(","));
         }
 
-        return fetch(`/api/map/admin-boundaries?${params}`).then((response) => this.getResponse<GetAdminBoundariesResponse>(response));
+        return this.request<GetAdminBoundariesResponse>(`/api/map/admin-boundaries?${params}`);
     }
 
     public getAdminBoundariesMarksCount(req: GetAdminBoundariesMarksCountRequest): Promise<GetAdminBoundariesMarksCountResponse> {
@@ -63,11 +63,11 @@ class MapService extends BaseService {
             params.append("mark_type_ids", req.mark_type_ids.join(","));
         }
 
-        return fetch(`/api/map/admin-boundaries/marks/count?${params}`).then((response) => this.getResponse<GetAdminBoundariesMarksCountResponse>(response));
+        return this.request<GetAdminBoundariesMarksCountResponse>(`/api/map/admin-boundaries/marks/count?${params}`);
     }
 
     public getDistricts() {
-        return fetch("/api/map/districts").then(this.getResponse)
+        return this.request("/api/map/districts")
     }
 }
 

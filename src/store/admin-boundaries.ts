@@ -1,6 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import MapService, { AdminBoundary, AdminBoundaryMarksCount, GetAdminBoundariesMarksCountRequest, GetAdminBoundariesRequest } from "../services/MapService";
-import { getErrorMessage } from "../services/http";
 import notificationsStore from "./notifications";
 import marksStore from "./marks";
 
@@ -38,10 +37,9 @@ class AdminBoundariesStore {
         } catch (error) {
             console.error(error);
             runInAction(() => {
-                this.errorBoundaries = getErrorMessage(error, 'Ошибка загрузки административных границ');
+                this.errorBoundaries = notificationsStore.showError(error, 'Ошибка загрузки административных границ');
                 this.isLoadingBoundaries = false;
             });
-            notificationsStore.showError(this.errorBoundaries);
         }
     }
 
@@ -60,10 +58,9 @@ class AdminBoundariesStore {
         } catch (error) {
             console.error(error);
             runInAction(() => {
-                this.errorMarkCount = getErrorMessage(error, 'Ошибка загрузки административных границ');
+                this.errorMarkCount = notificationsStore.showError(error, 'Ошибка загрузки статистики по районам');
                 this.isLoadingMarksCount = false;
             });
-            notificationsStore.showError(this.errorMarkCount);
         }
     }
 }

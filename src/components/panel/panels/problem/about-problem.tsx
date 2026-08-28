@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import MarksService, { Mark, MarkStatusHistoryItem, MarkStatusType } from "../../../../services/MarksService";
+import MarksService, { MarkStatusHistoryItem, MarkStatusType } from "../../../../services/MarksService";
 import { Button } from "../../../button/button";
 import DoubleProgressBar from "../../../double-progress-bar/double-progress-bar";
 import { useNavigate } from "react-router-dom";
@@ -9,22 +9,6 @@ import user from "../../../../store/user";
 import Arrow from "../../../arrow/arrow";
 import markStatusesStore from "../../../../store/mark-statuses";
 import notificationsStore from "../../../../store/notifications";
-import { nullableInt } from "../../../../utils/nullable";
-
-export const emptyMark: Mark = {
-    mark_id: 0,
-    name: "",
-    geom: {
-        type: "Point",
-        coordinates: [0, 0]
-    },
-    mark_type_id: 1,
-    description: "",
-    user_id: 0,
-    mark_status_id: 0,
-    created_at: "",
-    updated_at: ""
-}
 
 export default function AboutProblem() {
     const navigate = useNavigate();
@@ -40,8 +24,7 @@ export default function AboutProblem() {
 
         groupHistoryItems.unshift(historyItem);
         // statuses with a parent are grouped under their parent status
-        const hasParent = markStatus !== undefined && nullableInt(markStatus.parent_id) !== null;
-        if (!hasParent) {
+        if (markStatus?.parent_id == null) {
             groups.unshift(groupHistoryItems);
             groupHistoryItems = [];
         }

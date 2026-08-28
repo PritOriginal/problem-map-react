@@ -53,15 +53,15 @@ export interface AddCheckResponsePayload {
 
 class ChecksService extends BaseService {
     public getCheckById(id: number): Promise<GetCheckByIdResponse> {
-        return fetch(`/api/checks/${id}`).then((response) => this.getResponse<GetCheckByIdResponse>(response))
+        return this.request<GetCheckByIdResponse>(`/api/checks/${id}`)
     }
 
     public getChecksByMarkId(markId: number): Promise<GetChecksByMarkIdResponse> {
-        return fetch(`/api/checks/mark/${markId}`).then((response) => this.getResponse<GetChecksByMarkIdResponse>(response))
+        return this.request<GetChecksByMarkIdResponse>(`/api/checks/mark/${markId}`)
     }
 
     public getChecksByUserId(userId: number): Promise<GetChecksByUserIdResponse> {
-        return fetch(`/api/checks/user/${userId}`).then((response) => this.getResponse<GetChecksByUserIdResponse>(response))
+        return this.request<GetChecksByUserIdResponse>(`/api/checks/user/${userId}`)
     }
 
     public addCheck(req: AddCheckRequest, photos: File[]): Promise<AddCheckResponse> {
@@ -73,10 +73,10 @@ class ChecksService extends BaseService {
             form.append("photos", photo)
         });
 
-        return this.fetchWithAuth("/api/checks", {
+        return this.requestWithAuth<AddCheckResponse>("/api/checks", {
             method: "POST",
             body: form
-        }).then((response) => this.getResponse<AddCheckResponse>(response))
+        })
     }
 }
 

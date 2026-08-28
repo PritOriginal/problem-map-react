@@ -4,7 +4,7 @@ import BaseService from "./BaseService";
 
 class TestService extends BaseService {
     ping() {
-        return fetch("/api/ping").then(this.getResponse);
+        return this.request("/api/ping");
     }
 }
 
@@ -15,7 +15,7 @@ function jsonResponse(body: unknown, status: number): Response {
     });
 }
 
-describe("parseResponse / BaseService.getResponse", () => {
+describe("parseResponse / BaseService.request", () => {
     afterEach(() => vi.unstubAllGlobals());
 
     it("resolves with the body on success", async () => {

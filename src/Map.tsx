@@ -34,7 +34,7 @@ import markTypesStore from "./store/mark-types";
 import panelStore from "./store/panel";
 import { useDeviceDetect } from "./utils/hooks";
 
-const YMAPS_API_KEY: string = import.meta.env.VITE_YMAPS_API_KEY ?? "";
+const YMAPS_API_KEY = import.meta.env.VITE_YMAPS_API_KEY ?? "";
 
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],

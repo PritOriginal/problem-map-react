@@ -8,8 +8,10 @@ class NotificationsStore {
         makeAutoObservable(this);
     }
 
-    showError = (error: unknown, fallback?: string) => {
+    /** Shows the error banner and returns the displayed message. */
+    showError = (error: unknown, fallback?: string): string => {
         this.error = getErrorMessage(error, fallback);
+        return this.error;
     }
 
     clear = () => {

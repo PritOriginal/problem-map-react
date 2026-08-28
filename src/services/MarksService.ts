@@ -1,8 +1,6 @@
 import BaseService, { IResponse } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
 import { Check } from "./ChecksService";
-import { NullableInt } from "../utils/nullable";
-import { getAccessToken, isAccessTokenValid } from "./tokens";
 
 
 export interface Mark {
@@ -25,8 +23,7 @@ export interface MarkType {
 export interface MarkStatus {
     mark_status_id: number;
     name: string;
-    /** guregu/null: number, null or `{ Int64, Valid }`; normalize with `nullableInt()`. */
-    parent_id: NullableInt;
+    parent_id: number | null;
 }
 
 export enum MarkStatusType {
@@ -105,8 +102,7 @@ export interface GetMarkStatusesResponsePayload {
 export interface MarkStatusHistoryItem {
     id: number;
     mark_id: number;
-    /** guregu/null: number, null or `{ V, Valid }`; normalize with `nullableInt()`. */
-    old_mark_status_id: NullableInt;
+    old_mark_status_id: number | null;
     new_mark_status_id: number;
     changed_at: string;
     checks?: Check[]; 
@@ -130,15 +126,15 @@ class MarksService extends BaseService {
             params.append("mark_status_ids", req.mark_status_ids.join(","));
         }
 
-        return fetch(`/api/marks?${params}`).then((response) => this.getResponse<GetMarksResponse>(response))
+        return this.request<GetMarksResponse>(`/api/marks?${params}`)
     }
 
     public getMarkById(id: number): Promise<GetMarkByIdResponse> {
-        return fetch(`/api/marks/${id}`).then((response) => this.getResponse<GetMarkByIdResponse>(response))
+        return this.request<GetMarkByIdResponse>(`/api/marks/${id}`)
     }
 
     public getMarksByUserId(userId: number): Promise<GetMarksByUserIdResponse> {
-        return fetch(`/api/marks/user/${userId}`).then((response) => this.getResponse<GetMarksByUserIdResponse>(response))
+        return this.request<GetMarksByUserIdResponse>(`/api/marks/user/${userId}`)
     }
 
     public addMark(req: AddMarkRequest, photos: File[]): Promise<AddMarkResponse> {
@@ -151,27 +147,22 @@ class MarksService extends BaseService {
             form.append("photos", photo)
         });
 
-        return this.fetchWithAuth("/api/marks", {
+        return this.requestWithAuth<AddMarkResponse>("/api/marks", {
             method: "POST",
             body: form
-        }).then((response) => this.getResponse<AddMarkResponse>(response))
+        })
     }
 
     public getMarkTypes(): Promise<GetMarkTypesResponse> {
-        return fetch("/api/marks/types").then((response) => this.getResponse<GetMarkTypesResponse>(response))
+        return this.request<GetMarkTypesResponse>("/api/marks/types")
     }
 
     public getMarkStatuses(): Promise<GetMarkStatusesResponse> {
-        return fetch("/api/marks/statuses").then((response) => this.getResponse<GetMarkStatusesResponse>(response))
+        return this.request<GetMarkStatusesResponse>("/api/marks/statuses")
     }
 
     public getMarkStatusHistoryByMarkId(id: number, withChecks: boolean): Promise<GetMarkStatusHistoryByMarkIdResponse> {
-        return fetch(`/api/marks/${id}/status-history?withChecks=${withChecks}`).then((response) => this.getResponse<GetMarkStatusHistoryByMarkIdResponse>(response))
-    }
-
-    /** @deprecated use `ensureAccessToken()` / `isAccessTokenValid()` from `services/tokens`. */
-    public checkAccessToken(): boolean {
-        return isAccessTokenValid(getAccessToken());
+        return this.request<GetMarkStatusHistoryByMarkIdResponse>(`/api/marks/${id}/status-history?withChecks=${withChecks}`)
     }
 }
 

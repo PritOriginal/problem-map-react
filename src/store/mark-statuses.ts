@@ -1,6 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import MarksService, { MarkStatus } from '../services/MarksService';
-import { getErrorMessage } from '../services/http';
 import notificationsStore from './notifications';
 
 class MarkStatusesStore {
@@ -24,10 +23,9 @@ class MarkStatusesStore {
         } catch (error) {
             console.error(error);
             runInAction(() => {
-                this.error = getErrorMessage(error, 'Ошибка загрузки типов меток');
+                this.error = notificationsStore.showError(error, 'Ошибка загрузки статусов меток');
                 this.isLoading = false;
             });
-            notificationsStore.showError(this.error);
         }
     }
 }

@@ -2,17 +2,16 @@ import { ApiError, IResponse, parseResponse } from "./http";
 import { ensureAccessToken, getAccessToken, refreshTokens, signOut } from "./tokens";
 
 export type { IResponse } from "./http";
-export { ApiError } from "./http";
 
 class BaseService {
-    /** Parses a response; rejects with ApiError on failure. */
-    protected getResponse<T extends IResponse = IResponse>(response: Response): Promise<T> {
-        return parseResponse<T>(response);
+    /** Performs a request and parses the response; rejects with ApiError on failure. */
+    protected request<T extends IResponse = IResponse>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+        return fetch(input, init).then((response) => parseResponse<T>(response));
     }
 
-    /** Returns a valid access token, refreshing it if needed (throws ApiError(401) otherwise). */
-    protected ensureAccessToken(): Promise<string> {
-        return ensureAccessToken();
+    /** Same as `request`, but authenticated (see `fetchWithAuth`). */
+    protected requestWithAuth<T extends IResponse = IResponse>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+        return this.fetchWithAuth(input, init).then((response) => parseResponse<T>(response));
     }
 
     /**
@@ -23,16 +22,14 @@ class BaseService {
      * are cleared and ApiError(401) is thrown; a second 401 after the retry also signs out.
      */
     protected async fetchWithAuth(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-        const token = await this.ensureAccessToken();
+        const token = await ensureAccessToken();
         let response = await fetch(input, this.withBearer(init, token));
 
         if (response.status === 401) {
-            const alreadyRotated = getAccessToken() !== token;
-            if (!alreadyRotated && !(await refreshTokens())) {
+            if (getAccessToken() === token && !(await refreshTokens())) {
                 throw new ApiError("Требуется авторизация", 401);
             }
-            const newToken = await this.ensureAccessToken();
-            response = await fetch(input, this.withBearer(init, newToken));
+            response = await fetch(input, this.withBearer(init, await ensureAccessToken()));
             if (response.status === 401) {
                 signOut();
             }

@@ -56,12 +56,8 @@ const ProblemPanel = observer(() => {
 
 
     useEffect(() => {
-        const markIdParam = Number(params.id);
-        if (mark.mark_id === markIdParam) {
-            return;
-        }
         let ignore = false;
-        MarksService.getMarkById(markIdParam)
+        MarksService.getMarkById(Number(params.id))
             .then((data) => {
                 if (!ignore) {
                     setMark(data.payload.mark);
@@ -77,7 +73,7 @@ const ProblemPanel = observer(() => {
         return () => {
             ignore = true;
         };
-    }, [params, mark.mark_id])
+    }, [params.id])
 
     return (
         <MarkContext.Provider value={mark}>

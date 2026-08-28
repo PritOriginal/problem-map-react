@@ -1,6 +1,7 @@
 import { jwtDecode } from "jwt-decode";
 import { ApiError, IResponse, parseResponse } from "./http";
 import user from "../store/user";
+import { getRoleFromToken } from "../utils/role";
 
 export const ACCESS_TOKEN_KEY = "access_token";
 export const REFRESH_TOKEN_KEY = "refresh_token";
@@ -95,6 +96,7 @@ async function doRefresh(): Promise<boolean> {
         });
         const data = await parseResponse<RefreshTokensResponse>(response);
         saveTokens(data.payload.access_token, data.payload.refresh_token);
+        user.setRole(getRoleFromToken(data.payload.access_token));
         return true;
     } catch (error) {
         console.error("Failed to refresh tokens:", error);

@@ -99,6 +99,12 @@ export interface GetMarkStatusesResponsePayload {
     mark_statuses: MarkStatus[]
 }
 
+export interface ModerateMarkResponse extends IResponse {
+    payload: {
+        new_mark_staus_id: number;
+    };
+}
+
 export interface MarkStatusHistoryItem {
     id: number;
     mark_id: number;
@@ -151,6 +157,16 @@ class MarksService extends BaseService {
             method: "POST",
             body: form
         })
+    }
+
+    /** Moderator/admin only: confirms the mark and moves it to a new status. */
+    public confirmMark(id: number): Promise<ModerateMarkResponse> {
+        return this.requestWithAuth<ModerateMarkResponse>(`/api/marks/${id}/confirm`, { method: "POST" })
+    }
+
+    /** Moderator/admin only: rejects the mark and moves it to a new status. */
+    public rejectMark(id: number): Promise<ModerateMarkResponse> {
+        return this.requestWithAuth<ModerateMarkResponse>(`/api/marks/${id}/reject`, { method: "POST" })
     }
 
     public getMarkTypes(): Promise<GetMarkTypesResponse> {

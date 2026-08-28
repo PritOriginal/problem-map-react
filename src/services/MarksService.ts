@@ -1,8 +1,8 @@
-import { jwtDecode } from "jwt-decode";
 import BaseService, { IResponse } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
-import AuthService from "./AuthService";
 import { Check } from "./ChecksService";
+import { NullableInt } from "../utils/nullable";
+import { getAccessToken, isAccessTokenValid } from "./tokens";
 
 
 export interface Mark {
@@ -10,8 +10,8 @@ export interface Mark {
     name: string;
     geom: PointGeometry,
     mark_type_id: number;
+    description: string;
     user_id: number;
-    district_id: number;
     mark_status_id: number;
     created_at: string;
     updated_at: string;
@@ -25,7 +25,8 @@ export interface MarkType {
 export interface MarkStatus {
     mark_status_id: number;
     name: string;
-    parent_id: number | undefined;
+    /** guregu/null: number, null or `{ Int64, Valid }`; normalize with `nullableInt()`. */
+    parent_id: NullableInt;
 }
 
 export enum MarkStatusType {
@@ -104,7 +105,8 @@ export interface GetMarkStatusesResponsePayload {
 export interface MarkStatusHistoryItem {
     id: number;
     mark_id: number;
-    old_mark_status_id: number;
+    /** guregu/null: number, null or `{ V, Valid }`; normalize with `nullableInt()`. */
+    old_mark_status_id: NullableInt;
     new_mark_status_id: number;
     changed_at: string;
     checks?: Check[]; 
@@ -119,13 +121,6 @@ export interface GetMarkStatusHistoryByMarkIdResponsePayload {
 }
 
 class MarksService extends BaseService {
-    AuthService: typeof AuthService;
-
-    constructor() {
-        super();
-        this.AuthService = AuthService;
-    }
-
     public getMarks(req: GetMarksRequest): Promise<GetMarksResponse> {
         const params = new URLSearchParams();
         if (req.mark_type_ids.length > 0) {
@@ -135,70 +130,48 @@ class MarksService extends BaseService {
             params.append("mark_status_ids", req.mark_status_ids.join(","));
         }
 
-        return fetch(`/api/marks?${params}`).then(this.getResponse)
+        return fetch(`/api/marks?${params}`).then((response) => this.getResponse<GetMarksResponse>(response))
     }
 
     public getMarkById(id: number): Promise<GetMarkByIdResponse> {
-        return fetch(`/api/marks/${id}`).then(this.getResponse)
+        return fetch(`/api/marks/${id}`).then((response) => this.getResponse<GetMarkByIdResponse>(response))
     }
 
     public getMarksByUserId(userId: number): Promise<GetMarksByUserIdResponse> {
-        return fetch(`/api/marks/user/${userId}`).then(this.getResponse)
+        return fetch(`/api/marks/user/${userId}`).then((response) => this.getResponse<GetMarksByUserIdResponse>(response))
     }
 
-    public async addMark(req: AddMarkRequest, photos: File[]): Promise<AddMarkResponse> {
-        let userIsAuthorized = true;
-        if (!this.checkAccessToken()) {
-            userIsAuthorized = await this.AuthService.refreshTokens();
-        }
-        if (userIsAuthorized) {
-            const bearer = 'Bearer ' + localStorage.getItem('access_token');
+    public addMark(req: AddMarkRequest, photos: File[]): Promise<AddMarkResponse> {
+        const form = new FormData();
+        form.append("longitude", req.point.longitude.toString());
+        form.append("latitude", req.point.latitude.toString());
+        form.append("mark_type_id", req.mark_type_id.toString());
+        form.append("description", req.description);
+        photos.forEach(photo => {
+            form.append("photos", photo)
+        });
 
-            const form = new FormData();
-            form.append("longitude", req.point.longitude.toString());
-            form.append("latitude", req.point.latitude.toString());
-            form.append("mark_type_id", req.mark_type_id.toString());
-            form.append("description", req.description);
-            photos.forEach(photo => {
-                form.append("photos", photo)
-            });
-
-            return fetch("/api/marks", {
-                method: "POST",
-                headers: {
-                    'Authorization': bearer,
-                },
-                body: form
-            }).then(this.getResponse)
-        } else {
-            return Promise.reject();
-        }
+        return this.fetchWithAuth("/api/marks", {
+            method: "POST",
+            body: form
+        }).then((response) => this.getResponse<AddMarkResponse>(response))
     }
 
     public getMarkTypes(): Promise<GetMarkTypesResponse> {
-        return fetch("/api/marks/types").then(this.getResponse)
+        return fetch("/api/marks/types").then((response) => this.getResponse<GetMarkTypesResponse>(response))
     }
 
     public getMarkStatuses(): Promise<GetMarkStatusesResponse> {
-        return fetch("/api/marks/statuses").then(this.getResponse)
+        return fetch("/api/marks/statuses").then((response) => this.getResponse<GetMarkStatusesResponse>(response))
     }
 
     public getMarkStatusHistoryByMarkId(id: number, withChecks: boolean): Promise<GetMarkStatusHistoryByMarkIdResponse> {
-        return fetch(`/api/marks/${id}/status-history?withChecks=${withChecks}`).then(this.getResponse)
+        return fetch(`/api/marks/${id}/status-history?withChecks=${withChecks}`).then((response) => this.getResponse<GetMarkStatusHistoryByMarkIdResponse>(response))
     }
 
+    /** @deprecated use `ensureAccessToken()` / `isAccessTokenValid()` from `services/tokens`. */
     public checkAccessToken(): boolean {
-        const access_token = localStorage.getItem('access_token');
-        if (access_token) {
-            const payload = jwtDecode(access_token);
-            const dateNow = new Date();
-            if (payload.exp! < dateNow.getTime()) {
-                return false
-            }
-        } else {
-            return false
-        }
-        return true
+        return isAccessTokenValid(getAccessToken());
     }
 }
 

@@ -3,6 +3,8 @@ import { Button } from "../../button/button";
 import AuthService, { SignInRequest } from "../../../services/AuthService";
 import { jwtDecode } from "jwt-decode";
 import user from "../../../store/user";
+import notificationsStore from "../../../store/notifications";
+import { saveTokens } from "../../../services/tokens";
 import { Link, useNavigate } from "react-router-dom";
 import panelStore from "../../../store/panel";
 
@@ -28,15 +30,15 @@ export default function SignIn() {
 
         AuthService.signIn(req)
             .then((data) => {
-                console.log(data.payload)
                 const payload = jwtDecode(data.payload.access_token)
-                localStorage.setItem('access_token', data.payload.access_token);
-                localStorage.setItem('refresh_token', data.payload.refresh_token);
+                saveTokens(data.payload.access_token, data.payload.refresh_token);
+                notificationsStore.clear();
                 user.setUser(login, Number(payload.sub));
                 navigate(-1);
             })
-            .catch(function (error) {
-                console.log(error);
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, "Ошибка авторизации");
             });
     }
 

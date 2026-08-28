@@ -1,5 +1,5 @@
-import user from "../store/user"
 import BaseService, { IResponse } from "./BaseService"
+import { refreshTokens } from "./tokens"
 
 export interface SignUpRequest {
     username: string
@@ -50,7 +50,7 @@ class AuthService extends BaseService {
                 'Content-Type': 'application/json;charset=utf-8',
             },
             body: JSON.stringify(req),
-        }).then(this.getResponse)
+        }).then((response) => this.getResponse<SignUpResponse>(response))
     }
 
     public signIn(req: SignInRequest): Promise<SignInResponse> {
@@ -60,35 +60,12 @@ class AuthService extends BaseService {
                 'Content-Type': 'application/json;charset=utf-8',
             },
             body: JSON.stringify(req),
-        }).then(this.getResponse)
+        }).then((response) => this.getResponse<SignInResponse>(response))
     }
 
-    public async refreshTokens() {
-        const refresh_token = localStorage.getItem('refresh_token');
-        if (refresh_token !== null) {
-            const req: RefreshTokensRequest = {
-                refresh_token: refresh_token
-            };
-
-            try {
-                const response = await fetch("/api/auth/tokens/refresh", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json;charset=utf-8',
-                    },
-                    body: JSON.stringify(req),
-                });
-
-                const data: RefreshTokensResponse = await this.getResponse(response);
-                localStorage.setItem('access_token', data.payload.access_token);
-                localStorage.setItem('refresh_token', data.payload.refresh_token);
-                return true;
-            } catch (error) {
-                console.log(error);
-                user.resetUser();
-            }
-        }
-        return false;
+    /** Refreshes the token pair. On failure tokens and the user store are cleared. */
+    public refreshTokens(): Promise<boolean> {
+        return refreshTokens();
     }
 }
 

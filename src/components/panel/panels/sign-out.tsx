@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Button } from "../../button/button";
 import user from "../../../store/user";
+import { signOut } from "../../../services/tokens";
 import { useNavigate } from "react-router-dom";
 import panelStore from "../../../store/panel";
 
@@ -16,7 +17,7 @@ export default function Profile() {
     const navigate = useNavigate();
 
     const onClickSignOut = () => {
-        user.resetUser();
+        signOut();
         navigate(-1);
     }
 

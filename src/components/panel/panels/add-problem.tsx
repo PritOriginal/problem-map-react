@@ -48,6 +48,11 @@ const AddProblem = observer(function AddProblem() {
     const addMark = () => {
         if (selectedMarkType && photos.length > 0) {
             const req: AddMarkRequest = {
+                // ВНИМАНИЕ: намеренная «перестановка». selectedPoint.coords — ymaps3 LngLat = [lng, lat].
+                // Бэкенд (handler/marks AddMark) собирает точку как geom.Coord{Latitude, Longitude},
+                // т.е. кладёт поле latitude в X (долгота), а longitude — в Y (широта). Чтобы в БД
+                // оказалась корректная точка (X=lng, Y=lat), сюда нужно отправлять поля крест-накрест.
+                // Если бэкенд исправят на Coord{Longitude, Latitude} — здесь надо поменять индексы местами.
                 point: {
                     longitude: selectedPoint.coords[1],
                     latitude: selectedPoint.coords[0]

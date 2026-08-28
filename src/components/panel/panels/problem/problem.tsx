@@ -1,29 +1,18 @@
 import { Outlet, useParams } from "react-router-dom";
 import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
-import { createContext, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../../../store/panel";
 import notificationsStore from "../../../../store/notifications";
+import selectedMark from "../../../../store/selected_mark";
+import marksStore from "../../../../store/marks";
+import { LngLat } from "@yandex/ymaps3-types";
+import { MarkContext, MarkReloadContext, emptyMark } from "./mark-context";
 
-export const emptyMark: Mark = {
-    mark_id: 0,
-    name: "",
-    geom: {
-        type: "Point",
-        coordinates: [0, 0]
-    },
-    mark_type_id: 1,
-    description: "",
-    user_id: 0,
-    mark_status_id: 0,
-    created_at: "",
-    updated_at: ""
-}
-
-export const MarkContext = createContext<Mark>(emptyMark)
+export { MarkContext, emptyMark } from "./mark-context";
 
 const ProblemPanel = observer(() => {
     const params = useParams();
@@ -31,6 +20,11 @@ const ProblemPanel = observer(() => {
     const panelHeaderRef = useRef<HTMLDivElement>(null);
 
     const [mark, setMark] = useState<Mark>(emptyMark);
+    const [version, setVersion] = useState(0);
+    const reload = useCallback(() => {
+        setVersion((v) => v + 1);
+        marksStore.fetch();
+    }, []);
 
     useEffect(() => {
         if (panelHeaderRef.current) {
@@ -60,7 +54,9 @@ const ProblemPanel = observer(() => {
         MarksService.getMarkById(Number(params.id))
             .then((data) => {
                 if (!ignore) {
-                    setMark(data.payload.mark);
+                    const loaded = data.payload.mark;
+                    setMark(loaded);
+                    selectedMark.setLoadedCoords(loaded.mark_id, loaded.geom.coordinates as LngLat);
                 }
             })
             .catch((error) => {
@@ -73,10 +69,11 @@ const ProblemPanel = observer(() => {
         return () => {
             ignore = true;
         };
-    }, [params.id])
+    }, [params.id, version])
 
     return (
         <MarkContext.Provider value={mark}>
+        <MarkReloadContext.Provider value={reload}>
             <div
                 ref={panelHeaderRef}
                 className="panel__header"
@@ -97,6 +94,7 @@ const ProblemPanel = observer(() => {
             <div className="panel__content">
                 <Outlet />
             </div>
+        </MarkReloadContext.Provider>
         </MarkContext.Provider>
     );
 });

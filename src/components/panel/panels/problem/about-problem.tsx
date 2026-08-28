@@ -1,19 +1,21 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import MarksService, { MarkStatusHistoryItem, MarkStatusType } from "../../../../services/MarksService";
 import { Button } from "../../../button/button";
 import DoubleProgressBar from "../../../double-progress-bar/double-progress-bar";
 import { useNavigate } from "react-router-dom";
 import { Check } from "../../../../services/ChecksService";
-import { MarkContext } from "./problem";
+import { MarkContext, MarkReloadContext } from "./mark-context";
+import { observer } from "mobx-react-lite";
 import user from "../../../../store/user";
 import Arrow from "../../../arrow/arrow";
 import markStatusesStore from "../../../../store/mark-statuses";
 import notificationsStore from "../../../../store/notifications";
 
-export default function AboutProblem() {
+const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigate();
 
     const mark = useContext(MarkContext)
+    const reload = useContext(MarkReloadContext)
     const [historyItems, setHistoryItems] = useState<MarkStatusHistoryItem[]>([])
 
     const groups: MarkStatusHistoryItem[][] = []
@@ -76,6 +78,8 @@ export default function AboutProblem() {
 
     return (
         <>
+            <ShareButton />
+            {user.isModerator && mark.mark_id !== 0 && <ModerationBlock markId={mark.mark_id} onDone={reload} />}
             {mark.description !== "" &&
                 <>
                     <p style={{ fontSize: 18 }}><b>Описание</b></p>
@@ -96,6 +100,92 @@ export default function AboutProblem() {
                 </div>
             }
         </>
+    );
+});
+
+export default AboutProblem;
+
+const MODERATABLE_STATUSES = [
+    MarkStatusType.UnconfirmedStatus,
+    MarkStatusType.ConfirmedStatus,
+    MarkStatusType.UnderReviewStatus,
+    MarkStatusType.RediscoveredStatus,
+];
+
+function ModerationBlock({ markId, onDone }: { markId: number, onDone: () => void }) {
+    const mark = useContext(MarkContext);
+    const [pending, setPending] = useState<"confirm" | "reject" | null>(null);
+
+    if (!MODERATABLE_STATUSES.includes(mark.mark_status_id)) {
+        return null;
+    }
+
+    const moderate = (action: "confirm" | "reject") => {
+        const question = action === "confirm"
+            ? `Подтвердить проблему №${markId}?`
+            : `Отклонить проблему №${markId}?`;
+        if (!window.confirm(question)) {
+            return;
+        }
+        setPending(action);
+        const request = action === "confirm" ? MarksService.confirmMark(markId) : MarksService.rejectMark(markId);
+        request
+            .then(() => {
+                notificationsStore.clear();
+                onDone();
+            })
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, action === "confirm" ? "Не удалось подтвердить проблему" : "Не удалось отклонить проблему");
+            })
+            .finally(() => setPending(null));
+    };
+
+    return (
+        <>
+            <p style={{ fontSize: 18 }}><b>Модерация</b></p>
+            <div style={{ display: "flex", gap: "8px" }}>
+                <Button style="green" disabled={pending !== null} onClick={() => moderate("confirm")}>
+                    {pending === "confirm" ? "Подтверждаем…" : "Подтвердить"}
+                </Button>
+                <Button style="red" disabled={pending !== null} onClick={() => moderate("reject")}>
+                    {pending === "reject" ? "Отклоняем…" : "Отклонить"}
+                </Button>
+            </div>
+            <hr />
+        </>
+    );
+}
+
+function ShareButton() {
+    const [copied, setCopied] = useState(false);
+    const timer = useRef<number | undefined>(undefined);
+
+    useEffect(() => () => window.clearTimeout(timer.current), []);
+
+    const share = async () => {
+        const url = window.location.href;
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                window.prompt("Скопируйте ссылку", url);
+            }
+            setCopied(true);
+            window.clearTimeout(timer.current);
+            timer.current = window.setTimeout(() => setCopied(false), 2000);
+        } catch (error) {
+            console.error(error);
+            notificationsStore.showError(error, "Не удалось скопировать ссылку");
+        }
+    };
+
+    return (
+        <div>
+            <Button style="white-2-black" isMini onClick={share}>
+                {copied ? "Ссылка скопирована" : "Поделиться"}
+            </Button>
+        </div>
     );
 }
 

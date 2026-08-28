@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { Button } from "../../../button/button";
 import { observer } from "mobx-react-lite";
 import ChecksService, { AddCheckRequest } from "../../../../services/ChecksService";
-import { MarkContext } from "./problem";
+import { MarkContext } from "./mark-context";
 import { useNavigate } from "react-router-dom";
 import SelectFiles from "../../../SelectFiles";
 import user from "../../../../store/user";

@@ -172,7 +172,6 @@ const Map = observer(() => {
       { fireImmediately: true },
     );
     return dispose;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

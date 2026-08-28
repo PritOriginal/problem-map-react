@@ -1,0 +1,29 @@
+.error-banner {
+    margin: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background-color: #ffe5e5;
+    border: 1px solid #ff8a8a;
+    color: #a40000;
+
+    &__text {
+        margin: 0;
+        font-size: 14px;
+        word-break: break-word;
+    }
+
+    &__close {
+        flex-shrink: 0;
+        border: none;
+        background: none;
+        color: inherit;
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+    }
+}

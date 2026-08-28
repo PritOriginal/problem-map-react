@@ -8,6 +8,8 @@ import { MarkContext } from "./problem";
 import user from "../../../../store/user";
 import Arrow from "../../../arrow/arrow";
 import markStatusesStore from "../../../../store/mark-statuses";
+import notificationsStore from "../../../../store/notifications";
+import { nullableInt } from "../../../../utils/nullable";
 
 export const emptyMark: Mark = {
     mark_id: 0,
@@ -17,8 +19,8 @@ export const emptyMark: Mark = {
         coordinates: [0, 0]
     },
     mark_type_id: 1,
+    description: "",
     user_id: 0,
-    district_id: 0,
     mark_status_id: 0,
     created_at: "",
     updated_at: ""
@@ -37,8 +39,9 @@ export default function AboutProblem() {
         const markStatus = markStatusesStore.statuses.find((satus) => satus.mark_status_id == historyItem.new_mark_status_id);
 
         groupHistoryItems.unshift(historyItem);
-        if (markStatus && markStatus.parent_id) {
-        } else {
+        // statuses with a parent are grouped under their parent status
+        const hasParent = markStatus !== undefined && nullableInt(markStatus.parent_id) !== null;
+        if (!hasParent) {
             groups.unshift(groupHistoryItems);
             groupHistoryItems = [];
         }
@@ -65,11 +68,11 @@ export default function AboutProblem() {
         if (mark.mark_id !== 0) {
             MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true)
                 .then((data) => {
-                    console.log(data.payload.items);
                     setHistoryItems(data.payload.items);
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
+                    notificationsStore.showError(error, "Не удалось загрузить историю проблемы");
                 })
         }
     }, [mark])
@@ -80,6 +83,13 @@ export default function AboutProblem() {
 
     return (
         <>
+            {mark.description !== "" &&
+                <>
+                    <p style={{ fontSize: 18 }}><b>Описание</b></p>
+                    <p style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{mark.description}</p>
+                    <hr />
+                </>
+            }
             <p style={{ fontSize: 18 }}><b>История</b></p>
             <hr />
             {groups.map((group, index) => (

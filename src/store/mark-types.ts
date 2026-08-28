@@ -1,5 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import MarksService, { MarkType } from '../services/MarksService';
+import { getErrorMessage } from '../services/http';
+import notificationsStore from './notifications';
 
 class MarkTypesStore {
     types: MarkType[] = [];
@@ -20,9 +22,12 @@ class MarkTypesStore {
                 this.isLoading = false;
             });
         } catch (error) {
-            console.log(error);
-            this.error = 'Ошибка загрузки типов меток';
-            this.isLoading = false;
+            console.error(error);
+            runInAction(() => {
+                this.error = getErrorMessage(error, 'Ошибка загрузки типов меток');
+                this.isLoading = false;
+            });
+            notificationsStore.showError(this.error);
         }
     }
 } 

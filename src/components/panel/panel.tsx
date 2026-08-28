@@ -21,6 +21,7 @@ import selectedPoint from "../../store/selected_point";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../store/panel";
 import { useDeviceDetect } from "../../utils/hooks";
+import ErrorBanner from "../error-banner/error-banner";
 export default function PanelRoute() {
     return (
         <Routes>
@@ -83,6 +84,7 @@ const Panel = observer(() => {
                             </div>
                         </div>
                     }
+                    <ErrorBanner />
                     <Outlet />
                 </div >
                 :

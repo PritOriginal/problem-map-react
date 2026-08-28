@@ -11,6 +11,7 @@ import user from "../../../store/user";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import markTypesStore from "../../../store/mark-types";
 import panelStore from "../../../store/panel";
+import notificationsStore from "../../../store/notifications";
 import { useDeviceDetect } from "../../../utils/hooks";
 
 const AddProblem = observer(function AddProblem() {
@@ -57,13 +58,14 @@ const AddProblem = observer(function AddProblem() {
 
             MarksService.addMark(req, photos)
                 .then((data) => {
-                    console.log(data.payload);
+                    notificationsStore.clear();
                     marksStore.fetch();
                     panelStore.setOpen(false);
                     navigate(`/problem/${data.payload.mark_id}`);
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
+                    notificationsStore.showError(error, "Не удалось отметить проблему");
                 })
         }
     }

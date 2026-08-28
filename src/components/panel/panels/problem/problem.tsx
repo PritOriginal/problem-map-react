@@ -6,6 +6,7 @@ import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../../../store/panel";
+import notificationsStore from "../../../../store/notifications";
 
 export const emptyMark: Mark = {
     mark_id: 0,
@@ -15,8 +16,8 @@ export const emptyMark: Mark = {
         coordinates: [0, 0]
     },
     mark_type_id: 1,
+    description: "",
     user_id: 0,
-    district_id: 0,
     mark_status_id: 0,
     created_at: "",
     updated_at: ""
@@ -45,7 +46,7 @@ const ProblemPanel = observer(() => {
         }
     }
 
-    let markStatus: MarkStatus = { mark_status_id: 0, parent_id: 0, name: "Статус" };
+    let markStatus: MarkStatus = { mark_status_id: 0, parent_id: null, name: "Статус" };
     if (markStatusesStore.statuses.length > 0 && mark.mark_status_id !== 0) {
         const findStatus = markStatusesStore.statuses.find((status) => status.mark_status_id == mark.mark_status_id);
         if (findStatus) {
@@ -59,13 +60,13 @@ const ProblemPanel = observer(() => {
         if (mark.mark_id === 0 || mark.mark_id !== markIdParam)
             MarksService.getMarkById(markIdParam)
                 .then((data) => {
-                    console.log(data.payload.mark);
                     setMark(data.payload.mark)
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
+                    notificationsStore.showError(error, "Не удалось загрузить проблему");
                 })
-    }, [params])
+    }, [params, mark.mark_id])
 
     return (
         <MarkContext.Provider value={mark}>
@@ -75,15 +76,15 @@ const ProblemPanel = observer(() => {
                 onClick={() => panelStore.toggle()}
             >
                 <div className="panel__header__status">
-                    <div style={{ border: `2px solid ${COLOR_MARK_STATUSES[markStatus?.mark_status_id!]}`, backgroundColor: "#fff", borderRadius: "4px", padding: "4px" }}>
-                        <p style={{ color: "#000" }}><b>{markStatus?.name}</b></p>
+                    <div style={{ border: `2px solid ${COLOR_MARK_STATUSES[markStatus.mark_status_id]}`, backgroundColor: "#fff", borderRadius: "4px", padding: "4px" }}>
+                        <p style={{ color: "#000" }}><b>{markStatus.name}</b></p>
                     </div>
                 </div>
                 <p style={{ fontSize: "12px" }}>№{mark.mark_id}</p>
                 <p style={{ fontSize: 12 }}>Координаты: <b>{mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}</b></p>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
-                    <p style={{ fontSize: 14 }}><b>{markType?.name}</b></p>
+                    <p style={{ fontSize: 14 }}><b>{markType.name}</b></p>
                 </div>
             </div>
             <div className="panel__content">

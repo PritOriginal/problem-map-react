@@ -40,6 +40,12 @@ class MarksStore {
         }
     }
 
+    /** Replaces both filter lists without fetching (used to apply filters from the URL). */
+    setFilters = (filters: GetMarksRequest) => {
+        this.filters.mark_type_ids = [...filters.mark_type_ids];
+        this.filters.mark_status_ids = [...filters.mark_status_ids];
+    }
+
     updateMarkType = (markTypeId: number) => {
         const index = this.filters.mark_type_ids.indexOf(markTypeId);
         if (index !== -1) {

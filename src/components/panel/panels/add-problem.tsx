@@ -4,7 +4,7 @@ import Select from 'react-select';
 import { Button } from "../../button/button";
 import { observer } from "mobx-react-lite";
 import selectedPoint from "../../../store/selected_point";
-import { useNavigate } from "react-router-dom";
+import { useNavigateKeepSearch } from "../../../utils/navigation";
 import SelectFiles from "../../SelectFiles";
 import marksStore from "../../../store/marks";
 import user from "../../../store/user";
@@ -28,7 +28,7 @@ const AddProblem = observer(function AddProblem() {
         }
     }, [isMobile]);
 
-    const navigate = useNavigate();
+    const navigate = useNavigateKeepSearch();
 
     const markTypesOptions = markTypesStore.types.map((type) => ({
         value: type.mark_type_id,

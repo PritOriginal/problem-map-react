@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import MarksService, { MarkStatusHistoryItem, MarkStatusType } from "../../../../services/MarksService";
 import { Button } from "../../../button/button";
 import DoubleProgressBar from "../../../double-progress-bar/double-progress-bar";
-import { useNavigate } from "react-router-dom";
+import { useNavigateKeepSearch } from "../../../../utils/navigation";
 import { Check } from "../../../../services/ChecksService";
 import { MarkContext, MarkReloadContext } from "./mark-context";
 import { observer } from "mobx-react-lite";
@@ -12,7 +12,7 @@ import markStatusesStore from "../../../../store/mark-statuses";
 import notificationsStore from "../../../../store/notifications";
 
 const AboutProblem = observer(function AboutProblem() {
-    const navigate = useNavigate();
+    const navigate = useNavigateKeepSearch();
 
     const mark = useContext(MarkContext)
     const reload = useContext(MarkReloadContext)

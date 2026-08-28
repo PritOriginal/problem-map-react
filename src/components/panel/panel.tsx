@@ -5,7 +5,6 @@ import {
     Route,
     useLocation,
     Outlet,
-    useNavigate,
     useParams,
 } from "react-router-dom";
 import AboutProblem from "./panels/problem/about-problem";
@@ -21,6 +20,7 @@ import selectedPoint from "../../store/selected_point";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../store/panel";
 import { useDeviceDetect } from "../../utils/hooks";
+import { useNavigateKeepSearch } from "../../utils/navigation";
 import ErrorBanner from "../error-banner/error-banner";
 export default function PanelRoute() {
     return (
@@ -44,7 +44,7 @@ const Panel = observer(() => {
     const { isMobile } = useDeviceDetect();
 
     const location = useLocation();
-    const navigate = useNavigate();
+    const navigate = useNavigateKeepSearch();
     const params = useParams();
 
     useEffect(() => {

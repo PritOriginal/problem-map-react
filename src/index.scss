@@ -197,6 +197,16 @@ a {
   }
 }
 
+.locate-button {
+  position: absolute;
+  right: 16px;
+  bottom: 88px;
+
+  @include mobile {
+    bottom: calc(80px + var(--panel-header-height));
+  }
+}
+
 .circle-button {
   align-content: center;
 

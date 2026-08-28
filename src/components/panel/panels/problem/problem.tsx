@@ -12,7 +12,6 @@ import marksStore from "../../../../store/marks";
 import { LngLat } from "@yandex/ymaps3-types";
 import { MarkContext, MarkReloadContext, emptyMark } from "./mark-context";
 
-export { MarkContext, emptyMark } from "./mark-context";
 
 const ProblemPanel = observer(() => {
     const params = useParams();

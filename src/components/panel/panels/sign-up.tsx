@@ -36,7 +36,7 @@ export default function SignUp() {
             })
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, "Ошибка авторизации");
+                notificationsStore.showError(error, "Ошибка регистрации");
             });
     }
 

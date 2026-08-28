@@ -62,7 +62,10 @@ let refreshInFlight: Promise<boolean> | null = null;
 
 /**
  * Refreshes the token pair using the stored refresh token.
- * Returns true on success. On failure clears tokens and the user store.
+ * Resolves `true` on success. Resolves `false` when the backend rejects the refresh token
+ * (or there is none) — in that case tokens and the user store are cleared.
+ * Rejects on transport / server errors, keeping the stored tokens so a transient
+ * failure does not sign the user out.
  * Concurrent calls share one in-flight request.
  */
 export function refreshTokens(): Promise<boolean> {
@@ -95,8 +98,11 @@ async function doRefresh(): Promise<boolean> {
         return true;
     } catch (error) {
         console.error("Failed to refresh tokens:", error);
-        signOut();
-        return false;
+        if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+            signOut();
+            return false;
+        }
+        throw error;
     }
 }
 

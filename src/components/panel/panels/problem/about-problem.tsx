@@ -65,16 +65,26 @@ export default function AboutProblem() {
     }
 
     useEffect(() => {
-        if (mark.mark_id !== 0) {
-            MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true)
-                .then((data) => {
-                    setHistoryItems(data.payload.items);
-                })
-                .catch((error) => {
-                    console.error(error);
-                    notificationsStore.showError(error, "Не удалось загрузить историю проблемы");
-                })
+        if (mark.mark_id === 0) {
+            return;
         }
+        let ignore = false;
+        MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true)
+            .then((data) => {
+                if (!ignore) {
+                    setHistoryItems(data.payload.items);
+                }
+            })
+            .catch((error) => {
+                if (ignore) {
+                    return;
+                }
+                console.error(error);
+                notificationsStore.showError(error, "Не удалось загрузить историю проблемы");
+            });
+        return () => {
+            ignore = true;
+        };
     }, [mark])
 
     const handleOnClickNewCheck = () => {

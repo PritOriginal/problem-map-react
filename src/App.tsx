@@ -7,7 +7,7 @@ import PanelRoute from './components/panel/panel';
 export default function App() {
 
   useEffect(() => {
-    AuthService.refreshTokens();
+    AuthService.refreshTokens().catch(console.error);
   }, [])
 
   return (

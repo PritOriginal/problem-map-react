@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, clearTokens, isAccessTokenValid, saveTokens } from "./tokens";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, clearTokens, isAccessTokenValid, refreshTokens, saveTokens } from "./tokens";
+import { ApiError } from "./http";
 
 function makeJwt(payload: Record<string, unknown>): string {
     const enc = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
@@ -39,5 +40,56 @@ describe("token storage", () => {
         clearTokens();
         expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
         expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+    });
+});
+
+describe("refreshTokens", () => {
+    beforeEach(() => {
+        localStorage.clear();
+        vi.restoreAllMocks();
+        vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    function jsonResponse(body: unknown, status: number): Response {
+        return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+    }
+
+    it("saves the new pair on success and shares one in-flight request", async () => {
+        saveTokens("old-a", "old-r");
+        const fetchMock = vi.fn().mockResolvedValue(
+            jsonResponse({ success: true, payload: { access_token: "new-a", refresh_token: "new-r" } }, 200),
+        );
+        vi.stubGlobal("fetch", fetchMock);
+
+        const [a, b] = await Promise.all([refreshTokens(), refreshTokens()]);
+        expect(a).toBe(true);
+        expect(b).toBe(true);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("new-a");
+        expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("new-r");
+    });
+
+    it("clears tokens when the backend rejects the refresh token", async () => {
+        saveTokens("old-a", "old-r");
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+            jsonResponse({ success: false, error: { message: "failed refresh tokens" } }, 401),
+        ));
+
+        await expect(refreshTokens()).resolves.toBe(false);
+        expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+    });
+
+    it("keeps tokens and rejects on a transport or server error", async () => {
+        saveTokens("old-a", "old-r");
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+        await expect(refreshTokens()).rejects.toThrow("Failed to fetch");
+        expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("old-r");
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+            jsonResponse({ success: false, error: { message: "failed refresh tokens" } }, 500),
+        ));
+        await expect(refreshTokens()).rejects.toBeInstanceOf(ApiError);
+        expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("old-r");
     });
 });

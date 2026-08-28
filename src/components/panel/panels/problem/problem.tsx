@@ -57,15 +57,26 @@ const ProblemPanel = observer(() => {
 
     useEffect(() => {
         const markIdParam = Number(params.id);
-        if (mark.mark_id === 0 || mark.mark_id !== markIdParam)
-            MarksService.getMarkById(markIdParam)
-                .then((data) => {
-                    setMark(data.payload.mark)
-                })
-                .catch((error) => {
-                    console.error(error);
-                    notificationsStore.showError(error, "Не удалось загрузить проблему");
-                })
+        if (mark.mark_id === markIdParam) {
+            return;
+        }
+        let ignore = false;
+        MarksService.getMarkById(markIdParam)
+            .then((data) => {
+                if (!ignore) {
+                    setMark(data.payload.mark);
+                }
+            })
+            .catch((error) => {
+                if (ignore) {
+                    return;
+                }
+                console.error(error);
+                notificationsStore.showError(error, "Не удалось загрузить проблему");
+            });
+        return () => {
+            ignore = true;
+        };
     }, [params, mark.mark_id])
 
     return (

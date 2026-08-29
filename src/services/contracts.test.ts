@@ -191,14 +191,15 @@ describe("service payloads match the backend contract", () => {
         expect((await MapService.getAdminBoundariesMarksCount({ admin_levels: [4], mark_type_ids: [] })).payload.admin_boundaries[0].id).toBe(1);
     });
 
-    it("ETag cache: bodies stored by an older build (etag:* keys) are purged, current keys are versioned", async () => {
+    // The legacy-prefix purge itself runs once, on module load (see etagCache.test.ts):
+    // a legacy entry appearing mid-session is simply never read, and the write is versioned.
+    it("ETag cache: bodies stored by an older build (etag:* keys) are ignored, current keys are versioned", async () => {
         localStorage.setItem("etag:ru:/api/badges", JSON.stringify({ etag: '"old"', body: { success: true, payload: [] } }));
         fetchMock.mockResolvedValue(jsonResponse({ success: true, payload: { badges: [{ code: "x", name: "X", description: "", icon: "" }] } }, 200, { ETag: '"v1"' }));
         const res = await UsersService.getBadges();
         const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
         expect(new Headers(init.headers).get("If-None-Match")).toBeNull();
         expect(res.payload[0].code).toBe("x");
-        expect(localStorage.getItem("etag:ru:/api/badges")).toBeNull();
         expect(localStorage.getItem("etag:v2:ru:/api/badges")).not.toBeNull();
 
         clearEtagCache();

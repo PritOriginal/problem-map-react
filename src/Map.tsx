@@ -648,7 +648,7 @@ const Filters = observer(() => {
             <button
               type="button"
               className="filters__toggle"
-              aria-expanded={true}
+              aria-expanded={showFilters}
               aria-label={t("map.filtersTitle")}
               onClick={close}
             >

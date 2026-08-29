@@ -16,17 +16,15 @@ import { type ResolvedTheme, useTheme } from './theme'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
+import type { LngLat, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance } from "@yandex/ymaps3-types";
 import MarkItem, { MarkerItem, MarkerSize, TypeIcon } from "./components/mark/mark";
 import { MARKER_ICON, statusColors, STATUS_FALLBACK, themeColors } from "./styles/tokens";
 import { typeColor } from "./utils/mark-types";
-import { Feature } from "@yandex/ymaps3-clusterer";
 
-import convert from 'color-convert';
 import { useLocation, useSearchParams } from "react-router-dom";
 import { filtersEqual, parseFilters, serializeFilters } from "./utils/filters";
 import { useNavigateKeepSearch } from "./utils/navigation";
-import MarksService, { ExportFormat, Mark, MarkStatusType } from "./services/MarksService";
+import MarksService, { ExportFormat, Mark } from "./services/MarksService";
 import "./components/filters/filters.scss";
 import { useT } from "./i18n";
 import selectedPoint from "./store/selected_point";
@@ -48,82 +46,22 @@ import { useDeviceDetect } from "./utils/hooks";
 import heatmapStore from "./store/heatmap";
 import { bboxFromBounds, cellSizeForZoom, heatColor, heatLegend, HEAT_COLORS } from "./utils/heatmap";
 import { BBox, HeatmapFeature } from "./services/MapService";
-
-// Lengths of the filter panel's morph, kept in step with `filters.scss`. The
-// panel is clipped back to the round button's own circle, so for the morph to
-// read as one object the button has to stay on screen for part of it.
-const FILTERS_OPEN_MS = 220;
-const FILTERS_CLOSE_MS = 180;
-/** Diameter of the round button, and so of the circle the panel grows out of. */
-export const FILTERS_BUTTON_SIZE = 56;
-
-/** Debounce for heatmap reloads while the map is being moved. */
-const HEATMAP_DEBOUNCE_MS = 400;
-
-const YMAPS_API_KEY = import.meta.env.VITE_YMAPS_API_KEY ?? "";
-
-const LOCATION: YMapLocationRequest = {
-  center: [41.452746, 52.722408],
-  zoom: 11
-};
-
-const RESTRICT_AREA: LngLatBounds = [[40.96110892973163, 52.54600597551669], [41.91211295805194, 52.90452560092497]];
-
-export const ZOOM_RANGE: ZoomRange = { min: 11, max: 22 };
-export const ZOOMS = {
-  small: 12,
-  big: 16
-};
-
-/**
- * Map centres arrive with full float precision and jitter in the last bits while the
- * map settles. Five decimals is ~1 m — finer than the point can be placed by hand —
- * and it lets `setCoords` recognise an unchanged position instead of invalidating the
- * zone polygon on every frame. Cheaper than a throttle, and with no lag.
- */
-const COORD_PRECISION = 1e5;
-const roundCoords = (coords: LngLat): LngLat =>
-  [Math.round(coords[0] * COORD_PRECISION) / COORD_PRECISION, Math.round(coords[1] * COORD_PRECISION) / COORD_PRECISION];
-
-const getColorByFeatues = (features: Feature[]) => {
-  let numsConfirmed = 0;
-  let numsUnderReview = 0;
-  let numsClosed = 0;
-  features.forEach(f => {
-    const mark = f.properties!.mark as Mark;
-    if (mark.mark_status_id == MarkStatusType.ConfirmedStatus ||
-      mark.mark_status_id == MarkStatusType.RediscoveredStatus) {
-      numsConfirmed++;
-    } else if (mark.mark_status_id == MarkStatusType.UnderReviewStatus) {
-      numsUnderReview++;
-    } else if (mark.mark_status_id == MarkStatusType.ClosedStatus) {
-      numsClosed++;
-    }
-  });
-
-  const allNums = numsConfirmed + numsUnderReview + numsClosed
-
-  const h = (numsClosed + numsUnderReview / 2) / allNums * 120;
-  if (allNums > 0) {
-    return convert.hsv.hex(h, 100, 80)
-  } else {
-    return "d3d3d3"
-  }
-}
-
-const getColorPolygon = (count: AdminBoundaryMarksCount | undefined) => {
-  if (!count) {
-    return "00cc00"
-  }
-
-  const allCount = count.confirmed_count + count.under_review_count + count.closed_count;
-  if (allCount > 0) {
-    const h = (count.closed_count + count.under_review_count / 2) / allCount * 120;
-    return convert.hsv.hex(h, 100, 80)
-  } else {
-    return "00cc00"
-  }
-}
+import type { Feature } from "@yandex/ymaps3-clusterer";
+import {
+  FILTERS_CLOSE_MS,
+  FILTERS_OPEN_MS,
+  HEATMAP_DEBOUNCE_MS,
+  INITIAL_CENTER,
+  INITIAL_ZOOM,
+  LOCATION,
+  RESTRICT_AREA,
+  roundCoords,
+  YMAPS_API_KEY,
+  ZOOM_RANGE,
+  ZOOMS,
+} from "./map/map-constants";
+import { getColorByFeatures, getColorPolygon } from "./map/map-colors";
+import { type MarkFeature, markOf, toMarkFeature } from "./map/mark-feature";
 
 /**
  * The two basemap style sheets are 250 kB of JSON between them and exactly one of
@@ -173,9 +111,9 @@ const Map = observer(() => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [map, setMap] = useState<YMapInstance | null>(null);
-  const zoomRef = useRef<number>((LOCATION as { zoom: number }).zoom);
+  const zoomRef = useRef<number>(INITIAL_ZOOM);
   /** Latest map centre, tracked without touching the store. */
-  const centerRef = useRef<LngLat>((LOCATION as YMapCenterLocation).center);
+  const centerRef = useRef<LngLat>(INITIAL_CENTER);
 
   const [panelIsOpen, setPanelIsOpen] = useState(false);
   const [showNewMarkButton, setShowNewMarkButton] = useState(false);
@@ -291,7 +229,7 @@ const Map = observer(() => {
     markTypesStore.fetch();
     markStatusesStore.fetch();
     getUserLocation(false);
-    selectedPoint.setCoords((LOCATION as YMapCenterLocation).center)
+    selectedPoint.setCoords(INITIAL_CENTER)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -337,7 +275,7 @@ const Map = observer(() => {
   const cluster = useCallback((coordinates: LngLat, features: Feature[]) => (
     <YMapMarker source="markerSource" coordinates={coordinates}>
       <div className="circle">
-        <div className="circle-content" style={{ backgroundColor: '#' + getColorByFeatues(features) }}>
+        <div className="circle-content" style={{ backgroundColor: '#' + getColorByFeatures(features) }}>
           <span className="circle-text">
             {features.length}
           </span>
@@ -352,7 +290,7 @@ const Map = observer(() => {
   // the clusterer does not rebuild every marker.
   const typesById = markTypesStore.byId;
   const marker = useCallback((feature: Feature) => {
-    const mark = feature.properties!.mark as Mark;
+    const mark = markOf(feature);
     return (
       <MarkItem
         mark={mark}
@@ -374,20 +312,13 @@ const Map = observer(() => {
 
   const onlyMine = tasksStore.onlyMine;
   const points = useMemo(() => {
-    const p: Feature[] = [];
+    const p: MarkFeature[] = [];
     for (let i = 0; i < marks.length; i++) {
       const mark = marks[i];
       if (onlyMine && !assignedMarkIds.has(mark.mark_id)) {
         continue;
       }
-      p.push({
-        geometry: mark.geom,
-        type: "Feature",
-        id: String(mark.mark_id),
-        properties: {
-          mark: mark
-        }
-      })
+      p.push(toMarkFeature(mark));
     }
     return p
   }, [marks, onlyMine, assignedMarkIds]);

@@ -3,7 +3,7 @@
 // Diameter of the round filter button, which is also the diameter of the circle
 // the panel morphs out of. A Sass variable because it is interpolated into a
 // `calc()` inside a keyframe, and it is mirrored by FILTERS_BUTTON_SIZE in
-// `src/Map.tsx`.
+// `src/map/map-constants.ts`.
 $filters-button-size: 56px;
 
 // The map filter panel.

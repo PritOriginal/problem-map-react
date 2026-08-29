@@ -31,10 +31,12 @@ function readStoredTheme(): Theme {
     }
 }
 
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
 function systemPrefersDark(): boolean {
     return typeof window !== "undefined"
         && typeof window.matchMedia === "function"
-        && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        && window.matchMedia(DARK_QUERY).matches;
 }
 
 /** What "auto" actually resolves to right now. */
@@ -47,32 +49,60 @@ export function resolveTheme(theme: Theme): ResolvedTheme {
 
 type Listener = () => void;
 
-class ThemeStore {
+/** The one media query the theme cares about; one MediaQueryList is made per store. */
+function darkMediaQuery(): MediaQueryList | null {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+        return null;
+    }
+    return window.matchMedia(DARK_QUERY);
+}
+
+export class ThemeStore {
     private theme: Theme = readStoredTheme();
     private listeners = new Set<Listener>();
 
-    constructor() {
-        this.applyToDocument();
-        // While on "auto", follow the system as it changes -- no reload needed.
-        if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-                if (this.theme === "auto") {
-                    this.applyToDocument();
-                    this.listeners.forEach((listener) => listener());
-                }
-            });
+    /**
+     * One MediaQueryList for the life of the store. `getResolved` is the `getSnapshot`
+     * of a `useSyncExternalStore` read by every marker, heatmap cell and boundary on the
+     * map, and React calls getSnapshot at least twice per commit -- creating a fresh
+     * MediaQueryList in there cost hundreds of `matchMedia` calls per render pass.
+     */
+    private readonly mediaQuery: MediaQueryList | null = darkMediaQuery();
+
+    /** The already-resolved theme. Recomputed only when an input actually changes. */
+    private resolved: ResolvedTheme;
+
+    /** While on "auto", follow the system as it changes -- no reload needed. */
+    private readonly onSystemChange = () => {
+        if (this.theme !== "auto") {
+            return;
         }
+        const next = this.computeResolved();
+        if (next === this.resolved) {
+            return;
+        }
+        this.resolved = next;
+        this.applyToDocument();
+        this.listeners.forEach((listener) => listener());
+    };
+
+    constructor() {
+        this.resolved = this.computeResolved();
+        this.applyToDocument();
+        this.mediaQuery?.addEventListener("change", this.onSystemChange);
     }
 
     get = (): Theme => this.theme;
 
-    getResolved = (): ResolvedTheme => resolveTheme(this.theme);
+    /** A plain field read: no matchMedia, and referentially stable between changes. */
+    getResolved = (): ResolvedTheme => this.resolved;
 
     set = (theme: Theme) => {
         if (theme === this.theme) {
             return;
         }
         this.theme = theme;
+        this.resolved = this.computeResolved();
         try {
             localStorage.setItem(THEME_STORAGE_KEY, theme);
         } catch {
@@ -90,6 +120,22 @@ class ThemeStore {
     };
 
     /**
+     * Drops the system-theme subscription and every listener. The app singleton lives
+     * as long as the document and never needs this; tests that build their own store do.
+     */
+    dispose = () => {
+        this.mediaQuery?.removeEventListener("change", this.onSystemChange);
+        this.listeners.clear();
+    };
+
+    private computeResolved(): ResolvedTheme {
+        if (this.theme === "auto") {
+            return this.mediaQuery?.matches ? "dark" : "light";
+        }
+        return this.theme;
+    }
+
+    /**
      * "auto" leaves the attribute off entirely, so the stylesheet's
      * prefers-color-scheme block is what decides. An explicit choice stamps
      * data-theme, which the stylesheet lets win in both directions.
@@ -104,7 +150,7 @@ class ThemeStore {
         } else {
             root.setAttribute("data-theme", this.theme);
         }
-        const resolved = this.getResolved();
+        const resolved = this.resolved;
         root.style.colorScheme = resolved;
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLOR[resolved]);
     }

@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "../../button/button";
 import user from "../../../store/user";
 import { signOut } from "../../../services/tokens";
 import { Link, To } from "react-router-dom";
 import panelStore from "../../../store/panel";
-import notificationsStore from "../../../store/notifications";
-import UsersService, { CurrentUser, UserProfile, UserStats } from "../../../services/UsersService";
+import UsersService, { UserStats } from "../../../services/UsersService";
 import { BadgesBlock, LevelBlock } from "../../profile/profile-blocks";
 import { useBadgeCatalogue } from "../../../utils/badges";
+import { useAsyncData } from "../../../utils/use-async-data";
 import MarksService, { Mark } from "../../../services/MarksService";
 import ChecksService, { Check } from "../../../services/ChecksService";
 import { StatTile } from "../../stat-tile/stat-tile";
@@ -41,74 +41,55 @@ const Profile = observer(function Profile() {
     const toKeepSearch = useToKeepSearch();
     const { t } = useT();
 
-    const [me, setMe] = useState<CurrentUser | null>(null);
-    const [marks, setMarks] = useState<Mark[]>([]);
-    const [checks, setChecks] = useState<Check[]>([]);
-    const [stats, setStats] = useState<UserStats | null>(null);
-    const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
     const catalogue = useBadgeCatalogue();
 
     const userId = user.id;
+    const enabled = userId !== 0;
 
     useEffect(() => {
-        if (userId === 0) {
-            return;
+        if (enabled) {
+            organizationsStore.fetch();
         }
-        let ignore = false;
-        setIsLoading(true);
-        Promise.allSettled([
-            UsersService.getMe(),
-            MarksService.getMarksByUserId(userId),
-            ChecksService.getChecksByUserId(userId),
-            UsersService.getMyStats(),
-            UsersService.getMyProfile(),
-        ]).then(([meRes, marksRes, checksRes, statsRes, profileRes]) => {
-            if (ignore) {
-                return;
-            }
-            setIsLoading(false);
-            if (meRes.status === "fulfilled") {
-                const profile = meRes.value.payload.user;
-                setMe(profile);
-                user.setUser(profile.username, profile.user_id, parseRole(profile.role));
-            } else {
-                console.error(meRes.reason);
-                notificationsStore.showError(meRes.reason, t("profile.loadFailed"));
-            }
-            if (marksRes.status === "fulfilled") {
-                setMarks(marksRes.value.payload.marks ?? []);
-            } else {
-                console.error(marksRes.reason);
-                notificationsStore.showError(marksRes.reason, t("profile.marksLoadFailed"));
-            }
-            if (checksRes.status === "fulfilled") {
-                setChecks(checksRes.value.payload.checks ?? []);
-            } else {
-                console.error(checksRes.reason);
-                notificationsStore.showError(checksRes.reason, t("profile.checksLoadFailed"));
-            }
-            if (statsRes.status === "fulfilled") {
-                setStats(statsRes.value.payload);
-            } else {
-                // stats require backend integration/wave-3; keep the rest of the profile usable
-                console.error(statsRes.reason);
-                setStats(null);
-            }
-            if (profileRes.status === "fulfilled") {
-                setProfile(profileRes.value.payload);
-            } else {
-                // level/badges require backend integration/wave-5
-                console.error(profileRes.reason);
-                setProfile(null);
-            }
-        });
-        organizationsStore.fetch();
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId]);
+    }, [enabled]);
+
+    // Five independent reads. `Promise.allSettled` was only ever a way to keep one
+    // failing request from taking the others down with it, and five hooks do that on
+    // their own -- each with its own loader, its own message, and its own cancellation.
+    const { data: me = null } = useAsyncData(
+        (signal) => UsersService.getMe({ signal }).then((res) => {
+            const current = res.payload.user;
+            user.setUser(current.username, current.user_id, parseRole(current.role));
+            return current;
+        }),
+        [userId],
+        { enabled, errorMessage: t("profile.loadFailed") },
+    );
+
+    const { data: marks = [], isLoading: marksLoading } = useAsyncData(
+        (signal) => MarksService.getMarksByUserId(userId, { signal }).then((res) => res.payload.marks ?? []),
+        [userId],
+        { enabled, errorMessage: t("profile.marksLoadFailed") },
+    );
+
+    const { data: checks = [], isLoading: checksLoading } = useAsyncData(
+        (signal) => ChecksService.getChecksByUserId(userId, { signal }).then((res) => res.payload.checks ?? []),
+        [userId],
+        { enabled, errorMessage: t("profile.checksLoadFailed") },
+    );
+
+    // stats require backend integration/wave-3, level/badges wave-5: a backend without
+    // them leaves the rest of the profile usable and says nothing in the banner.
+    const { data: stats = null, isLoading: statsLoading } = useAsyncData(
+        (signal) => UsersService.getMyStats({ signal }).then((res) => res.payload),
+        [userId],
+        { enabled, silent: true },
+    );
+
+    const { data: profile = null } = useAsyncData(
+        (signal) => UsersService.getMyProfile({ signal }).then((res) => res.payload),
+        [userId],
+        { enabled, silent: true },
+    );
 
     const onClickSignOut = () => {
         signOut();
@@ -150,16 +131,16 @@ const Profile = observer(function Profile() {
                             <h2 className="section-title">{t("profile.stats")}</h2>
                             <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
                         </div>
-                        {stats ? <StatsBlock stats={stats} /> : !isLoading && <p className="empty-state">{t("profile.statsUnavailable")}</p>}
+                        {stats ? <StatsBlock stats={stats} /> : !statsLoading && <p className="empty-state">{t("profile.statsUnavailable")}</p>}
                         <hr />
-                        <h2 className="section-title">{t("profile.myMarks")}<span className="section-title__count">{isLoading ? "" : `(${marks.length})`}</span></h2>
-                        {!isLoading && marks.length === 0 && <p className="empty-state">{t("profile.noMarks")}</p>}
+                        <h2 className="section-title">{t("profile.myMarks")}<span className="section-title__count">{marksLoading ? "" : `(${marks.length})`}</span></h2>
+                        {!marksLoading && marks.length === 0 && <p className="empty-state">{t("profile.noMarks")}</p>}
                         <div className="profile-list">
                             {marks.map((mark) => <MarkRow key={mark.mark_id} mark={mark} to={toKeepSearch(`/problem/${mark.mark_id}`)} />)}
                         </div>
                         <hr />
-                        <h2 className="section-title">{t("profile.myChecks")}<span className="section-title__count">{isLoading ? "" : `(${checks.length})`}</span></h2>
-                        {!isLoading && checks.length === 0 && <p className="empty-state">{t("profile.noChecks")}</p>}
+                        <h2 className="section-title">{t("profile.myChecks")}<span className="section-title__count">{checksLoading ? "" : `(${checks.length})`}</span></h2>
+                        {!checksLoading && checks.length === 0 && <p className="empty-state">{t("profile.noChecks")}</p>}
                         <div className="profile-list">
                             {checks.map((check) => <CheckRow key={check.check_id} check={check} to={toKeepSearch(`/problem/${check.mark_id}`)} />)}
                         </div>

@@ -30,8 +30,10 @@
 
     &__header {
         display: flex;
-        flex-direction: column;
-        gap: var(--space-4);
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-4) var(--space-6);
         height: fit-content;
         background-color: var(--chrome);
         color: var(--on-chrome);
@@ -42,25 +44,45 @@
             cursor: pointer;
         }
 
-        &__status {
-            position: absolute;
-            right: var(--space-7);
-            top: var(--space-7);
-            font-size: var(--fs-caption);
-
-            @include mobile {
-                font-size: var(--fs-micro);
-            }
+        // Two columns: what and where on the left, the record's own labels on the
+        // right. The status chip and the mark number are both references to the
+        // record rather than parts of its title, so they share the aside.
+        &__main {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            min-width: 0;
         }
 
-        // The record's identity, set in the display face. It is the first thing
-        // you look for when someone sends you a link to a problem.
-        &__id {
-            font-family: var(--font-display);
+        &__aside {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: var(--space-3);
+            flex-shrink: 0;
+        }
+
+        // The category is the title: a person recognises a mark by what the problem
+        // is, not by its id. Set in the TEXT face, not the display face -- these
+        // names come from the backend, so their length is not ours to control, and
+        // "Информационные и визуальные дефекты" runs to three lines in the wide
+        // display face, which on the mobile sheet also drives how far the map is
+        // pushed down. The display face stays for short fixed labels.
+        &__title {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-4);
+
+            font-family: var(--font-body);
             font-size: var(--fs-title);
-            font-weight: 600;
-            line-height: 1.1;
+            font-weight: 700;
+            line-height: 1.18;
             letter-spacing: -0.01em;
+
+            svg {
+                flex-shrink: 0;
+                margin-top: 3px;
+            }
 
             @include mobile {
                 font-size: var(--fs-lead);
@@ -76,12 +98,21 @@
             letter-spacing: -0.02em;
         }
 
-        &__type {
+        // The id: a reference you quote, not the name of the thing.
+        &__ref {
+            font-family: var(--font-mono);
+            font-size: var(--fs-caption);
+            color: var(--on-chrome-muted);
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+
+        &__badges {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            gap: var(--space-4);
-            font-size: var(--fs-body);
-            font-weight: 500;
+            gap: var(--space-2);
+            width: 100%;
         }
     }
 

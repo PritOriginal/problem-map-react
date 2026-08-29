@@ -85,22 +85,24 @@ const ProblemPanel = observer(() => {
                 className="panel__header"
                 onClick={() => panelStore.toggle()}
             >
-                <div className="panel__header__status">
+                <div className="panel__header__main">
+                    <h1 className="panel__header__title">
+                        <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="var(--on-chrome)" />
+                        <span>{markType.name}</span>
+                    </h1>
+                    <p className="panel__header__coords">
+                        <span className="visually-hidden">{t("common.coordinates")}: </span>
+                        {mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}
+                    </p>
+                </div>
+                <div className="panel__header__aside">
                     <div className="status-chip" style={{ borderColor: statusColors(resolved)[markStatus.mark_status_id] }}>
                         {markStatus.name}
                     </div>
-                </div>
-                <p className="panel__header__id">{t("mark.n", { id: mark.mark_id })}</p>
-                <p className="panel__header__coords">
-                    <span className="visually-hidden">{t("common.coordinates")}: </span>
-                    {mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}
-                </p>
-                <div className="panel__header__type">
-                    <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="var(--on-chrome)" />
-                    <p>{markType.name}</p>
+                    <p className="panel__header__ref">{t("mark.n", { id: mark.mark_id })}</p>
                 </div>
                 {(mark.sla_due_at || mark.organization_id || mark.hidden) &&
-                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
+                    <div className="panel__header__badges">
                         <HiddenBadge hidden={mark.hidden} />
                         <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
                         <OrgLabel organizationId={mark.organization_id} />

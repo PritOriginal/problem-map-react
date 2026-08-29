@@ -40,7 +40,9 @@
     --fs-body: 14px;
     --fs-base: 16px;
     --fs-lead: 18px;
-    --fs-title: 24px;
+    // 20px: the panel title. Sized against the longest category name the backend
+    // sends, in the text face, in a 420px panel -- not against a short one.
+    --fs-title: 20px;
     --fs-display: 32px;
     --fs-jumbo: 64px;
 

@@ -16,14 +16,31 @@ function parseIds(raw: string | null): number[] | null {
     return Array.from(new Set(ids));
 }
 
+function sameIds(x: number[], y: number[]): boolean {
+    if (x.length !== y.length) {
+        return false;
+    }
+    const sortedY = [...y].sort((a, b) => a - b);
+    return [...x].sort((a, b) => a - b).every((v, i) => v === sortedY[i]);
+}
+
+function setIdsParam(params: URLSearchParams, name: string, ids: number[], defaults: number[]) {
+    if (sameIds(ids, defaults)) {
+        params.delete(name);
+    } else {
+        params.set(name, ids.join(","));
+    }
+}
+
 /**
- * Writes mark filters into query params (`?types=1,2&statuses=3`).
- * Empty lists are written as an empty param so the URL still overrides the defaults.
+ * Writes mark filters into query params (`?types=1,2&statuses=3`) on top of `base`.
+ * A list equal to its default is omitted, so the default view keeps a clean URL;
+ * an empty non-default list is written as an empty param so it still overrides the default.
  */
-export function serializeFilters(filters: GetMarksRequest, base?: URLSearchParams | string): URLSearchParams {
+export function serializeFilters(filters: GetMarksRequest, defaults: GetMarksRequest, base?: URLSearchParams | string): URLSearchParams {
     const params = new URLSearchParams(base);
-    params.set(TYPES_PARAM, filters.mark_type_ids.join(","));
-    params.set(STATUSES_PARAM, filters.mark_status_ids.join(","));
+    setIdsParam(params, TYPES_PARAM, filters.mark_type_ids, defaults.mark_type_ids);
+    setIdsParam(params, STATUSES_PARAM, filters.mark_status_ids, defaults.mark_status_ids);
     return params;
 }
 
@@ -41,6 +58,5 @@ export function parseFilters(search: URLSearchParams | string, defaults: GetMark
 
 /** Returns true when both filter sets contain the same ids (order-insensitive). */
 export function filtersEqual(a: GetMarksRequest, b: GetMarksRequest): boolean {
-    const same = (x: number[], y: number[]) => x.length === y.length && [...x].sort().every((v, i) => v === [...y].sort()[i]);
-    return same(a.mark_type_ids, b.mark_type_ids) && same(a.mark_status_ids, b.mark_status_ids);
+    return sameIds(a.mark_type_ids, b.mark_type_ids) && sameIds(a.mark_status_ids, b.mark_status_ids);
 }

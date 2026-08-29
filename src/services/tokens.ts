@@ -96,7 +96,9 @@ async function doRefresh(): Promise<boolean> {
         });
         const data = await parseResponse<RefreshTokensResponse>(response);
         saveTokens(data.payload.access_token, data.payload.refresh_token);
-        user.setRole(getRoleFromToken(data.payload.access_token));
+        // the persisted role is restored asynchronously; set ours only after that so it is not overwritten
+        const role = getRoleFromToken(data.payload.access_token);
+        user.hydrated.then(() => user.setRole(role));
         return true;
     } catch (error) {
         console.error("Failed to refresh tokens:", error);

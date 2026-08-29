@@ -14,6 +14,7 @@ import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../mark/mark";
 import { observer } from "mobx-react-lite";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import { Role } from "../../../utils/role";
+import { useToKeepSearch } from "../../../utils/navigation";
 
 const ROLE_NAMES: Record<Role, string> = {
     user: "Пользователь",
@@ -132,11 +133,12 @@ const Profile = observer(function Profile() {
 });
 
 const MarkRow = observer(function MarkRow({ mark }: { mark: Mark }) {
+    const toKeepSearch = useToKeepSearch();
     const status = markStatusesStore.statuses.find((s) => s.mark_status_id === mark.mark_status_id);
     const type = markTypesStore.types.find((t) => t.mark_type_id === mark.mark_type_id);
     const Icon = TypeMarkIcons[mark.mark_type_id];
     return (
-        <Link className="profile-list__item" to={`/problem/${mark.mark_id}`}>
+        <Link className="profile-list__item" to={toKeepSearch(`/problem/${mark.mark_id}`)}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 {Icon && Icon({ color: "#000" })}
                 <p style={{ fontSize: 14 }}><b>№{mark.mark_id}</b> {type?.name ?? ""}</p>
@@ -155,8 +157,9 @@ const MarkRow = observer(function MarkRow({ mark }: { mark: Mark }) {
 });
 
 function CheckRow({ check }: { check: Check }) {
+    const toKeepSearch = useToKeepSearch();
     return (
-        <Link className="profile-list__item" to={`/problem/${check.mark_id}`}>
+        <Link className="profile-list__item" to={toKeepSearch(`/problem/${check.mark_id}`)}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
                 <p style={{ fontSize: 14 }}><b>Проблема №{check.mark_id}</b></p>
                 <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleDateString()}</p>

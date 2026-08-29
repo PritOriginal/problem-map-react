@@ -13,7 +13,7 @@ import {
 import customization from './customization.json'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
 import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeMarkIcons } from "./components/mark/mark";
 import { Feature } from "@yandex/ymaps3-clusterer";
@@ -27,7 +27,7 @@ import { Mark, MarkStatusType } from "./services/MarksService";
 import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
 import { observer } from "mobx-react-lite";
-import marksStore from "./store/marks";
+import marksStore, { DEFAULT_FILTERS } from "./store/marks";
 import adminBoundariesStore from "./store/admin-boundaries";
 
 import AddIcon from "./assets/plus.svg?react"
@@ -160,14 +160,14 @@ const Map = observer(() => {
 
   // filters <-> URL (?types=&statuses=)
   useEffect(() => {
-    const fromUrl = parseFilters(window.location.search, marksStore.filters);
+    const fromUrl = parseFilters(window.location.search, DEFAULT_FILTERS);
     if (!filtersEqual(fromUrl, marksStore.filters)) {
       marksStore.setFilters(fromUrl);
     }
     const dispose = reaction(
-      () => serializeFilters(marksStore.filters).toString(),
+      () => serializeFilters(marksStore.filters, DEFAULT_FILTERS).toString(),
       () => {
-        setSearchParamsRef.current((prev) => serializeFilters(marksStore.filters, prev), { replace: true });
+        setSearchParamsRef.current((prev) => serializeFilters(marksStore.filters, DEFAULT_FILTERS, prev), { replace: true });
       },
       { fireImmediately: true },
     );
@@ -337,9 +337,25 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
 });
 
 
+/** Props that make a clickable <div> behave like a button for keyboard and screen-reader users. */
+function buttonProps(label: string, onClick: () => void) {
+  return {
+    role: "button" as const,
+    tabIndex: 0,
+    "aria-label": label,
+    onClick,
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onClick();
+      }
+    },
+  };
+}
+
 function OpenPanelButton() {
   return (
-    <div className="center-button" onClick={() => panelStore.setOpen(true)}>
+    <div className="center-button" {...buttonProps("Отметить проблему", () => panelStore.setOpen(true))}>
       Отметить
     </div>
   )
@@ -347,20 +363,7 @@ function OpenPanelButton() {
 
 function LocateButton({ onClick }: { onClick: () => void }) {
   return (
-    <div
-      className="circle-button locate-button"
-      title="Я здесь"
-      role="button"
-      tabIndex={0}
-      aria-label="Показать моё местоположение"
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-    >
+    <div className="circle-button locate-button" title="Я здесь" {...buttonProps("Показать моё местоположение", onClick)}>
       <div className="circle-button__content">
         <LocateIcon />
       </div>
@@ -372,7 +375,7 @@ function AddMarkButton() {
   const navigate = useNavigateKeepSearch();
 
   return (
-    <div className="circle-button add-mark-button" onClick={() => navigate("/add")}>
+    <div className="circle-button add-mark-button" title="Отметить проблему" {...buttonProps("Отметить проблему", () => navigate("/add"))}>
       <div className="circle-button__content">
         <AddIcon />
       </div>

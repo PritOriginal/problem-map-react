@@ -2,17 +2,23 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import MarksService, { GetMarksRequest, Mark, MarkStatusType } from '../services/MarksService';
 import notificationsStore from './notifications';
 
+/** Filters applied when the URL carries none. */
+export const DEFAULT_FILTERS: Readonly<GetMarksRequest> = {
+    mark_type_ids: [],
+    mark_status_ids: [
+        MarkStatusType.UnconfirmedStatus,
+        MarkStatusType.ConfirmedStatus,
+        MarkStatusType.UnderReviewStatus,
+        MarkStatusType.RediscoveredStatus,
+        MarkStatusType.ClosedStatus,
+    ],
+};
+
 class MarksStore {
     marks: Mark[] = [];
     filters: GetMarksRequest = {
-        mark_type_ids: [],
-        mark_status_ids: [
-            MarkStatusType.UnconfirmedStatus,
-            MarkStatusType.ConfirmedStatus,
-            MarkStatusType.UnderReviewStatus,
-            MarkStatusType.RediscoveredStatus,
-            MarkStatusType.ClosedStatus,
-        ]
+        mark_type_ids: [...DEFAULT_FILTERS.mark_type_ids],
+        mark_status_ids: [...DEFAULT_FILTERS.mark_status_ids],
     };
 
     isLoading: boolean = false;

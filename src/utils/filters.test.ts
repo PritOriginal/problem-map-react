@@ -5,17 +5,22 @@ const defaults = { mark_type_ids: [], mark_status_ids: [1, 2, 3, 4, 5] };
 
 describe("serializeFilters", () => {
     it("writes both params as comma-separated ids", () => {
-        const params = serializeFilters({ mark_type_ids: [1, 3], mark_status_ids: [2] });
+        const params = serializeFilters({ mark_type_ids: [1, 3], mark_status_ids: [2] }, defaults);
         expect(params.get("types")).toBe("1,3");
         expect(params.get("statuses")).toBe("2");
         expect(params.toString()).toBe("types=1%2C3&statuses=2");
     });
 
     it("writes empty lists as empty params and keeps unrelated params", () => {
-        const params = serializeFilters({ mark_type_ids: [], mark_status_ids: [] }, "foo=bar");
-        expect(params.get("types")).toBe("");
+        const params = serializeFilters({ mark_type_ids: [], mark_status_ids: [] }, defaults, "foo=bar");
+        expect(params.get("types")).toBeNull();
         expect(params.get("statuses")).toBe("");
         expect(params.get("foo")).toBe("bar");
+    });
+
+    it("omits params equal to the defaults (order-insensitive) and drops stale ones from base", () => {
+        const params = serializeFilters({ mark_type_ids: [], mark_status_ids: [5, 4, 3, 2, 1] }, defaults, "types=1&statuses=2&foo=bar");
+        expect(params.toString()).toBe("foo=bar");
     });
 });
 
@@ -43,7 +48,8 @@ describe("parseFilters", () => {
 
     it("round-trips through serializeFilters", () => {
         const filters = { mark_type_ids: [2, 5], mark_status_ids: [1, 6] };
-        expect(parseFilters(serializeFilters(filters), defaults)).toEqual(filters);
+        expect(parseFilters(serializeFilters(filters, defaults), defaults)).toEqual(filters);
+        expect(parseFilters(serializeFilters(defaults, defaults), defaults)).toEqual(defaults);
     });
 });
 

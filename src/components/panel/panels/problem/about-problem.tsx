@@ -115,6 +115,12 @@ const MODERATABLE_STATUSES = [
 function ModerationBlock({ markId, onDone }: { markId: number, onDone: () => void }) {
     const mark = useContext(MarkContext);
     const [pending, setPending] = useState<"confirm" | "reject" | null>(null);
+    // the request may outlive the panel (user navigates away): skip state updates after unmount
+    const mounted = useRef(true);
+    useEffect(() => {
+        mounted.current = true;
+        return () => { mounted.current = false; };
+    }, []);
 
     if (!MODERATABLE_STATUSES.includes(mark.mark_status_id)) {
         return null;
@@ -138,7 +144,11 @@ function ModerationBlock({ markId, onDone }: { markId: number, onDone: () => voi
                 console.error(error);
                 notificationsStore.showError(error, action === "confirm" ? "Не удалось подтвердить проблему" : "Не удалось отклонить проблему");
             })
-            .finally(() => setPending(null));
+            .finally(() => {
+                if (mounted.current) {
+                    setPending(null);
+                }
+            });
     };
 
     return (

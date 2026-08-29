@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 
 import ModerationPanel from "./moderation";
-import { renderPanel, resetStores } from "../../../test/render";
-import { jsonResponse, envelope } from "../../../test/fetch";
-import { saveTokens } from "../../../services/tokens";
-import user from "../../../store/user";
-import type { Report } from "../../../services/ReportsService";
+import { renderPanel, resetStores } from "../../../../test/render";
+import { jsonResponse, envelope } from "../../../../test/fetch";
+import { saveTokens } from "../../../../services/tokens";
+import user from "../../../../store/user";
+import type { Report } from "../../../../services/ReportsService";
 
 /** An unsigned JWT whose `exp` is far enough away for `ensureAccessToken` to accept it. */
 function fakeAccessToken(): string {

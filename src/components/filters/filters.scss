@@ -1,0 +1,402 @@
+@use "../../mixins" as *;
+
+// The map filter panel.
+//
+// Two different controls on purpose, because the two lists come from different
+// places. Mark statuses are a fixed dictionary of eight short names, so they are
+// toggle CHIPS: a lit chip is outlined and washed in its own status colour, which
+// makes the panel double as the map's legend -- the one place that explains what
+// an amber or a grey dot on the map means. Categories arrive from the backend with
+// names we do not control ("Информационные и визуальные дефекты"), so they stay
+// ROWS, free to wrap onto a second line without breaking a grid.
+//
+// The heatmap and "my tasks" switches sit above both: they are display MODES that
+// change the whole map, not a narrowing of the selection, and grouping them with
+// the status checkboxes was what made the old panel read as one undifferentiated
+// list.
+
+.filters {
+    position: absolute;
+    right: 16px;
+    // The button's own top: the panel opens in its place rather than beside it.
+    top: 42px;
+    z-index: 1;
+
+    display: flex;
+    flex-direction: column;
+    // The old panel had no bound at all and was simply cut off by the bottom of a
+    // phone screen. Header and footer are fixed; only the body scrolls.
+    max-height: calc(100dvh - 58px - var(--panel-header-height, 0px));
+    width: 296px;
+
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-2);
+    color: var(--ink);
+
+    @include mobile {
+        width: calc(100vw - 32px);
+        max-width: 343px;
+    }
+
+    &__bar {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        flex: none;
+
+        padding: var(--space-5) var(--space-6);
+        background-color: var(--chrome);
+        color: var(--on-chrome);
+        border-radius: var(--radius-3) var(--radius-3) 0 0;
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: var(--fs-caption);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+    }
+
+    // Carries the glyph the collapsed round button showed, so the panel reads as
+    // that button expanded rather than as a second, separate thing.
+    &__toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--on-chrome);
+        fill: var(--on-chrome);
+        stroke: var(--on-chrome);
+        cursor: pointer;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--chrome), 0 0 0 4px var(--accent);
+            border-radius: var(--radius-1);
+        }
+    }
+
+    // A tally, so monospace -- and it lines the figures up as the count changes.
+    &__count {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--on-chrome-faint);
+    }
+
+    &__reset {
+        padding: 0;
+        border: 0;
+        background: none;
+        font-family: var(--font-body);
+        font-size: var(--fs-caption);
+        color: var(--accent);
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-6);
+        padding: var(--space-6);
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        flex: none;
+
+        padding: var(--space-5) var(--space-6);
+        border-top: 1px solid var(--rule);
+        background-color: var(--surface);
+        border-radius: 0 0 var(--radius-3) var(--radius-3);
+
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+    }
+
+    &__group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+
+        h3 {
+            display: flex;
+            align-items: center;
+
+            font-size: var(--fs-micro);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+        }
+    }
+
+    // "0 selected" means "no restriction" to the backend, so the count says so in
+    // words rather than showing a zero the user would read as "nothing to see".
+    &__group-count {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-style: normal;
+        font-size: var(--fs-micro);
+        letter-spacing: 0;
+        color: var(--rule-faint);
+    }
+}
+
+// ---- Display modes --------------------------------------------------------
+
+.filter-mode {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    width: 100%;
+
+    padding: var(--space-4) var(--space-5);
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: var(--fs-small);
+    color: var(--ink);
+
+    background-color: var(--surface);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    cursor: pointer;
+
+    & + & {
+        margin-top: var(--space-2);
+    }
+
+    // A mode repaints the entire map, so it earns the accent; a filter does not.
+    &[aria-pressed="true"] {
+        background-color: var(--accent-bg);
+        border-color: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+    }
+
+    &__name {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__switch {
+        position: relative;
+        flex: none;
+        width: 26px;
+        height: 15px;
+        border-radius: 999px;
+        background-color: var(--rule);
+        transition: background-color var(--dur-fast) var(--ease);
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 11px;
+            height: 11px;
+            border-radius: var(--radius-round);
+            background-color: var(--paper);
+            transition: left var(--dur-fast) var(--ease);
+        }
+    }
+
+    &[aria-pressed="true"] &__switch {
+        background-color: var(--accent-ink);
+
+        &::after {
+            left: 13px;
+        }
+    }
+
+    &__swatch {
+        flex: none;
+        width: 14px;
+        height: 14px;
+        border-radius: var(--radius-1);
+    }
+
+    &__swatch--mine {
+        width: 12px;
+        height: 12px;
+        border-radius: var(--radius-round);
+        background-color: var(--rule-faint);
+        outline: 2px dashed var(--assigned);
+        outline-offset: 1px;
+    }
+}
+
+// ---- Status chips ---------------------------------------------------------
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 5px 10px 5px 8px;
+    font-family: var(--font-body);
+    font-size: var(--fs-caption);
+    line-height: 1.2;
+
+    color: var(--ink-muted);
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    cursor: pointer;
+
+    &__dot {
+        flex: none;
+        width: 9px;
+        height: 9px;
+        border-radius: var(--radius-round);
+        // An off chip keeps its status colour in the ring, so the link to the dots
+        // on the map survives even while the chip itself recedes.
+        box-shadow: inset 0 0 0 1.5px var(--chip-color);
+    }
+
+    // 13% of the status colour: enough to read as "lit" at a glance, light enough
+    // that --ink stays well over 7:1 on every one of the eight statuses.
+    &[aria-pressed="true"] {
+        color: var(--ink);
+        font-weight: 500;
+        border-color: var(--chip-color);
+        background-color: color-mix(in srgb, var(--chip-color) 13%, var(--paper));
+
+        .filter-chip__dot {
+            background-color: var(--chip-color);
+            box-shadow: none;
+        }
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+    }
+}
+
+// ---- Category rows --------------------------------------------------------
+
+.filter-rows {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+}
+
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    width: 100%;
+
+    padding: 8px var(--space-5);
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: var(--fs-small);
+    line-height: 1.3;
+
+    color: var(--ink-muted);
+    background-color: var(--paper);
+    border: 0;
+    cursor: pointer;
+
+    & + & {
+        border-top: 1px solid var(--rule-soft);
+    }
+
+    &[aria-pressed="true"] {
+        color: var(--ink);
+        font-weight: 500;
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+        // The ring is drawn outside the row, which the list clips; lifting the row
+        // above its siblings is what keeps the whole ring visible.
+        position: relative;
+        z-index: 1;
+    }
+
+    // The same disc the category wears as a marker on the map -- which is the
+    // point: the panel names what the reader is looking at out there.
+    &__glyph {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        width: 20px;
+        height: 20px;
+        border-radius: var(--radius-round);
+        background-color: var(--neutral-bg);
+        opacity: 0.55;
+    }
+
+    &[aria-pressed="true"] &__glyph {
+        opacity: 1;
+    }
+
+    &__name {
+        flex: 1;
+        min-width: 0;
+    }
+
+    // Drawn rather than a real checkbox: the row is already the control, and a
+    // native input here would be a second thing to hit for the same state.
+    &__tick {
+        position: relative;
+        flex: none;
+        width: 15px;
+        height: 15px;
+        border: 1.5px solid var(--rule-hover);
+        border-radius: 3px;
+    }
+
+    &[aria-pressed="true"] &__tick {
+        background-color: var(--accent-ink);
+        border-color: var(--accent-ink);
+
+        &::after {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 4px;
+            height: 8px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+    }
+}

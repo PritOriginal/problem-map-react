@@ -135,58 +135,6 @@ a {
   top: 42px;
 }
 
-.filters {
-  position: absolute;
-  right: 16px;
-  top: 102px;
-  width: 250px;
-  background-color: var(--paper);
-  padding: var(--space-6);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-1);
-  box-shadow: var(--shadow-1);
-
-  z-index: 1;
-
-  &__content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    &__title {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      align-items: center;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    &__block {
-      display: grid;
-      gap: 2px;
-      padding: 2px;
-      background-color: var(--paper);
-
-      &__item {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-
-        font-size: var(--fs-body);
-
-        user-select: none;
-        cursor: pointer;
-
-        &:nth-child(even) {
-          background-color: var(--surface);
-        }
-      }
-    }
-  }
-}
-
 
 .add-mark-button {
   position: absolute;

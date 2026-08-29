@@ -17,10 +17,10 @@ import customizationDark from './customization-dark.json'
 import { useTheme } from './theme'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
-import { type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
 import MarkItem, { MarkerItem, MarkerSize, TypeIcon } from "./components/mark/mark";
-import { ASSIGNED, MARKER_ICON, statusColors, STATUS_FALLBACK, themeColors } from "./styles/tokens";
+import { MARKER_ICON, statusColors, STATUS_FALLBACK, themeColors } from "./styles/tokens";
 import { typeColor } from "./utils/mark-types";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
@@ -29,6 +29,7 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { filtersEqual, parseFilters, serializeFilters } from "./utils/filters";
 import { useNavigateKeepSearch } from "./utils/navigation";
 import MarksService, { ExportFormat, Mark, MarkStatusType } from "./services/MarksService";
+import "./components/filters/filters.scss";
 import { useT } from "./i18n";
 import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
@@ -547,80 +548,138 @@ const ExportLink = observer(({ format, children }: { format: ExportFormat; child
   </a>
 ));
 
+/**
+ * The map filter panel.
+ *
+ * Two lists, two controls, because the two lists come from different places.
+ * Mark statuses are a fixed dictionary of eight short names -- toggle chips, lit
+ * in their own status colour, so the panel doubles as the map's legend. Category
+ * names arrive from the backend at a length we do not control, so they stay rows
+ * that may wrap. Above both sit the two display MODES, which repaint the whole
+ * map rather than narrow the selection and no longer share a list with the filters.
+ *
+ * An empty list means "no restriction" to the API (`MarksService.marksQuery`
+ * omits the param), so a zero count is spelled out as "all" -- a bare 0 reads as
+ * "nothing shown", which is its opposite.
+ */
 const Filters = observer(() => {
   const { t } = useT();
   const { resolved } = useTheme();
   const statuses = statusColors(resolved);
   const [showFilters, setShowFilters] = useState(false);
+
+  const statusIds = marksStore.filters.mark_status_ids;
+  const typeIds = marksStore.filters.mark_type_ids;
+  const selected = statusIds.length + typeIds.length;
+  const total = markStatusesStore.statuses.length + markTypesStore.types.length;
+  const isDefault = filtersEqual(marksStore.filters, DEFAULT_FILTERS);
+
+  const count = (selected: number, total: number) =>
+    selected === 0 ? t("map.filtersAll") : t("map.filtersCount", { n: selected, total });
+
   return (
     <>
-      <div className="circle-button filters-button" title={t("map.filters")} {...buttonProps(t("map.filtersTitle"), () => setShowFilters(!showFilters))}>
-        <div className="circle-button__content">
-          <FilterIcon style={{ transform: "translate(0, 2px)" }} />
+      {!showFilters &&
+        <div className="circle-button filters-button" title={t("map.filters")} {...buttonProps(t("map.filtersTitle"), () => setShowFilters(true))}>
+          <div className="circle-button__content">
+            <FilterIcon style={{ transform: "translate(0, 2px)" }} />
+          </div>
         </div>
-      </div>
+      }
 
       {showFilters &&
         <div className="filters">
-          <div className="filters__content">
-            <div className="filters__content__title">
-              <p>{t("map.filtersTitle")}</p>
-            </div>
-            <div className="filters__content__block">
-              <FilterItem
-                icon={<div style={{ height: "12px", width: "12px", background: `linear-gradient(90deg, ${HEAT_COLORS[0]}, ${HEAT_COLORS[HEAT_COLORS.length - 1]})`, border: "1px solid gray" }}></div>}
+          <div className="filters__bar">
+            {/* The round button does not sit beside the panel, it becomes it: the
+                panel opens at the button's own position and the glyph moves into
+                the bar, where it closes the panel again. */}
+            <button
+              type="button"
+              className="filters__toggle"
+              aria-expanded={true}
+              aria-label={t("map.filtersTitle")}
+              onClick={() => setShowFilters(false)}
+            >
+              <FilterIcon />
+            </button>
+            <h2>{t("map.filters")}</h2>
+            <span className="filters__count">{count(selected, total)}</span>
+            {!isDefault &&
+              <button type="button" className="filters__reset" onClick={() => marksStore.setFilters(DEFAULT_FILTERS)}>
+                {t("map.filtersReset")}
+              </button>
+            }
+          </div>
+
+          <div className="filters__body">
+            <div>
+              <FilterMode
+                swatch={<i className="filter-mode__swatch" style={{ background: `linear-gradient(90deg, ${HEAT_COLORS[0]}, ${HEAT_COLORS[HEAT_COLORS.length - 1]})` }} />}
                 name={t("map.heatmap")}
                 checked={heatmapStore.enabled}
                 onClick={() => heatmapStore.toggle()}
               />
-            </div>
-            {user.id !== 0 &&
-              <div className="filters__content__block">
-                <FilterItem
-                  icon={<div style={{ height: "12px", width: "12px", borderRadius: "50%", backgroundColor: STATUS_FALLBACK, border: "1px solid gray", outline: `2px dashed ${ASSIGNED}`, outlineOffset: "1px" }}></div>}
+              {user.id !== 0 &&
+                <FilterMode
+                  swatch={<i className="filter-mode__swatch filter-mode__swatch--mine" />}
                   name={t("map.myTasks")}
                   checked={tasksStore.onlyMine}
                   onClick={() => tasksStore.toggleOnlyMine()}
                 />
+              }
+            </div>
+
+            <section className="filters__group">
+              <h3>{t("map.statuses")}<em className="filters__group-count">{count(statusIds.length, markStatusesStore.statuses.length)}</em></h3>
+              <div className="filter-chips">
+                {markStatusesStore.statuses.map((status) => (
+                  <button
+                    key={status.mark_status_id}
+                    type="button"
+                    className="filter-chip"
+                    aria-pressed={statusIds.includes(status.mark_status_id)}
+                    style={{ "--chip-color": statuses[status.mark_status_id] ?? STATUS_FALLBACK } as CSSProperties}
+                    onClick={() => marksStore.updateMarkStatus(status.mark_status_id)}
+                  >
+                    <i className="filter-chip__dot" />
+                    {status.name}
+                  </button>
+                ))}
               </div>
-            }
-            <div className="filters__content__block">
-              <p><b>{t("map.statuses")}</b></p>
-              {markStatusesStore.statuses.map((status) => (
-                <FilterItem
-                  key={status.mark_status_id}
-                  icon={
-                    <div style={{ height: "12px", width: "12px", border: "1px solid gray", borderRadius: "50%", backgroundColor: statuses[status.mark_status_id] }}>
-                    </div>
-                  }
-                  name={status.name}
-                  checked={marksStore.filters.mark_status_ids.includes(status.mark_status_id)}
-                  onClick={() => {
-                    marksStore.updateMarkStatus(status.mark_status_id);
-                  }}
-                />
-              ))}
-            </div>
-            <div className="filters__content__block">
-              <p><b>{t("map.categories")}</b></p>
-              {markTypesStore.types.map((type) => (
-                <FilterItem
-                  key={type.mark_type_id}
-                  icon={<span className={typeColor(type) ? "icon-on-fill" : undefined} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", backgroundColor: typeColor(type) ?? "transparent" }}><TypeIcon typeId={type.mark_type_id} type={type} color={typeColor(type) ? MARKER_ICON : "var(--ink)"} /></span>}
-                  name={type.name}
-                  checked={marksStore.filters.mark_type_ids.includes(type.mark_type_id)}
-                  onClick={() => {
-                    marksStore.updateMarkType(type.mark_type_id);
-                    adminBoundariesStore.fetchMarksCount();
-                  }}
-                />
-              ))}
-            </div>
-            <div className="filters__content__block export-row" title={t("map.exportHint")}>
-              <p><b>{t("map.export")}</b></p>
-              <ExportLink format="geojson">{t("map.exportGeojson")}</ExportLink>
-              <ExportLink format="csv">{t("map.exportCsv")}</ExportLink>
-            </div>
+            </section>
+
+            <section className="filters__group">
+              <h3>{t("map.categories")}<em className="filters__group-count">{count(typeIds.length, markTypesStore.types.length)}</em></h3>
+              <div className="filter-rows">
+                {markTypesStore.types.map((type) => (
+                  <button
+                    key={type.mark_type_id}
+                    type="button"
+                    className="filter-row"
+                    aria-pressed={typeIds.includes(type.mark_type_id)}
+                    onClick={() => {
+                      marksStore.updateMarkType(type.mark_type_id);
+                      adminBoundariesStore.fetchMarksCount();
+                    }}
+                  >
+                    <span
+                      className={`filter-row__glyph${typeColor(type) ? " icon-on-fill" : ""}`}
+                      style={typeColor(type) ? { backgroundColor: typeColor(type) } : undefined}
+                    >
+                      <TypeIcon typeId={type.mark_type_id} type={type} color={typeColor(type) ? MARKER_ICON : "var(--ink)"} />
+                    </span>
+                    <span className="filter-row__name">{type.name}</span>
+                    <i className="filter-row__tick" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <div className="filters__foot" title={t("map.exportHint")}>
+            <span>{t("map.export")}</span>
+            <ExportLink format="geojson">{t("map.exportGeojson")}</ExportLink>
+            <ExportLink format="csv">{t("map.exportCsv")}</ExportLink>
           </div>
         </div>
       }
@@ -628,21 +687,15 @@ const Filters = observer(() => {
   )
 });
 
-function FilterItem({ icon, name, checked, onClick }: { icon: JSX.Element, name: string, checked: boolean, onClick: () => void }) {
-  const id = useId();
+/** A display mode: it repaints the whole map, so it is a switch, not a checkbox. */
+function FilterMode({ swatch, name, checked, onClick }: { swatch: ReactNode, name: string, checked: boolean, onClick: () => void }) {
   return (
-    <label className="filters__content__block__item" htmlFor={id}>
-      <input
-        type="checkbox"
-        name=""
-        id={id}
-        checked={checked}
-        onChange={onClick}
-      />
-      {icon}
-      <p>{name}</p>
-    </label>
-  )
+    <button type="button" className="filter-mode" aria-pressed={checked} onClick={onClick}>
+      <span className="filter-mode__switch" />
+      {swatch}
+      <span className="filter-mode__name">{name}</span>
+    </button>
+  );
 }
 
 export default Map;

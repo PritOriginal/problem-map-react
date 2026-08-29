@@ -9,7 +9,8 @@ import { MarkContext } from "./mark-context";
 import { Button } from "../../../button/button";
 import ReportButton from "../../../report/report-button";
 import { useNow } from "../../../../utils/hooks";
-import { localeOf, useT } from "../../../../i18n";
+import { relativeTime } from "../../../../utils/relative-time";
+import { TranslationKey, localeOf, useT } from "../../../../i18n";
 import { Link } from "react-router-dom";
 import { useToKeepSearch } from "../../../../utils/navigation";
 import "./comments.scss";
@@ -68,15 +69,19 @@ const CommentsBlock = observer(function CommentsBlock() {
                 {threads.map(({ root, replies }) => (
                     <div key={root.comment_id} className="comments__thread">
                         <CommentItem comment={root} onChanged={reload} canReply />
-                        {replies.map((reply) => (
-                            <CommentItem key={reply.comment_id} comment={reply} onChanged={reload} reply />
-                        ))}
+                        {replies.length > 0 &&
+                            <div className="comments__replies">
+                                {replies.map((reply) => (
+                                    <CommentItem key={reply.comment_id} comment={reply} onChanged={reload} reply />
+                                ))}
+                            </div>
+                        }
                     </div>
                 ))}
             </div>
             {user.id !== 0
                 ? <CommentForm markId={mark.mark_id} onDone={reload} />
-                : <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>{t("comments.signIn")}</p>
+                : <p className="comments__signin">{t("comments.signIn")}</p>
             }
             <hr />
         </>
@@ -135,39 +140,58 @@ const CommentItem = observer(function CommentItem({ comment, onChanged, canReply
             .finally(() => setPending(null));
     };
 
+    // "3 дн" is easier to place than a date, "37 дн" is not; past a week the
+    // exact day is what a reader wants, so the helper says which to show.
+    const when = relativeTime(comment.created_at, now);
+    const stamp = when.kind === "now"
+        ? t("common.justNow")
+        : when.kind === "span"
+            ? t("comments.ago", { span: `${when.value} ${t(`common.${when.unit}` as TranslationKey)}` })
+            : new Date(comment.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" });
+
     return (
-        <div className={`comment ${reply ? "reply" : ""} ${comment.deleted ? "deleted" : ""}`}>
-            <div className="comment__head">
-                <Link to={toKeepSearch(`/users/${comment.user_id}`)} className="comment__author">{comment.username}{comment.is_mine && ` ${t("common.you")}`}</Link>
-                <span className="comment__date">
-                    {new Date(comment.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}
-                    {edited && !comment.deleted && ` · ${t("comments.edited")}`}
-                </span>
-            </div>
-            {comment.deleted
-                ? <p className="comment__body comment__body--deleted">{t("comments.deleted")}</p>
-                : editing
-                    ? (
-                        <>
-                            <textarea className="edit-multiline-text" value={body} maxLength={COMMENT_MAX_LENGTH} rows={3} onChange={(e) => setBody(e.target.value)} />
-                            <div className="comment__actions">
-                                <Button style="positive" isMini disabled={pending !== null} onClick={save}>{t(pending === "save" ? "common.saving" : "common.save")}</Button>
-                                <Button style="secondary" isMini disabled={pending !== null} onClick={() => { setEditing(false); setBody(comment.body); }}>{t("common.cancel")}</Button>
-                            </div>
-                        </>
-                    )
-                    : <p className="comment__body">{comment.body}</p>
-            }
-            {!comment.deleted && !editing &&
-                <div className="comment__actions">
-                    {canReply && user.id !== 0 && <button type="button" className="comment__link" onClick={() => setReplying((v) => !v)}>{t("comments.reply")}</button>}
-                    {editable && <button type="button" className="comment__link" onClick={() => { setBody(comment.body); setEditing(true); }}>{t("comments.edit")}</button>}
-                    {deletable && <button type="button" className="comment__link danger" disabled={pending !== null} onClick={remove}>{t(pending === "delete" ? "common.deleting" : "common.delete")}</button>}
-                    {!comment.is_mine && <ReportButton targetType="comment" targetId={comment.comment_id} small />}
+        <article className={`comment${reply ? " comment--reply" : ""}${comment.deleted ? " comment--deleted" : ""}`}>
+            {/* Who is speaking, at a glance. The old block signalled it with a bold
+                name at 12px and nothing else, which a thread cannot be scanned by. */}
+            <span className={`comment-avatar${comment.is_mine ? " comment-avatar--mine" : ""}`} aria-hidden="true">
+                {comment.username.slice(0, 1)}
+            </span>
+            <div className="comment__main">
+                <div className="comment__head">
+                    <Link to={toKeepSearch(`/users/${comment.user_id}`)} className="comment__author">{comment.username}</Link>
+                    {comment.is_mine && <i className="comment__you">{t("common.youShort")}</i>}
+                    <time className="comment__date" dateTime={comment.created_at}>
+                        {stamp}
+                        {edited && !comment.deleted && ` · ${t("comments.edited")}`}
+                    </time>
                 </div>
-            }
-            {replying && <CommentForm markId={comment.mark_id} parentId={comment.comment_id} onDone={() => { setReplying(false); onChanged(); }} onCancel={() => setReplying(false)} />}
-        </div>
+                {comment.deleted
+                    ? <p className="comment__body comment__body--deleted">{t("comments.deleted")}</p>
+                    : editing
+                        ? (
+                            <>
+                                <textarea className="edit-multiline-text" value={body} maxLength={COMMENT_MAX_LENGTH} rows={3} onChange={(e) => setBody(e.target.value)} />
+                                <div className="comment__actions">
+                                    <Button style="positive" isMini disabled={pending !== null} onClick={save}>{t(pending === "save" ? "common.saving" : "common.save")}</Button>
+                                    <Button style="secondary" isMini disabled={pending !== null} onClick={() => { setEditing(false); setBody(comment.body); }}>{t("common.cancel")}</Button>
+                                </div>
+                            </>
+                        )
+                        : <p className="comment__body">{comment.body}</p>
+                }
+                {!comment.deleted && !editing &&
+                    <div className="comment__actions">
+                        {/* Replying is the one action here worth colour. Reporting is
+                            rare and used to be the loudest thing in every comment. */}
+                        {canReply && user.id !== 0 && <button type="button" className="comment__link comment__link--key" onClick={() => setReplying((v) => !v)}>{t("comments.reply")}</button>}
+                        {editable && <button type="button" className="comment__link" onClick={() => { setBody(comment.body); setEditing(true); }}>{t("comments.edit")}</button>}
+                        {deletable && <button type="button" className="comment__link" disabled={pending !== null} onClick={remove}>{t(pending === "delete" ? "common.deleting" : "common.delete")}</button>}
+                        {!comment.is_mine && <ReportButton targetType="comment" targetId={comment.comment_id} small />}
+                    </div>
+                }
+                {replying && <CommentForm markId={comment.mark_id} parentId={comment.comment_id} onDone={() => { setReplying(false); onChanged(); }} onCancel={() => setReplying(false)} />}
+            </div>
+        </article>
     );
 });
 
@@ -204,7 +228,7 @@ function CommentForm({ markId, parentId, onDone, onCancel }: { markId: number; p
     };
 
     return (
-        <form className="comment-form" onSubmit={submit}>
+        <form className={`comment-form${parentId ? "" : " comment-form--root"}`} onSubmit={submit}>
             <textarea
                 className="edit-multiline-text"
                 value={body}
@@ -214,9 +238,11 @@ function CommentForm({ markId, parentId, onDone, onCancel }: { markId: number; p
                 disabled={pending}
                 onChange={(e) => setBody(e.target.value)}
             />
-            <div className="comment__actions">
-                <button type="submit" className="btn-primary mini" disabled={pending || body.trim() === ""}>{t(pending ? "comments.sending" : "comments.send")}</button>
+            <div className="comment-form__foot">
+                {/* The limit is real and the old form never showed it. */}
+                <span className="comment-form__count">{body.length} / {COMMENT_MAX_LENGTH}</span>
                 {onCancel && <Button style="secondary" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>}
+                <button type="submit" className="btn-primary mini comment-form__submit" disabled={pending || body.trim() === ""}>{t(pending ? "comments.sending" : "comments.send")}</button>
             </div>
         </form>
     );

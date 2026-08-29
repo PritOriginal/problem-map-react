@@ -40,12 +40,15 @@ export const en: Partial<Dictionary> = {
     "common.photos": "Photos",
     "common.comment": "Comment",
     "common.you": "(you)",
+    // Without brackets: worn as a chip on the author, not appended to the name.
+    "common.youShort": "you",
     "common.offline": "You are offline — showing cached data, actions are unavailable",
     "common.error": "Something went wrong",
     "common.unauthorized": "Authorization required",
     "common.days": "d",
     "common.hours": "h",
     "common.minutes": "min",
+    "common.justNow": "just now",
     "common.meters": "m",
     "common.kilometers": "km",
 
@@ -343,6 +346,7 @@ export const en: Partial<Dictionary> = {
     "comments.sending": "Sending…",
     "comments.reply": "Reply",
     "comments.edit": "Edit",
+    "comments.ago": "{span} ago",
     "comments.edited": "edited",
     "comments.deleted": "Comment deleted",
     "comments.deleteQuestion": "Delete the comment?",

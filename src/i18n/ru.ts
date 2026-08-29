@@ -44,12 +44,15 @@ export const ru = {
     "common.photos": "Фотографии",
     "common.comment": "Комментарий",
     "common.you": "(вы)",
+    // Without brackets: worn as a chip on the author, not appended to the name.
+    "common.youShort": "вы",
     "common.offline": "Нет сети — показаны сохранённые данные, действия недоступны",
     "common.error": "Произошла ошибка",
     "common.unauthorized": "Требуется авторизация",
     "common.days": "дн",
     "common.hours": "ч",
     "common.minutes": "мин",
+    "common.justNow": "только что",
     "common.meters": "м",
     "common.kilometers": "км",
 
@@ -362,6 +365,7 @@ export const ru = {
     "comments.sending": "Отправляем…",
     "comments.reply": "Ответить",
     "comments.edit": "Изменить",
+    "comments.ago": "{span} назад",
     "comments.edited": "изменён",
     "comments.deleted": "Комментарий удалён",
     "comments.deleteQuestion": "Удалить комментарий?",

@@ -38,9 +38,10 @@ export interface AddCommentResponse extends IResponse {
     payload: Comment | null;
 }
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 class CommentsService extends BaseService {
-    public getComments(markId: number, limit: number = 100, offset: number = 0): Promise<GetCommentsResponse> {
-        return this.request<GetCommentsResponse>(`/api/marks/${markId}/comments?limit=${limit}&offset=${offset}`)
+    public getComments(markId: number, limit: number = 100, offset: number = 0, init?: Pick<RequestInit, "signal">): Promise<GetCommentsResponse> {
+        return this.request<GetCommentsResponse>(`/api/marks/${markId}/comments?limit=${limit}&offset=${offset}`, init)
             .then((res) => ({ ...res, payload: unwrapList<Comment>(res.payload, "comments") }));
     }
 

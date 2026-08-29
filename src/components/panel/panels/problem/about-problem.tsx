@@ -20,6 +20,7 @@ import { CommentsCount, DuplicateBadge, HiddenBadge } from "../../../badges/badg
 import { STATUS_COLORS, STATUS_FALLBACK } from "../../../../styles/tokens";
 import { layerDepths, layerSpans, spanLabel } from "../../../../utils/history-column";
 import { useNow } from "../../../../utils/hooks";
+import { useAsyncData } from "../../../../utils/use-async-data";
 import "./history-column.scss";
 import "./mark-actions.scss";
 import "./checks.scss";
@@ -30,7 +31,17 @@ const AboutProblem = observer(function AboutProblem() {
 
     const mark = useContext(MarkContext)
     const reload = useContext(MarkReloadContext)
-    const [historyItems, setHistoryItems] = useState<MarkStatusHistoryItem[]>([])
+    const { data: historyItems = [] } = useAsyncData<MarkStatusHistoryItem[]>(
+        (signal) => MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true, { signal }).then((res) => res.payload.items),
+        // Fields, not the object: MarkContext hands down a freshly parsed `mark` on every
+        // load of the panel above, so depending on its identity re-read the history even
+        // when nothing about the mark had changed -- which is most of the time, since the
+        // panel re-reads the mark after any action. The two fields kept are the ones the
+        // history actually follows: a status change, and anything else the backend stamps
+        // into `updated_at` (a check, for instance).
+        [mark.mark_id, mark.mark_status_id, mark.updated_at],
+        { enabled: mark.mark_id !== 0, errorMessage: t("mark.historyLoadFailed") },
+    );
 
     const groups: MarkStatusHistoryItem[][] = []
     let groupHistoryItems: MarkStatusHistoryItem[] = []
@@ -69,30 +80,6 @@ const AboutProblem = observer(function AboutProblem() {
             }
         });
     }
-
-    useEffect(() => {
-        if (mark.mark_id === 0) {
-            return;
-        }
-        let ignore = false;
-        MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true)
-            .then((data) => {
-                if (!ignore) {
-                    setHistoryItems(data.payload.items);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("mark.historyLoadFailed"));
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mark])
 
     const handleOnClickNewCheck = () => {
         navigate(`/problem/${mark.mark_id}/add-check`)

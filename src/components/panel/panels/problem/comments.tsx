@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useContext, useEffect, useState } from "react";
+import { FormEvent, useContext, useState } from "react";
 import { observer } from "mobx-react-lite";
 import CommentsService, { COMMENT_MAX_LENGTH, Comment } from "../../../../services/CommentsService";
 import { canEditComment, threadComments } from "../../../../utils/comments";
@@ -9,6 +9,7 @@ import { MarkContext } from "./mark-context";
 import { Button } from "../../../button/button";
 import ReportButton from "../../../report/report-button";
 import { useNow } from "../../../../utils/hooks";
+import { useAsyncData } from "../../../../utils/use-async-data";
 import { relativeTime } from "../../../../utils/relative-time";
 import { TranslationKey, localeOf, useT } from "../../../../i18n";
 import { Link } from "react-router-dom";
@@ -21,41 +22,17 @@ const COMMENTS_LIMIT = 100;
 const CommentsBlock = observer(function CommentsBlock() {
     const mark = useContext(MarkContext);
     const { t } = useT();
-    const [comments, setComments] = useState<Comment[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [version, setVersion] = useState(0);
-    const reload = useCallback(() => setVersion((v) => v + 1), []);
+    // A queue flush can land a comment written offline, so it re-reads the thread.
     const flushedAt = offlineQueueStore.lastFlushedAt;
 
-    useEffect(() => {
-        if (mark.mark_id === 0) {
-            return;
-        }
-        let ignore = false;
-        setIsLoading(true);
-        CommentsService.getComments(mark.mark_id, COMMENTS_LIMIT, 0)
-            .then((data) => {
-                if (!ignore) {
-                    setComments(data.payload);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("comments.loadFailed"));
-            })
-            .finally(() => {
-                if (!ignore) {
-                    setIsLoading(false);
-                }
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mark.mark_id, version, flushedAt]);
+    // `reload` is what the form and every item call after writing; it replaces the
+    // version counter this block used to bump for the same purpose.
+    const { data, isLoading, reload } = useAsyncData(
+        (signal) => CommentsService.getComments(mark.mark_id, COMMENTS_LIMIT, 0, { signal }).then((res) => res.payload),
+        [mark.mark_id, flushedAt],
+        { enabled: mark.mark_id !== 0, errorMessage: t("comments.loadFailed") },
+    );
+    const comments: Comment[] = data ?? [];
 
     const threads = threadComments(comments);
     const count = comments.filter((c) => !c.deleted).length;

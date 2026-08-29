@@ -45,6 +45,7 @@ export interface GetQueueResponse extends IResponse {
     meta?: ListMeta;
 }
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 /** Complaints and the moderation queue (backend integration/wave-5). */
 class ReportsService extends BaseService {
     /** `POST /reports`: 409 when the user already reported the target, 429 on the rate limit. */
@@ -57,7 +58,7 @@ class ReportsService extends BaseService {
     }
 
     /** Moderator/admin: the queue of complaints. */
-    public getQueue(req: GetQueueRequest = {}): Promise<GetQueueResponse> {
+    public getQueue(req: GetQueueRequest = {}, init?: Pick<RequestInit, "signal">): Promise<GetQueueResponse> {
         const params = new URLSearchParams();
         if (req.status) {
             params.set("status", req.status);
@@ -72,7 +73,7 @@ class ReportsService extends BaseService {
             params.set("offset", String(req.offset));
         }
         const query = params.toString();
-        return this.requestWithAuth<GetQueueResponse>(`/api/moderation/queue${query ? `?${query}` : ""}`)
+        return this.requestWithAuth<GetQueueResponse>(`/api/moderation/queue${query ? `?${query}` : ""}`, init)
             .then((res) => ({ ...res, payload: unwrapList<Report>(res.payload, "reports") }));
     }
 

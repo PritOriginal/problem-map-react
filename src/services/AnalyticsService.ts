@@ -56,13 +56,14 @@ export function analyticsParams(req: AnalyticsRequest, extra: Record<string, str
     return params;
 }
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 class AnalyticsService extends BaseService {
-    public getKpi(req: AnalyticsRequest): Promise<GetKpiResponse> {
-        return this.request<GetKpiResponse>(`/api/analytics/kpi?${analyticsParams(req)}`);
+    public getKpi(req: AnalyticsRequest, init?: Pick<RequestInit, "signal">): Promise<GetKpiResponse> {
+        return this.request<GetKpiResponse>(`/api/analytics/kpi?${analyticsParams(req)}`, init);
     }
 
-    public getTimeseries(req: AnalyticsRequest, step: TimeseriesStep = "week"): Promise<GetTimeseriesResponse> {
-        return this.request<IResponse>(`/api/analytics/timeseries?${analyticsParams(req, { step })}`)
+    public getTimeseries(req: AnalyticsRequest, step: TimeseriesStep = "week", init?: Pick<RequestInit, "signal">): Promise<GetTimeseriesResponse> {
+        return this.request<IResponse>(`/api/analytics/timeseries?${analyticsParams(req, { step })}`, init)
             .then((res) => ({ ...res, payload: unwrapList<TimeseriesPoint>(res.payload, "timeseries") }));
     }
 }

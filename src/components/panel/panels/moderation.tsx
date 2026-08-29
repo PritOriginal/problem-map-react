@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { LngLat } from "@yandex/ymaps3-types";
 import user from "../../../store/user";
@@ -15,6 +15,7 @@ import { TypeIcon } from "../../mark/mark";
 import { REASON_LABELS } from "../../../utils/report";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { mapWithLimit } from "../../../utils/concurrency";
+import { useAsyncData } from "../../../utils/use-async-data";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import PanelHeader from "../panel-header";
@@ -40,70 +41,48 @@ const ModerationPanel = observer(function ModerationPanel() {
 
     const [status, setStatus] = useState<ReportStatus>("open");
     const [targetType, setTargetType] = useState<ReportTargetType | "">("");
-    const [reports, setReports] = useState<Report[]>([]);
-    const [marks, setMarks] = useState<Record<number, Mark>>({});
-    const [isLoading, setIsLoading] = useState(false);
-    const [version, setVersion] = useState(0);
-    const reload = useCallback(() => setVersion((v) => v + 1), []);
 
     const isModerator = user.isModerator;
 
-    useEffect(() => {
-        if (!isModerator) {
-            return;
-        }
-        let ignore = false;
-        setIsLoading(true);
-        ReportsService.getQueue({ status, target_type: targetType || undefined, limit: QUEUE_LIMIT, offset: 0 })
-            .then(async (data) => {
-                if (ignore) {
-                    return;
-                }
-                const list = data.payload;
-                setReports(list);
-                setMarks(expandedMarks(list));
-                // A queue of QUEUE_LIMIT reports used to mean that many parallel
-                // `getMarkById` calls, one per card; the browser queued them six at a
-                // time and the panel froze. They are loaded here instead, throttled,
-                // and handed to the cards as a prop. Failures leave a single card
-                // without its mark block, exactly as the per-card load did.
-                const ids = missingMarkIds(list);
-                if (ids.length === 0) {
-                    return;
-                }
-                const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id));
-                if (ignore) {
-                    return;
-                }
-                setMarks((current) => {
-                    const byId = { ...current };
-                    loaded.forEach((res, index) => {
-                        if (res.status === "fulfilled") {
-                            byId[ids[index]] = res.value.payload.mark;
-                        } else {
-                            console.error(res.reason);
-                        }
-                    });
-                    return byId;
-                });
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("moderation.loadFailed"));
-            })
-            .finally(() => {
-                if (!ignore) {
-                    setIsLoading(false);
+    // `reload` is what a card calls after acting on a report; it replaces the version
+    // counter this panel used to bump for the same purpose.
+    const { data, isLoading, reload } = useAsyncData(
+        (signal) => ReportsService
+            .getQueue({ status, target_type: targetType || undefined, limit: QUEUE_LIMIT, offset: 0 }, { signal })
+            .then((res) => res.payload),
+        [status, targetType],
+        { enabled: isModerator, errorMessage: t("moderation.loadFailed") },
+    );
+    const reports: Report[] = useMemo(() => data ?? [], [data]);
+
+    // A queue of QUEUE_LIMIT reports used to mean that many parallel `getMarkById`
+    // calls, one per card; the browser queued them six at a time and the panel froze.
+    // They are loaded here instead, throttled, and handed to the cards as a prop.
+    // Failures leave a single card without its mark block, exactly as the per-card load
+    // did -- hence `silent`. The key is the id list itself, so a reload that returns the
+    // same reports does not re-request every mark.
+    const missingIds = useMemo(() => missingMarkIds(reports).join(","), [reports]);
+    const { data: fetched } = useAsyncData(
+        async (signal) => {
+            const ids = missingIds.split(",").map(Number);
+            const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id, { signal }));
+            const byId: Record<number, Mark> = {};
+            loaded.forEach((res, index) => {
+                if (res.status === "fulfilled") {
+                    byId[ids[index]] = res.value.payload.mark;
                 }
             });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isModerator, status, targetType, version]);
+            return byId;
+        },
+        [missingIds],
+        { enabled: missingIds !== "", silent: true },
+    );
+
+    // The queue expands some marks inline; the rest arrive from the pass above.
+    const marks: Record<number, Mark> = useMemo(
+        () => ({ ...expandedMarks(reports), ...fetched }),
+        [reports, fetched],
+    );
 
     return (
         <>
@@ -280,30 +259,21 @@ const ReportCard = observer(function ReportCard({ report, mark: loadedMark, onDo
 /** "Merge into…": similar marks from `GET /marks/similar` plus a manual id -> `POST /marks/{id}/merge-into/{target}`. */
 export const MergeForm = observer(function MergeForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => void; onDone: (target: Mark) => void }) {
     const { t } = useT();
-    const [similar, setSimilar] = useState<SimilarMark[]>([]);
-    const [loading, setLoading] = useState(true);
     const [manualId, setManualId] = useState("");
     const [pending, setPending] = useState(false);
 
-    useEffect(() => {
-        let ignore = false;
-        const [lon, lat] = mark.geom.coordinates as LngLat;
-        MarksService.getSimilarMarks({ point: { longitude: lon, latitude: lat }, mark_type_id: mark.mark_type_id })
-            .then((data) => {
-                if (!ignore) {
-                    setSimilar(parseSimilarMarks(data.payload).filter((m) => m.mark_id !== mark.mark_id));
-                }
-            })
-            .catch((error) => console.error(error))
-            .finally(() => {
-                if (!ignore) {
-                    setLoading(false);
-                }
-            });
-        return () => {
-            ignore = true;
-        };
-    }, [mark]);
+    // A failed lookup leaves the manual id field, which is enough to merge; the banner
+    // would say nothing the empty list does not.
+    const { data: similar = [], isLoading: loading } = useAsyncData<SimilarMark[]>(
+        (signal) => {
+            const [lon, lat] = mark.geom.coordinates as LngLat;
+            return MarksService
+                .getSimilarMarks({ point: { longitude: lon, latitude: lat }, mark_type_id: mark.mark_type_id }, { signal })
+                .then((res) => parseSimilarMarks(res.payload).filter((m) => m.mark_id !== mark.mark_id));
+        },
+        [mark],
+        { silent: true },
+    );
 
     const merge = (targetId: number) => {
         if (!Number.isInteger(targetId) || targetId <= 0 || targetId === mark.mark_id) {

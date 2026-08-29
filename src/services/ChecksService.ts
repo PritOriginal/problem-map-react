@@ -51,6 +51,7 @@ export interface AddCheckResponsePayload {
 }
 
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 class ChecksService extends BaseService {
     public getCheckById(id: number): Promise<GetCheckByIdResponse> {
         return this.request<GetCheckByIdResponse>(`/api/checks/${id}`)
@@ -60,8 +61,8 @@ class ChecksService extends BaseService {
         return this.request<GetChecksByMarkIdResponse>(`/api/checks/mark/${markId}`)
     }
 
-    public getChecksByUserId(userId: number): Promise<GetChecksByUserIdResponse> {
-        return this.request<GetChecksByUserIdResponse>(`/api/checks/user/${userId}`)
+    public getChecksByUserId(userId: number, init?: Pick<RequestInit, "signal">): Promise<GetChecksByUserIdResponse> {
+        return this.request<GetChecksByUserIdResponse>(`/api/checks/user/${userId}`, init)
     }
 
     public addCheck(req: AddCheckRequest, photos: Blob[], idempotencyKey?: string): Promise<AddCheckResponse> {

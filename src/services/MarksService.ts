@@ -249,6 +249,7 @@ export interface GetMarkStatusHistoryByMarkIdResponsePayload {
     items: MarkStatusHistoryItem[];
 }
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 class MarksService extends BaseService {
     /**
      * `GET /marks?mark_type_ids=&mark_status_ids=` returns `{ marks: Mark[] }`.
@@ -258,16 +259,16 @@ class MarksService extends BaseService {
         return this.request<GetMarksResponse>(`/api/marks?${this.filterParams(req)}`, init)
     }
 
-    public getMarkById(id: number): Promise<GetMarkByIdResponse> {
-        return this.request<GetMarkByIdResponse>(`/api/marks/${id}`)
+    public getMarkById(id: number, init?: Pick<RequestInit, "signal">): Promise<GetMarkByIdResponse> {
+        return this.request<GetMarkByIdResponse>(`/api/marks/${id}`, init)
     }
 
-    public getMarksByUserId(userId: number): Promise<GetMarksByUserIdResponse> {
-        return this.request<GetMarksByUserIdResponse>(`/api/marks/user/${userId}`)
+    public getMarksByUserId(userId: number, init?: Pick<RequestInit, "signal">): Promise<GetMarksByUserIdResponse> {
+        return this.request<GetMarksByUserIdResponse>(`/api/marks/user/${userId}`, init)
     }
 
     /** Marks of the same type near the point. */
-    public getSimilarMarks(req: GetSimilarMarksRequest): Promise<GetSimilarMarksResponse> {
+    public getSimilarMarks(req: GetSimilarMarksRequest, init?: Pick<RequestInit, "signal">): Promise<GetSimilarMarksResponse> {
         const params = new URLSearchParams({
             lon: String(req.point.longitude),
             lat: String(req.point.latitude),
@@ -276,7 +277,7 @@ class MarksService extends BaseService {
         if (req.radius !== undefined) {
             params.set("radius", String(req.radius));
         }
-        return this.request<IResponse>(`/api/marks/similar?${params}`)
+        return this.request<IResponse>(`/api/marks/similar?${params}`, init)
             .then((res) => ({ ...res, payload: parseSimilarMarks(res.payload) }));
     }
 
@@ -409,8 +410,8 @@ class MarksService extends BaseService {
         return params;
     }
 
-    public getMarkStatusHistoryByMarkId(id: number, withChecks: boolean): Promise<GetMarkStatusHistoryByMarkIdResponse> {
-        return this.request<GetMarkStatusHistoryByMarkIdResponse>(`/api/marks/${id}/status-history?withChecks=${withChecks}`)
+    public getMarkStatusHistoryByMarkId(id: number, withChecks: boolean, init?: Pick<RequestInit, "signal">): Promise<GetMarkStatusHistoryByMarkIdResponse> {
+        return this.request<GetMarkStatusHistoryByMarkIdResponse>(`/api/marks/${id}/status-history?withChecks=${withChecks}`, init)
     }
 }
 

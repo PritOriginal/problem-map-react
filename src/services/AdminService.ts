@@ -149,10 +149,11 @@ export function normalizeAdminMarkTypes(payload: unknown): AdminMarkType[] {
 
 const JSON_HEADERS = { "Content-Type": "application/json;charset=utf-8" };
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 /** Admin settings, mark types and API keys (backend integration/wave-5, role admin). */
 class AdminService extends BaseService {
-    public getSettings(): Promise<GetSettingsResponse> {
-        return this.requestWithAuth<GetSettingsResponse>("/api/admin/settings");
+    public getSettings(init?: Pick<RequestInit, "signal">): Promise<GetSettingsResponse> {
+        return this.requestWithAuth<GetSettingsResponse>("/api/admin/settings", init);
     }
 
     public updateSettings(settings: AdminSettings): Promise<GetSettingsResponse> {
@@ -164,8 +165,8 @@ class AdminService extends BaseService {
     }
 
     /** All mark types, including inactive ones. */
-    public getMarkTypes(): Promise<GetAdminMarkTypesResponse> {
-        return this.requestWithAuth<IResponse>("/api/admin/mark-types")
+    public getMarkTypes(init?: Pick<RequestInit, "signal">): Promise<GetAdminMarkTypesResponse> {
+        return this.requestWithAuth<IResponse>("/api/admin/mark-types", init)
             .then((res) => ({ ...res, payload: normalizeAdminMarkTypes(res.payload) }));
     }
 
@@ -185,8 +186,8 @@ class AdminService extends BaseService {
         }).then((res) => ({ ...res, payload: normalizeAdminMarkType(res.payload) }));
     }
 
-    public getApiKeys(): Promise<GetApiKeysResponse> {
-        return this.requestWithAuth<IResponse>("/api/api-keys")
+    public getApiKeys(init?: Pick<RequestInit, "signal">): Promise<GetApiKeysResponse> {
+        return this.requestWithAuth<IResponse>("/api/api-keys", init)
             .then((res) => ({ ...res, payload: normalizeApiKeys(res.payload) }));
     }
 

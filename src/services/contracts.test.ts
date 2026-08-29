@@ -75,6 +75,14 @@ describe("service payloads match the backend contract", () => {
 
         fetchMock.mockImplementation(ok({ task_statuses: [{ id: 1, code: "assigned", name: "Выдано" }] }));
         expect((await TasksService.getTaskStatuses()).payload[0].code).toBe("assigned");
+
+        // the optional trailing `init` only carries the abort signal through to fetch
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ tasks: [task] }));
+        const signal = new AbortController().signal;
+        expect((await TasksService.getUserTasks(3, { limit: 10 }, { signal })).payload).toEqual([task]);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/tasks/user/3?limit=10");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
     });
 
     it("GET /notifications -> { notifications }", async () => {
@@ -90,11 +98,24 @@ describe("service payloads match the backend contract", () => {
         expect((await CommentsService.getComments(3)).payload).toEqual([comment]);
         fetchMock.mockImplementation(ok({ comment }));
         expect((await CommentsService.addComment(3, { body: "x" })).payload).toEqual(comment);
+
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ comments: [comment] }));
+        const signal = new AbortController().signal;
+        expect((await CommentsService.getComments(3, 50, 10, { signal })).payload).toEqual([comment]);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks/3/comments?limit=50&offset=10");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
     });
 
     it("GET /moderation/queue -> { reports }", async () => {
         fetchMock.mockImplementation(ok({ reports: [{ report_id: 1, target_type: "mark", target_id: 5, reason: "spam", status: "open" }] }));
         expect((await ReportsService.getQueue()).payload[0].report_id).toBe(1);
+
+        fetchMock.mockClear();
+        const signal = new AbortController().signal;
+        expect((await ReportsService.getQueue({ status: "open", limit: 100, offset: 0 }, { signal })).payload[0].report_id).toBe(1);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/moderation/queue?status=open&limit=100&offset=0");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
     });
 
     it("GET /analytics/timeseries -> { timeseries }, /analytics/kpi flat", async () => {
@@ -102,6 +123,17 @@ describe("service payloads match the backend contract", () => {
         expect((await AnalyticsService.getTimeseries({})).payload[0].created).toBe(1);
         fetchMock.mockImplementation(ok({ total: 4, by_status: { "1": 4 }, by_organization: [], avg_confirm_hours: null, median_confirm_hours: null, avg_close_hours: null, refuted_share: null, sla_breach_share: null }));
         expect((await AnalyticsService.getKpi({})).payload.total).toBe(4);
+
+        fetchMock.mockClear();
+        const signal = new AbortController().signal;
+        expect((await AnalyticsService.getKpi({ boundary_id: 3 }, { signal })).payload.total).toBe(4);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/analytics/kpi?boundary_id=3");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
+
+        fetchMock.mockImplementation(ok({ timeseries: [{ period: "2026-01", created: 1, confirmed: 0, closed: 0, refuted: 0 }] }));
+        expect((await AnalyticsService.getTimeseries({ boundary_id: 3 }, "day", { signal })).payload[0].created).toBe(1);
+        expect(fetchMock.mock.calls[1][0]).toBe("/api/analytics/timeseries?boundary_id=3&step=day");
+        expect((fetchMock.mock.calls[1][1] as RequestInit).signal).toBe(signal);
     });
 
     it("organizations: /me -> { organization: { id } }, list -> { organizations: [{ id, name }] }, marks -> { marks }", async () => {
@@ -119,6 +151,17 @@ describe("service payloads match the backend contract", () => {
         expect(normalizeOrganization({ organization_id: 2, name: "x" })?.organization_id).toBe(2);
         expect(normalizeOrganization(null)).toBeNull();
         expect(normalizeOrganization({ name: "no id" })).toBeNull();
+
+        fetchMock.mockClear();
+        const signal = new AbortController().signal;
+        expect((await OrganizationsService.getMarks(5, { overdue: true, limit: 100 }, { signal })).payload[0].mark_id).toBe(1);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/organizations/5/marks?overdue=true&limit=100");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
+
+        fetchMock.mockImplementation(ok({ organization: { id: 5, name: "ЖКХ" } }));
+        expect((await OrganizationsService.getMe({ signal })).payload?.organization_id).toBe(5);
+        expect(fetchMock.mock.calls[1][0]).toBe("/api/organizations/me");
+        expect((fetchMock.mock.calls[1][1] as RequestInit).signal).toBe(signal);
     });
 
     it("users: stats -> { stats }, leaderboard -> { leaderboard } with level object, badges -> { badges }, me -> { user }", async () => {
@@ -141,6 +184,34 @@ describe("service payloads match the backend contract", () => {
 
         fetchMock.mockImplementation(ok({ user: { user_id: 4, username: "u", login: "l", rating: 1, role: "user" } }));
         expect((await UsersService.getMe()).payload.user.user_id).toBe(4);
+
+        // every read a panel effect can cancel takes the same trailing `init`; it reaches
+        // fetch untouched and leaves the URL and the unwrapping exactly as asserted above
+        const signal = new AbortController().signal;
+        const withSignal = async (call: () => Promise<unknown>, url: string) => {
+            fetchMock.mockClear();
+            await call();
+            expect(fetchMock.mock.calls[0][0]).toBe(url);
+            expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
+        };
+        await withSignal(async () => expect((await UsersService.getMe({ signal })).payload.user.user_id).toBe(4), "/api/users/me");
+
+        fetchMock.mockImplementation(ok({ stats }));
+        await withSignal(async () => expect((await UsersService.getMyStats({ signal })).payload).toEqual(stats), "/api/users/me/stats");
+
+        fetchMock.mockImplementation(ok({ leaderboard: [{ user_id: 4, username: "u", rating: 10 }] }));
+        await withSignal(async () => expect((await UsersService.getLeaderboard({ period: "week", limit: 50, offset: 0 }, { signal })).payload[0].user_id).toBe(4), "/api/leaderboard?period=week&limit=50&offset=0");
+
+        const profilePayload = { profile: { user_id: 4, username: "u", rating: 10, level: { number: 1, name: "n", next_threshold: 50 }, badges: [], stats: {}, member_since: "" } };
+        fetchMock.mockImplementation(ok(profilePayload));
+        await withSignal(async () => expect((await UsersService.getProfile(4, { signal })).payload.user_id).toBe(4), "/api/users/4/profile");
+        await withSignal(async () => expect((await UsersService.getMyProfile({ signal })).payload.user_id).toBe(4), "/api/users/me/profile");
+
+        // getBadges goes through the ETag cache; the entry from the call above would answer
+        // without a request, so it is dropped first
+        localStorage.removeItem("etag:v2:ru:/api/badges");
+        fetchMock.mockImplementation(ok({ badges: [{ code: "x", name: "X", description: "", icon: "⭐" }] }));
+        await withSignal(async () => expect((await UsersService.getBadges({ signal })).payload[0].code).toBe("x"), "/api/badges");
     });
 
     it("admin: api keys -> { api_keys: [{ api_key_id }] }, create -> { api_key, key }, mark types -> { mark_types }", async () => {
@@ -158,6 +229,23 @@ describe("service payloads match the backend contract", () => {
 
         fetchMock.mockImplementation(ok({ id: 9, mark_type_id: 9, code: "c", name: "r", name_ru: "r", name_en: "e", sla_hours: 1, active: true, sort_order: 0 }));
         expect((await AdminService.addMarkType({ code: "c", name_ru: "r", name_en: "e", icon: "", color: "", sla_hours: 1 })).payload?.mark_type_id).toBe(9);
+
+        const signal = new AbortController().signal;
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ mark_types: [{ id: 1, mark_type_id: 1, code: "trash", name: "Мусор", name_ru: "Мусор", name_en: "Trash", icon: "", color: "", sla_hours: 48, active: true, sort_order: 1 }] }));
+        expect((await AdminService.getMarkTypes({ signal })).payload[0].mark_type_id).toBe(1);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/admin/mark-types");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
+
+        fetchMock.mockImplementation(ok({ api_keys: [{ api_key_id: 7, name: "ci", prefix: "pm_live_0123", created_at: "", last_used_at: null, active: true }] }));
+        expect((await AdminService.getApiKeys({ signal })).payload[0].id).toBe(7);
+        expect(fetchMock.mock.calls[1][0]).toBe("/api/api-keys");
+        expect((fetchMock.mock.calls[1][1] as RequestInit).signal).toBe(signal);
+
+        fetchMock.mockImplementation(ok({ settings: { sla: {} } }));
+        expect((await AdminService.getSettings({ signal })).payload).toBeDefined();
+        expect(fetchMock.mock.calls[2][0]).toBe("/api/admin/settings");
+        expect((fetchMock.mock.calls[2][1] as RequestInit).signal).toBe(signal);
     });
 
     it("marks: list/user/by-id/history keep their keyed shape, similar -> { marks }, follow -> { mark_id, following }", async () => {
@@ -179,9 +267,31 @@ describe("service payloads match the backend contract", () => {
         fetchMock.mockImplementation(ok({ items: [{ id: 1, mark_id: 1, old_mark_status_id: null, new_mark_status_id: 2, changed_at: "" }] }));
         expect((await MarksService.getMarkStatusHistoryByMarkId(1, false)).payload.items).toHaveLength(1);
 
+        // the same trailing `init` on the other reads a panel effect can cancel
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ marks: [mark] }));
+        expect((await MarksService.getMarksByUserId(1, { signal: controller.signal })).payload.marks).toEqual([mark]);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks/user/1");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(controller.signal);
+
+        fetchMock.mockImplementation(ok({ mark }));
+        expect((await MarksService.getMarkById(1, { signal: controller.signal })).payload.mark).toEqual(mark);
+        expect(fetchMock.mock.calls[1][0]).toBe("/api/marks/1");
+        expect((fetchMock.mock.calls[1][1] as RequestInit).signal).toBe(controller.signal);
+
+        fetchMock.mockImplementation(ok({ items: [{ id: 1, mark_id: 1, old_mark_status_id: null, new_mark_status_id: 2, changed_at: "" }] }));
+        expect((await MarksService.getMarkStatusHistoryByMarkId(1, true, { signal: controller.signal })).payload.items).toHaveLength(1);
+        expect(fetchMock.mock.calls[2][0]).toBe("/api/marks/1/status-history?withChecks=true");
+        expect((fetchMock.mock.calls[2][1] as RequestInit).signal).toBe(controller.signal);
+
         fetchMock.mockImplementation(ok({ marks: [{ ...mark, distance_m: 12.5 }] }));
         const similar = await MarksService.getSimilarMarks({ point: { longitude: 1, latitude: 2 }, mark_type_id: 1 });
         expect(similar.payload[0].distance_m).toBe(12.5);
+
+        fetchMock.mockClear();
+        expect((await MarksService.getSimilarMarks({ point: { longitude: 1, latitude: 2 }, mark_type_id: 1 }, { signal: controller.signal })).payload[0].distance_m).toBe(12.5);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks/similar?lon=1&lat=2&mark_type_id=1");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(controller.signal);
 
         fetchMock.mockImplementation(ok({ mark_id: 1, following: true }));
         expect((await MarksService.followMark(1)).payload?.following).toBe(true);
@@ -196,6 +306,13 @@ describe("service payloads match the backend contract", () => {
         fetchMock.mockImplementation(ok({ checks: [{ check_id: 1 }] }));
         expect((await ChecksService.getChecksByMarkId(1)).payload.checks[0].check_id).toBe(1);
         expect((await ChecksService.getChecksByUserId(1)).payload.checks[0].check_id).toBe(1);
+
+        fetchMock.mockClear();
+        const signal = new AbortController().signal;
+        expect((await ChecksService.getChecksByUserId(1, { signal })).payload.checks[0].check_id).toBe(1);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/checks/user/1");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
+
         fetchMock.mockImplementation(ok({ admin_boundaries: [{ id: 1, name: "a", admin_level: 4 }] }));
         expect((await MapService.getAdminBoundariesMarksCount({ admin_levels: [4], mark_type_ids: [] })).payload.admin_boundaries[0].id).toBe(1);
     });

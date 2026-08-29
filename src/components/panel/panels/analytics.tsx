@@ -1,13 +1,13 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { StatTile } from "../../stat-tile/stat-tile";
 import { observer } from "mobx-react-lite";
-import notificationsStore from "../../../store/notifications";
 import adminBoundariesStore from "../../../store/admin-boundaries";
 import markStatusesStore from "../../../store/mark-statuses";
 import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesStep } from "../../../services/AnalyticsService";
 import { TranslationKey, useT } from "../../../i18n";
 import { SERIES_COLORS } from "../../../styles/tokens";
 import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, pointX, pointY, toIsoDate, yTicks } from "../../../utils/chart";
+import { useAsyncData } from "../../../utils/use-async-data";
 import PanelHeader from "../panel-header";
 
 const SERIES_META: { key: keyof Omit<TimeseriesPoint, "period">; label: TranslationKey; color: string }[] = [
@@ -45,45 +45,28 @@ const Analytics = observer(function Analytics() {
     const [range, setRange] = useState(() => defaultRange(90));
     const [step, setStep] = useState<TimeseriesStep>("week");
 
-    const [kpi, setKpi] = useState<Kpi | null>(null);
-    const [series, setSeries] = useState<TimeseriesPoint[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-
     const request: AnalyticsRequest = useMemo(() => ({
         boundary_id: boundaryId || undefined,
         from: range.from || undefined,
         to: range.to || undefined,
     }), [boundaryId, range.from, range.to]);
 
-    useEffect(() => {
-        let ignore = false;
-        setIsLoading(true);
-        Promise.allSettled([
-            AnalyticsService.getKpi(request),
-            AnalyticsService.getTimeseries(request, step),
-        ]).then(([kpiRes, tsRes]) => {
-            if (ignore) {
-                return;
-            }
-            setIsLoading(false);
-            if (kpiRes.status === "fulfilled") {
-                setKpi(kpiRes.value.payload);
-            } else {
-                console.error(kpiRes.reason);
-                notificationsStore.showError(kpiRes.reason, t("analytics.kpiFailed"));
-            }
-            if (tsRes.status === "fulfilled") {
-                setSeries(tsRes.value.payload ?? []);
-            } else {
-                console.error(tsRes.reason);
-                notificationsStore.showError(tsRes.reason, t("analytics.tsFailed"));
-            }
-        });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [request, step]);
+    // Two independent reads with two different messages. `Promise.allSettled` was only
+    // ever a way to keep one failure from taking the other panel half down with it, and
+    // two hooks do that on their own.
+    const { data: kpi = null, isLoading: kpiLoading } = useAsyncData(
+        (signal) => AnalyticsService.getKpi(request, { signal }).then((res) => res.payload),
+        [request],
+        { errorMessage: t("analytics.kpiFailed") },
+    );
+
+    const { data: series = [], isLoading: seriesLoading } = useAsyncData(
+        (signal) => AnalyticsService.getTimeseries(request, step, { signal }).then((res) => res.payload ?? []),
+        [request, step],
+        { errorMessage: t("analytics.tsFailed") },
+    );
+
+    const isLoading = kpiLoading || seriesLoading;
 
     const rawBoundaries = adminBoundariesStore.boundaries;
     const boundaries = useMemo(

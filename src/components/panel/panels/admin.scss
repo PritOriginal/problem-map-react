@@ -1,0 +1,75 @@
+.admin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.admin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+
+    input[type="text"],
+    input[type="number"] {
+        padding: 4px;
+        font-size: 13px;
+        border: 1px solid #dadada;
+        width: 100%;
+    }
+
+    small {
+        color: #777;
+    }
+
+    &.invalid {
+        input {
+            border-color: #a40000;
+        }
+
+        small {
+            color: #a40000;
+        }
+    }
+
+    &--check {
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        align-self: end;
+    }
+}
+
+.admin-type {
+    &.inactive {
+        opacity: 0.6;
+    }
+
+    &__swatch {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: white;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+}
+
+.api-key {
+    display: block;
+    padding: 6px;
+    background-color: white;
+    border: 1px solid rgb(201, 201, 201);
+    font-size: 12px;
+    word-break: break-all;
+    user-select: all;
+}

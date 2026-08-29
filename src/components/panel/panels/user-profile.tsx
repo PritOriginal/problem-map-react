@@ -77,8 +77,8 @@ const UserProfilePanel = observer(function UserProfilePanel() {
                 <p style={{ fontSize: 12 }}>{subtitle}</p>
             </div>
             <div className="panel__content">
-                {isLoading && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                {(notFound || !Number.isFinite(id) || id <= 0) && <p style={{ fontSize: 14 }}>{t("profile.notFound")}</p>}
+                {isLoading && <p className="empty-state">{t("common.loading")}</p>}
+                {(notFound || !Number.isFinite(id) || id <= 0) && <p className="empty-state">{t("profile.notFound")}</p>}
                 {profile &&
                     <>
                         <LevelBlock rating={profile.rating} level={profile.level} />

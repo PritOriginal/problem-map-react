@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CSS_MIRROR, contrastOn, INK, PAPER, STATUS_COLORS } from "./tokens";
+import { CSS_MIRROR, CSS_MIRROR_DARK, contrastOn, INK, PAPER, STATUS_COLORS, STATUS_COLORS_DARK, statusColors, themeColors } from "./tokens";
 
 /**
  * `src/tokens.scss` is the source of truth for colour. A few of its values are also
@@ -11,12 +11,23 @@ import { CSS_MIRROR, contrastOn, INK, PAPER, STATUS_COLORS } from "./tokens";
  * gives the two dictionaries.
  */
 
-/** Parse `--name: value;` pairs out of the `:root` block of the SCSS token file. */
-function readScssTokens(): Map<string, string> {
-    const source = readFileSync(resolve(__dirname, "../tokens.scss"), "utf8");
-    const root = source.slice(source.indexOf(":root"));
+const SCSS = readFileSync(resolve(__dirname, "../tokens.scss"), "utf8");
+
+/**
+ * Parse `--name: value;` pairs out of ONE top-level block, stopping at its closing
+ * brace in column 0. Reading the whole file would let the dark mixin's values
+ * overwrite the light ones and silently make this test compare the wrong theme.
+ */
+function readBlock(header: string): Map<string, string> {
+    const start = SCSS.indexOf(header);
+    if (start === -1) {
+        throw new Error(`block not found in src/tokens.scss: ${header}`);
+    }
     const tokens = new Map<string, string>();
-    for (const line of root.split("\n")) {
+    for (const line of SCSS.slice(start + header.length).split("\n")) {
+        if (/^\}/.test(line)) {
+            break;
+        }
         const match = /^\s*(--[a-z0-9-]+)\s*:\s*([^;]+);/i.exec(line);
         if (match) {
             tokens.set(match[1], match[2].trim());
@@ -24,6 +35,9 @@ function readScssTokens(): Map<string, string> {
     }
     return tokens;
 }
+
+const readScssTokens = () => readBlock(":root {");
+const readScssDarkTokens = () => readBlock("@mixin dark-theme {");
 
 /** #abc -> #aabbcc, so shorthand and longhand compare equal. */
 function expand(colour: string): string {
@@ -52,6 +66,26 @@ describe("design token parity", () => {
     });
 });
 
+describe("design token parity (dark)", () => {
+    const scss = readScssDarkTokens();
+
+    it("parses the dark block separately from the light one", () => {
+        expect(scss.size).toBeGreaterThan(30);
+        // proves the two blocks were not merged
+        expect(expand(scss.get("--paper")!)).not.toBe(expand(CSS_MIRROR["--paper"]));
+    });
+
+    it.each(Object.keys(CSS_MIRROR_DARK))("%s matches the dark-theme mixin", (name) => {
+        const fromScss = scss.get(name);
+        expect(fromScss, `${name} is missing from the dark-theme mixin`).toBeDefined();
+        expect(expand(fromScss!)).toBe(expand(CSS_MIRROR_DARK[name as keyof typeof CSS_MIRROR_DARK]));
+    });
+
+    it("mirrors exactly the same token names as the light theme", () => {
+        expect(Object.keys(CSS_MIRROR_DARK).sort()).toEqual(Object.keys(CSS_MIRROR).sort());
+    });
+});
+
 describe("status colours", () => {
     it("covers every status id the backend can send", () => {
         expect(Object.keys(STATUS_COLORS).map(Number).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
@@ -61,6 +95,22 @@ describe("status colours", () => {
         for (const [id, colour] of Object.entries(STATUS_COLORS)) {
             expect(colour, `status ${id}`).toMatch(/^#[0-9a-f]{6}$/i);
         }
+    });
+});
+
+describe("theme resolvers", () => {
+    it("returns the dark mirror only for dark", () => {
+        expect(themeColors("dark")).toBe(CSS_MIRROR_DARK);
+        expect(themeColors("light")).toBe(CSS_MIRROR);
+    });
+
+    it("returns the dark status scale only for dark", () => {
+        expect(statusColors("dark")).toBe(STATUS_COLORS_DARK);
+        expect(statusColors("light")).toBe(STATUS_COLORS);
+    });
+
+    it("covers the same status ids in both themes", () => {
+        expect(Object.keys(STATUS_COLORS_DARK).sort()).toEqual(Object.keys(STATUS_COLORS).sort());
     });
 });
 

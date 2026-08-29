@@ -5,7 +5,8 @@ import "./marker.scss"
 import { memo } from "react";
 import { Mark, MarkType } from "../../services/MarksService";
 import { typeColor, typeIcon } from "../../utils/mark-types";
-import { contrastOn, STATUS_COLORS, STATUS_FALLBACK } from "../../styles/tokens";
+import { contrastOn, statusColors, STATUS_FALLBACK } from "../../styles/tokens";
+import { useTheme } from "../../theme";
 
 import BlobIcon from "../../assets/blob.svg?react"
 import RoadIcon from "../../assets/road.svg?react"
@@ -129,7 +130,8 @@ interface MarkItemProps {
 }
 
 const MarkItem = memo(function ({ mark, type, size, selected, assigned = false, onClick }: MarkItemProps) {
-  const color = STATUS_COLORS[mark.mark_status_id] ?? STATUS_FALLBACK;
+  const { resolved } = useTheme();
+  const color = statusColors(resolved)[mark.mark_status_id] ?? STATUS_FALLBACK;
   const ring = typeColor(type);
 
   return (

@@ -108,8 +108,8 @@ const ModerationPanel = observer(function ModerationPanel() {
                                 </select>
                             </label>
                         </div>
-                        {isLoading && reports.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                        {!isLoading && reports.length === 0 && <p style={{ fontSize: 14 }}>{t("moderation.empty")}</p>}
+                        {isLoading && reports.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
+                        {!isLoading && reports.length === 0 && <p className="empty-state">{t("moderation.empty")}</p>}
                         <div className="profile-list">
                             {reports.map((report) => <ReportCard key={report.report_id} report={report} onDone={reload} />)}
                         </div>
@@ -298,8 +298,8 @@ export const MergeForm = observer(function MergeForm({ mark, onCancel, onDone }:
     return (
         <div className="similar-block">
             <p><b>{t("moderation.mergeTitle", { id: mark.mark_id })}</b></p>
-            {loading && <p style={{ fontSize: 13 }}>{t("moderation.similarLoading")}</p>}
-            {!loading && similar.length === 0 && <p style={{ fontSize: 13 }}>{t("moderation.similarEmpty")}</p>}
+            {loading && <p className="empty-state">{t("moderation.similarLoading")}</p>}
+            {!loading && similar.length === 0 && <p className="empty-state">{t("moderation.similarEmpty")}</p>}
             <div className="similar-block__list">
                 {similar.map((s) => {
                     const type = markTypesStore.types.find((x) => x.mark_type_id === s.mark_type_id);

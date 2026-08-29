@@ -51,7 +51,7 @@ const QueuePanel = observer(function QueuePanel() {
                                 {t(offlineQueueStore.isFlushing ? "offline.sending" : "offline.send")}
                             </Button>
                         </div>
-                        {items.length === 0 && <p style={{ fontSize: 14 }}>{t("offline.empty")}</p>}
+                        {items.length === 0 && <p className="empty-state">{t("offline.empty")}</p>}
                         <div className="profile-list">
                             {items.map((item) => (
                                 <div key={item.id} className={`task-card ${item.last_error ? "overdue" : ""}`}>

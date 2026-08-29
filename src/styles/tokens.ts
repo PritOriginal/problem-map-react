@@ -31,6 +31,29 @@ export const CSS_MIRROR = {
     "--highlight-rule": "#f4b71a",
 } as const;
 
+/**
+ * The same tokens under the dark theme, mirrored from the `dark-theme` mixin in
+ * src/tokens.scss. The map draws boundary strokes and heat-cell outlines with
+ * these, and a black stroke is invisible on a dark basemap.
+ */
+export const CSS_MIRROR_DARK = {
+    "--ink": "#e6e8e9",
+    "--ink-muted": "#9aa0a4",
+    "--paper": "#1f2225",
+    "--placeholder": "#2a2e31",
+    "--rule": "#31363a",
+    "--rule-faint": "#5c6266",
+    "--alert": "#ff5c5c",
+    "--success-ink": "#55cc83",
+    "--assigned": "#ff2e88",
+    "--highlight-rule": "#ffc93d",
+} as const;
+
+/** The mirrored tokens for a theme. Takes a plain string so this module stays pure. */
+export function themeColors(theme: "light" | "dark"): typeof CSS_MIRROR | typeof CSS_MIRROR_DARK {
+    return theme === "dark" ? CSS_MIRROR_DARK : CSS_MIRROR;
+}
+
 export const INK = CSS_MIRROR["--ink"];
 export const INK_MUTED = CSS_MIRROR["--ink-muted"];
 export const PAPER = CSS_MIRROR["--paper"];
@@ -55,6 +78,27 @@ export const STATUS_COLORS: Readonly<Record<number, string>> = {
     7: "#f07316", // in progress
     8: "#8b8f91", // duplicate
 };
+
+/**
+ * The same scale for a dark basemap. Every value is lifted: on the dark ground
+ * the light-theme greys disappear and the deep red reads as brown. Refuted (6)
+ * moves furthest -- a dark slate is invisible against a dark map.
+ */
+export const STATUS_COLORS_DARK: Readonly<Record<number, string>> = {
+    1: "#8a8782", // unconfirmed
+    2: "#ff5c5c", // confirmed
+    3: "#ffc93d", // under review
+    4: "#ff5c5c", // rediscovered
+    5: "#55cc83", // closed
+    6: "#aab0b4", // refuted
+    7: "#ff9440", // in progress
+    8: "#6f7477", // duplicate
+};
+
+/** The status scale for a theme. Takes a plain string so this module stays pure. */
+export function statusColors(theme: "light" | "dark"): Readonly<Record<number, string>> {
+    return theme === "dark" ? STATUS_COLORS_DARK : STATUS_COLORS;
+}
 
 /** Fallback when a status has no colour of its own. */
 export const STATUS_FALLBACK = STATUS_COLORS[1];

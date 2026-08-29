@@ -2,6 +2,9 @@ import type { Dictionary } from "./ru";
 
 /** English dictionary; any key missing here falls back to Russian. */
 export const en: Partial<Dictionary> = {
+    "theme.auto": "Theme: system",
+    "theme.light": "Theme: light",
+    "theme.dark": "Theme: dark",
     "nav.map": "Map",
     "nav.tasks": "Tasks",
     "nav.org": "Service desk",

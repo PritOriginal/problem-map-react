@@ -11,6 +11,7 @@ import MapIcon from "../../assets/map.svg?react"
 import { useDeviceDetect } from "../../utils/hooks";
 import { useToKeepSearch } from "../../utils/navigation";
 import { LANGS, Lang, setLang, useT } from "../../i18n";
+import { Theme, THEMES, useSetTheme, useTheme } from "../../theme";
 
 /**
  * A top-level section link that shows whether you are in that section.
@@ -21,6 +22,55 @@ function NavItem({ to, label }: { to: ReturnType<ReturnType<typeof useToKeepSear
         <NavLink to={to} className={({ isActive }) => `header-nav-link${isActive ? " active" : ""}`}>
             {label}
         </NavLink>
+    );
+}
+
+/** Cycles system -> light -> dark. The icon shows what is in effect right now. */
+function ThemeSwitcher() {
+    const { theme, resolved } = useTheme();
+    const setTheme = useSetTheme();
+    const { t } = useT();
+    const label = t(`theme.${theme}` as Parameters<typeof t>[0]);
+
+    return (
+        <button
+            type="button"
+            className="header-theme"
+            title={label}
+            aria-label={label}
+            onClick={() => setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length] as Theme)}
+        >
+            {theme === "auto"
+                ? <AutoThemeIcon />
+                : resolved === "dark" ? <MoonIcon /> : <SunIcon />}
+        </button>
+    );
+}
+
+function SunIcon() {
+    return (
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+            <circle cx="8" cy="8" r="3.1" />
+            <path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+function MoonIcon() {
+    return (
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+            <path d="M13.2 9.6A5.6 5.6 0 0 1 6.4 2.8a5.6 5.6 0 1 0 6.8 6.8Z" strokeLinejoin="round" />
+        </svg>
+    );
+}
+
+/** Half light, half dark: the theme is whatever the device says. */
+function AutoThemeIcon() {
+    return (
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" strokeWidth="1.4" />
+            <path d="M8 2.6a5.4 5.4 0 0 1 0 10.8Z" fill="currentColor" />
+        </svg>
     );
 }
 
@@ -44,6 +94,7 @@ const Header = observer(function Header() {
                     <NavItem to={toKeepSearch("/analytics")} label={t("nav.analytics")} />
                 </div>
                 <div className="header-container__user-info">
+                    <ThemeSwitcher />
                     <LangSwitcher />
                     {user.id !== 0 ?
                         <>

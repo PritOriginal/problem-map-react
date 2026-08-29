@@ -5,6 +5,9 @@
  */
 export const ru = {
     // header / navigation
+    "theme.auto": "Тема: как в системе",
+    "theme.light": "Тема: светлая",
+    "theme.dark": "Тема: тёмная",
     "nav.map": "Карта",
     "nav.tasks": "Задания",
     "nav.org": "Кабинет службы",

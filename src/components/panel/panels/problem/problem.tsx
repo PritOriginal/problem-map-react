@@ -1,6 +1,7 @@
 import { Outlet, useParams } from "react-router-dom";
 import { TypeIcon } from "../../../mark/mark";
-import { STATUS_COLORS } from "../../../../styles/tokens";
+import { statusColors } from "../../../../styles/tokens";
+import { useTheme } from "../../../../theme";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
@@ -17,6 +18,7 @@ import { CommentsCount, HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/
 
 
 const ProblemPanel = observer(() => {
+    const { resolved } = useTheme();
     const params = useParams();
     const { t } = useT();
 
@@ -84,7 +86,7 @@ const ProblemPanel = observer(() => {
                 onClick={() => panelStore.toggle()}
             >
                 <div className="panel__header__status">
-                    <div className="status-chip" style={{ borderColor: STATUS_COLORS[markStatus.mark_status_id] }}>
+                    <div className="status-chip" style={{ borderColor: statusColors(resolved)[markStatus.mark_status_id] }}>
                         {markStatus.name}
                     </div>
                 </div>

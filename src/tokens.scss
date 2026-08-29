@@ -20,6 +20,8 @@
 // which cannot resolve var().
 
 :root {
+    color-scheme: light;
+
     // ---- Type families --------------------------------------------------
     // Golos Text is a Paratype face drawn for Russian civic interfaces -- the exact
     // register this product speaks in. Unbounded is the display voice, used with
@@ -180,4 +182,122 @@
     // `var(--panel-header-height, 0px)` — an unresolved custom property inside
     // calc() invalidates the whole declaration.
     --panel-header-height: 0px;
+}
+
+
+// ---------------------------------------------------------------------------
+// Dark theme
+//
+// Declared once as a mixin and applied twice: under prefers-color-scheme for the
+// "auto" default, and under [data-theme="dark"] for an explicit choice. The
+// media-query rule excludes [data-theme="light"] so an explicit light choice wins
+// on a dark system. src/theme.ts stamps the attribute; "auto" leaves it off.
+//
+// Every colour is redefined here. No token gets its ONLY definition inside this
+// block -- the light values above are always the base.
+// ---------------------------------------------------------------------------
+
+@mixin dark-theme {
+    color-scheme: dark;
+
+    // ---- Chrome ---------------------------------------------------------
+    --chrome: #0f1112;
+    --chrome-2: #0f1112;
+    --on-chrome: #e6e8e9;
+    --on-chrome-muted: #9aa0a4;
+    --on-chrome-faint: #82888c;
+    --rule-chrome: #2b3033;
+
+    // ---- Surfaces -------------------------------------------------------
+    // Paper is LIGHTER than the surface behind it, so a card still reads as
+    // raised. Inverting that (a darker card) makes every panel look punched out.
+    --surface: #16181a;
+    --paper: #1f2225;
+    --surface-sunken: #121415;
+    --neutral-bg: #2a2e31;
+    --placeholder: #2a2e31;
+    --disabled-bg: #26292c;
+    --track: #26292c;
+    --swatch-empty: #3a3f43;
+
+    // ---- Ink ------------------------------------------------------------
+    // Not pure white: #e6e8e9 on --paper is 12.4:1, enough contrast without the
+    // halation pure white causes on a dark ground.
+    --ink: #e6e8e9;
+    --ink-soft: #c3c8cb;
+    --ink-muted: #9aa0a4;
+    --ink-faint: #7c8286;
+
+    // ---- Rules ----------------------------------------------------------
+    --rule: #31363a;
+    --rule-soft: #26292c;
+    --rule-hover: #4a5054;
+    --rule-faint: #5c6266;
+    --rule-translucent: rgba(255, 255, 255, 0.16);
+
+    // ---- Status ---------------------------------------------------------
+    // Status backgrounds become deep tints of their hue rather than pale washes,
+    // which would glare. The ink on them is the light end of the same hue.
+    --alert: #ff5c5c;
+    --danger-ink: #ff8f8f;
+    --danger-bg: #3a1f1f;
+    --danger-bg-soft: #2a1a1a;
+    --danger-rule: #6b3333;
+
+    --warn-ink: #f2d494;
+    --warn-bg: #362c14;
+    --warn-rule: #6b5520;
+
+    --info-ink: #97cbe9;
+    --info-bg: #14303f;
+    --info-rule: #2d5a75;
+
+    --success-ink: #55cc83;
+
+    --highlight-bg: #362c14;
+    --highlight-rule: #ffc93d;
+
+    // ---- Accent ---------------------------------------------------------
+    // On dark the base pink is already 5.1:1, so --accent-ink moves the OTHER
+    // way: lighter, for filled buttons that now carry dark text.
+    --accent: #ff2e88;
+    --accent-ink: #ff5c9f;
+    --accent-bg: #3a1226;
+    --cta: #ff2e88;
+    --focus: #ff2e88;
+    --assigned: #ff2e88;
+    --selected-ring: rgba(255, 46, 136, 0.38);
+
+    --hi-vis: #ffc93d;
+
+    // ---- Vote scale -----------------------------------------------------
+    --vote-reject: #e05a5a;
+    --vote-reject-soft: #5c2a2a;
+    --vote-mid: #d9a233;
+    --vote-confirm: #45b271;
+    --vote-confirm-soft: #234a33;
+
+    // ---- Markers --------------------------------------------------------
+    // Markers sit on the map, not on the interface, so their ring stays light in
+    // both themes -- it is what separates a marker from the ground beneath it.
+    --marker-ring: rgba(255, 255, 255, 0.75);
+    --marker-veil: rgba(255, 255, 255, 0.25);
+
+    // ---- Elevation ------------------------------------------------------
+    // Shadows do almost no work on a dark ground, so they go deeper and the
+    // borders carry more of the separation.
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.6);
+    --scrim: rgba(0, 0, 0, 0.7);
+    --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        @include dark-theme;
+    }
+}
+
+:root[data-theme="dark"] {
+    @include dark-theme;
 }

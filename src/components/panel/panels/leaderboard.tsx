@@ -95,8 +95,8 @@ const Leaderboard = observer(function Leaderboard() {
                         </select>
                     </label>
                 </div>
-                {isLoading && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                {!isLoading && entries.length === 0 && <p style={{ fontSize: 14 }}>{t("leaderboard.empty")}</p>}
+                {isLoading && <p className="empty-state">{t("common.loading")}</p>}
+                {!isLoading && entries.length === 0 && <p className="empty-state">{t("leaderboard.empty")}</p>}
                 <table className="leaderboard">
                     <tbody>
                         {entries.map((entry, index) => (

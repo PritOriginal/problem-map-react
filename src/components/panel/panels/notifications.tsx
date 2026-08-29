@@ -47,8 +47,8 @@ const NotificationsPanel = observer(function NotificationsPanel() {
                                 {t("common.refresh")}
                             </Button>
                         </div>
-                        {isLoading && items.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                        {!isLoading && items.length === 0 && <p style={{ fontSize: 14 }}>{t("notifications.empty")}</p>}
+                        {isLoading && items.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
+                        {!isLoading && items.length === 0 && <p className="empty-state">{t("notifications.empty")}</p>}
                         <div className="profile-list">
                             {items.map((n) => <NotificationRow key={n.id} item={n} />)}
                         </div>

@@ -145,8 +145,8 @@ const TasksPanel = observer(function TasksPanel() {
                             ))}
                         </div>
                         <div id="tasks-tabpanel" role="tabpanel" aria-labelledby={`tasks-tab-${tab}`}>
-                            {isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                            {!isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("tasks.empty")}</p>}
+                            {isLoading && tasks.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
+                            {!isLoading && tasks.length === 0 && <p className="empty-state">{t("tasks.empty")}</p>}
                             <div className="profile-list">
                                 {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks[task.mark_id]} />)}
                             </div>

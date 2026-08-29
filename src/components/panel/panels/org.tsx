@@ -117,8 +117,8 @@ const OrgPanel = observer(function OrgPanel() {
                                 {t("org.onlyOverdue")}
                             </label>
                         </div>
-                        {isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                        {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>{t("org.empty")}</p>}
+                        {isLoading && marks.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
+                        {!isLoading && marks.length === 0 && <p className="empty-state">{t("org.empty")}</p>}
                         <div className="profile-list">
                             {marks.map((mark) => <QueueCard key={mark.mark_id} mark={mark} onDone={reload} />)}
                         </div>

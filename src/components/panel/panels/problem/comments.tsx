@@ -62,8 +62,8 @@ const CommentsBlock = observer(function CommentsBlock() {
     return (
         <>
             <h2 className="section-title">{t("comments.title")}<span className="section-title__count">{!isLoading && `(${count})`}</span></h2>
-            {isLoading && comments.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-            {!isLoading && threads.length === 0 && <p style={{ fontSize: 14 }}>{t("comments.empty")}</p>}
+            {isLoading && comments.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
+            {!isLoading && threads.length === 0 && <p className="empty-state">{t("comments.empty")}</p>}
             <div className="comments">
                 {threads.map(({ root, replies }) => (
                     <div key={root.comment_id} className="comments__thread">

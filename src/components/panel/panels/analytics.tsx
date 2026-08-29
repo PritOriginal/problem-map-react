@@ -142,7 +142,7 @@ const Analytics = observer(function Analytics() {
                 </div>
                 <hr />
                 <h2 className="section-title">{t("analytics.kpi")}<span className="section-title__count">{isLoading && <span style={{ fontSize: 12 }}>{t("common.loading")}</span>}</span></h2>
-                {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p style={{ fontSize: 14 }}>{t("common.noData")}</p>}
+                {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p className="empty-state">{t("common.noData")}</p>}
                 <hr />
                 <h2 className="section-title">{t("analytics.dynamics")}</h2>
                 <LineChart points={series} />
@@ -189,7 +189,7 @@ export const LineChart = memo(function LineChart({ points }: { points: Timeserie
     const ticks = yTicks(yMax);
 
     if (points.length === 0) {
-        return <p style={{ fontSize: 14 }}>{t("analytics.noDataPeriod")}</p>;
+        return <p className="empty-state">{t("analytics.noDataPeriod")}</p>;
     }
 
     const labelEvery = Math.max(1, Math.ceil(points.length / 6));

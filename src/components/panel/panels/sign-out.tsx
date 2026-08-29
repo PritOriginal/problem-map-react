@@ -150,16 +150,16 @@ const Profile = observer(function Profile() {
                             <h2 className="section-title">{t("profile.stats")}</h2>
                             <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
                         </div>
-                        {stats ? <StatsBlock stats={stats} /> : !isLoading && <p style={{ fontSize: 14 }}>{t("profile.statsUnavailable")}</p>}
+                        {stats ? <StatsBlock stats={stats} /> : !isLoading && <p className="empty-state">{t("profile.statsUnavailable")}</p>}
                         <hr />
                         <h2 className="section-title">{t("profile.myMarks")}<span className="section-title__count">{isLoading ? "" : `(${marks.length})`}</span></h2>
-                        {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>{t("profile.noMarks")}</p>}
+                        {!isLoading && marks.length === 0 && <p className="empty-state">{t("profile.noMarks")}</p>}
                         <div className="profile-list">
                             {marks.map((mark) => <MarkRow key={mark.mark_id} mark={mark} to={toKeepSearch(`/problem/${mark.mark_id}`)} />)}
                         </div>
                         <hr />
                         <h2 className="section-title">{t("profile.myChecks")}<span className="section-title__count">{isLoading ? "" : `(${checks.length})`}</span></h2>
-                        {!isLoading && checks.length === 0 && <p style={{ fontSize: 14 }}>{t("profile.noChecks")}</p>}
+                        {!isLoading && checks.length === 0 && <p className="empty-state">{t("profile.noChecks")}</p>}
                         <div className="profile-list">
                             {checks.map((check) => <CheckRow key={check.check_id} check={check} to={toKeepSearch(`/problem/${check.mark_id}`)} />)}
                         </div>

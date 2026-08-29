@@ -94,7 +94,7 @@ const SettingsForm = function SettingsForm() {
     }, []);
 
     if (!form || !saved) {
-        return <p style={{ fontSize: 14 }}>{t("common.loading")}</p>;
+        return <p className="empty-state">{t("common.loading")}</p>;
     }
 
     const errors = validateSettings(form);
@@ -218,7 +218,7 @@ const MarkTypesTable = function MarkTypesTable() {
 
     return (
         <div className="admin-form">
-            {isLoading && types.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
+            {isLoading && types.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
             <div className="profile-list">
                 {types.map((type) => <MarkTypeRow key={type.mark_type_id} type={type} onDone={reload} />)}
             </div>
@@ -475,7 +475,7 @@ const ApiKeysBlock = function ApiKeysBlock() {
                 </label>
                 <Button style="primary" isMini disabled={pending !== null || name.trim() === ""} onClick={create}>{t(pending === "create" ? "admin.keys.creating" : "admin.keys.create")}</Button>
             </div>
-            {keys.length === 0 && <p style={{ fontSize: 14 }}>{t("admin.keys.empty")}</p>}
+            {keys.length === 0 && <p className="empty-state">{t("admin.keys.empty")}</p>}
             <div className="profile-list">
                 {keys.map((key) => (
                     <div key={key.id} className="task-card">

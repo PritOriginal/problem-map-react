@@ -13,12 +13,14 @@ import {
 } from "ymap3-components";
 
 import customization from './customization.json'
+import customizationDark from './customization-dark.json'
+import { useTheme } from './theme'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
 import MarkItem, { MarkerItem, MarkerSize, TypeIcon } from "./components/mark/mark";
-import { ASSIGNED, contrastOn, INK, PAPER, STATUS_COLORS, STATUS_FALLBACK } from "./styles/tokens";
+import { ASSIGNED, contrastOn, PAPER, statusColors, STATUS_FALLBACK, themeColors } from "./styles/tokens";
 import { typeColor } from "./utils/mark-types";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
@@ -109,6 +111,9 @@ const getColorPolygon = (count: AdminBoundaryMarksCount) => {
 const Map = observer(() => {
   const { isMobile } = useDeviceDetect();
   const { t } = useT();
+  // The basemap has to follow the theme too: dark chrome around a bright map
+  // reads as a hole punched in the page.
+  const { resolved: resolvedTheme } = useTheme();
 
   const location = useLocation();
   const navigate = useNavigateKeepSearch();
@@ -330,7 +335,7 @@ const Map = observer(() => {
             zoomRange={ZOOM_RANGE}
             copyrightsPosition={"top right"}
           >
-            <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
+            <YMapDefaultSchemeLayer customization={(resolvedTheme === "dark" ? customizationDark : customization) as VectorCustomization} />
             <YMapDefaultFeaturesLayer />
 
             {/* own sources + layers so that boundaries < zones < marks < the draggable point, whatever the mount order */}
@@ -412,6 +417,7 @@ const HeatmapLayer = observer(() => {
 });
 
 const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, max: number }) {
+  const { resolved } = useTheme();
   const count = feature.properties?.count ?? 0;
   if (count <= 0) {
     return null;
@@ -419,7 +425,7 @@ const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, 
   return (
     <YMapFeature
       style={{
-        stroke: [{ color: PAPER, width: 0.5, opacity: 0.6 }],
+        stroke: [{ color: themeColors(resolved)["--paper"], width: 0.5, opacity: 0.6 }],
         fill: heatColor(count, max),
         fillOpacity: 0.55,
       }}
@@ -448,6 +454,7 @@ const HeatmapLegend = observer(() => {
 });
 
 const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBoundary, count: AdminBoundaryMarksCount }) {
+  const { resolved } = useTheme();
   const color = '#' + getColorPolygon(count);
   return (
     <YMapFeature
@@ -455,7 +462,7 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
       style={{
         stroke: [
           {
-            color: INK,
+            color: themeColors(resolved)["--ink"],
             width: 1,
             opacity: 0.5,
           }
@@ -533,6 +540,8 @@ const ExportLink = observer(({ format, children }: { format: ExportFormat; child
 
 const Filters = observer(() => {
   const { t } = useT();
+  const { resolved } = useTheme();
+  const statuses = statusColors(resolved);
   const [showFilters, setShowFilters] = useState(false);
   return (
     <>
@@ -572,7 +581,7 @@ const Filters = observer(() => {
                 <FilterItem
                   key={status.mark_status_id}
                   icon={
-                    <div style={{ height: "12px", width: "12px", border: "1px solid gray", borderRadius: "50%", backgroundColor: STATUS_COLORS[status.mark_status_id] }}>
+                    <div style={{ height: "12px", width: "12px", border: "1px solid gray", borderRadius: "50%", backgroundColor: statuses[status.mark_status_id] }}>
                     </div>
                   }
                   name={status.name}

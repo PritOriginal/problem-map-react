@@ -13,9 +13,12 @@ import Arrow from "../../../arrow/arrow";
 import markStatusesStore from "../../../../store/mark-statuses";
 import notificationsStore from "../../../../store/notifications";
 import marksStore from "../../../../store/marks";
+import organizationsStore from "../../../../store/organizations";
+import { TranslationKey, localeOf, tOr, useT } from "../../../../i18n";
 
 const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigateKeepSearch();
+    const { t } = useT();
 
     const mark = useContext(MarkContext)
     const reload = useContext(MarkReloadContext)
@@ -68,11 +71,12 @@ const AboutProblem = observer(function AboutProblem() {
                     return;
                 }
                 console.error(error);
-                notificationsStore.showError(error, "Не удалось загрузить историю проблемы");
+                notificationsStore.showError(error, t("mark.historyLoadFailed"));
             });
         return () => {
             ignore = true;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mark])
 
     const handleOnClickNewCheck = () => {
@@ -86,15 +90,16 @@ const AboutProblem = observer(function AboutProblem() {
                 {user.id !== 0 && mark.mark_id !== 0 && <FollowButton onDone={reload} />}
             </div>
             {user.isModerator && mark.mark_id !== 0 && <ModerationBlock onDone={reload} />}
+            {user.isModerator && mark.mark_id !== 0 && <AssignBlock onDone={reload} />}
             {user.id !== 0 && user.id === mark.user_id && mark.mark_status_id === MarkStatusType.UnconfirmedStatus && <OwnerBlock onDone={reload} />}
             {mark.description !== "" &&
                 <>
-                    <p style={{ fontSize: 18 }}><b>Описание</b></p>
+                    <p style={{ fontSize: 18 }}><b>{t("common.description")}</b></p>
                     <p style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{mark.description}</p>
                     <hr />
                 </>
             }
-            <p style={{ fontSize: 18 }}><b>История</b></p>
+            <p style={{ fontSize: 18 }}><b>{t("mark.history")}</b></p>
             <hr />
             {groups.map((group, index) => (
                 <HistoryGroup key={index} group={group} />
@@ -102,7 +107,7 @@ const AboutProblem = observer(function AboutProblem() {
             {possibilityAddCheck &&
                 <div style={{ position: "sticky", bottom: "0" }}>
                     <Button style="white-2-black" onClick={handleOnClickNewCheck}>
-                        Опровергнуть | Подтвердить
+                        {t("mark.checkButton")}
                     </Button>
                 </div>
             }
@@ -123,32 +128,33 @@ type ModerationAction = "confirm" | "reject";
 
 const MODERATION_ACTIONS: Record<ModerationAction, {
     call: (markId: number) => Promise<unknown>;
-    question: string;
-    errorText: string;
-    label: string;
-    pendingLabel: string;
+    question: TranslationKey;
+    errorText: TranslationKey;
+    label: TranslationKey;
+    pendingLabel: TranslationKey;
     style: "green" | "red";
 }> = {
     confirm: {
         call: (id) => MarksService.confirmMark(id),
-        question: "Подтвердить проблему №{id}?",
-        errorText: "Не удалось подтвердить проблему",
-        label: "Подтвердить",
-        pendingLabel: "Подтверждаем…",
+        question: "mark.confirmQuestion",
+        errorText: "mark.confirmFailed",
+        label: "mark.confirm",
+        pendingLabel: "mark.confirming",
         style: "green",
     },
     reject: {
         call: (id) => MarksService.rejectMark(id),
-        question: "Отклонить проблему №{id}?",
-        errorText: "Не удалось отклонить проблему",
-        label: "Отклонить",
-        pendingLabel: "Отклоняем…",
+        question: "mark.rejectQuestion",
+        errorText: "mark.rejectFailed",
+        label: "mark.reject",
+        pendingLabel: "mark.rejecting",
         style: "red",
     },
 };
 
 function ModerationBlock({ onDone }: { onDone: () => void }) {
     const mark = useContext(MarkContext);
+    const { t } = useT();
     const [pending, setPending] = useState<ModerationAction | null>(null);
 
     if (!MODERATABLE_STATUSES.includes(mark.mark_status_id)) {
@@ -157,7 +163,7 @@ function ModerationBlock({ onDone }: { onDone: () => void }) {
 
     const moderate = (action: ModerationAction) => {
         const spec = MODERATION_ACTIONS[action];
-        if (!window.confirm(spec.question.replace("{id}", String(mark.mark_id)))) {
+        if (!window.confirm(t(spec.question, { id: mark.mark_id }))) {
             return;
         }
         setPending(action);
@@ -168,18 +174,18 @@ function ModerationBlock({ onDone }: { onDone: () => void }) {
             })
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, spec.errorText);
+                notificationsStore.showError(error, t(spec.errorText));
             })
             .finally(() => setPending(null));
     };
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>Модерация</b></p>
+            <p style={{ fontSize: 18 }}><b>{t("mark.moderation")}</b></p>
             <div style={{ display: "flex", gap: "8px" }}>
                 {(Object.keys(MODERATION_ACTIONS) as ModerationAction[]).map((action) => (
                     <Button key={action} style={MODERATION_ACTIONS[action].style} disabled={pending !== null} onClick={() => moderate(action)}>
-                        {pending === action ? MODERATION_ACTIONS[action].pendingLabel : MODERATION_ACTIONS[action].label}
+                        {t(pending === action ? MODERATION_ACTIONS[action].pendingLabel : MODERATION_ACTIONS[action].label)}
                     </Button>
                 ))}
             </div>
@@ -188,9 +194,53 @@ function ModerationBlock({ onDone }: { onDone: () => void }) {
     );
 }
 
+/** Moderator/admin: assigns the mark to an organization (`PATCH /marks/{id}/assign`). */
+const AssignBlock = observer(function AssignBlock({ onDone }: { onDone: () => void }) {
+    const mark = useContext(MarkContext);
+    const { t } = useT();
+    const [pending, setPending] = useState(false);
+
+    useEffect(() => {
+        organizationsStore.fetch();
+    }, []);
+
+    const options = organizationsStore.items.map((o) => ({ value: o.organization_id, label: o.name }));
+    const current = options.find((o) => o.value === mark.organization_id) ?? null;
+
+    const assign = (organizationId: number) => {
+        setPending(true);
+        MarksService.assignMark(mark.mark_id, organizationId)
+            .then(() => {
+                notificationsStore.clear();
+                onDone();
+            })
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, t("mark.assignFailed"));
+            })
+            .finally(() => setPending(false));
+    };
+
+    return (
+        <>
+            <p><b>{t("mark.assignOrganization")}</b></p>
+            <Select
+                options={options}
+                value={current}
+                placeholder={t("mark.noOrganization")}
+                isDisabled={pending || options.length === 0}
+                isLoading={organizationsStore.isLoading}
+                onChange={(val) => { if (val && val.value !== mark.organization_id) { assign(val.value); } }}
+            />
+            <hr />
+        </>
+    );
+});
+
 /** "Слежу" toggle with the followers counter (`POST/DELETE /marks/{id}/follow`). */
 const FollowButton = observer(function FollowButton({ onDone }: { onDone: () => void }) {
     const mark = useContext(MarkContext);
+    const { t } = useT();
     const [pending, setPending] = useState(false);
     const following = mark.is_following === true;
     const count = mark.followers_count;
@@ -204,14 +254,14 @@ const FollowButton = observer(function FollowButton({ onDone }: { onDone: () => 
             })
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, following ? "Не удалось отписаться" : "Не удалось подписаться");
+                notificationsStore.showError(error, t(following ? "mark.unfollowFailed" : "mark.followFailed"));
             })
             .finally(() => setPending(false));
     };
 
     return (
         <Button style={following ? "black-2-white" : "white-2-black"} isMini disabled={pending} onClick={toggle}>
-            {following ? "Слежу" : "Следить"}{count !== undefined && ` · ${count}`}
+            {t(following ? "mark.following" : "mark.follow")}{count !== undefined && ` · ${count}`}
         </Button>
     );
 });
@@ -220,6 +270,7 @@ const FollowButton = observer(function FollowButton({ onDone }: { onDone: () => 
 const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void }) {
     const mark = useContext(MarkContext);
     const navigate = useNavigateKeepSearch();
+    const { t } = useT();
     const [editing, setEditing] = useState(false);
     const [description, setDescription] = useState(mark.description);
     const [typeId, setTypeId] = useState(mark.mark_type_id);
@@ -252,13 +303,13 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
             })
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, "Не удалось сохранить изменения");
+                notificationsStore.showError(error, t("mark.saveFailed"));
             })
             .finally(() => setPending(null));
     };
 
     const remove = () => {
-        if (!window.confirm(`Удалить проблему №${mark.mark_id}? Это действие нельзя отменить.`)) {
+        if (!window.confirm(t("mark.deleteQuestion", { id: mark.mark_id }))) {
             return;
         }
         setPending("delete");
@@ -270,7 +321,7 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
             })
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, "Не удалось удалить проблему");
+                notificationsStore.showError(error, t("mark.deleteFailed"));
                 setPending(null);
             });
     };
@@ -279,17 +330,17 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>Моя метка</b></p>
+            <p style={{ fontSize: 18 }}><b>{t("mark.mine")}</b></p>
             {editing ?
                 <>
-                    <p><b>Категория</b></p>
+                    <p><b>{t("common.category")}</b></p>
                     <Select
                         options={options}
                         value={options.find((o) => o.value === typeId) ?? null}
                         onChange={(val) => { if (val) { setTypeId(val.value); } }}
                         isDisabled={options.length === 0}
                     />
-                    <p><b>Описание</b></p>
+                    <p><b>{t("common.description")}</b></p>
                     <textarea
                         className="edit-multiline-text"
                         name="description"
@@ -298,16 +349,16 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
                     ></textarea>
                     <div style={{ display: "flex", gap: "8px" }}>
                         <Button style="green" disabled={pending !== null} onClick={save}>
-                            {pending === "save" ? "Сохраняем…" : "Сохранить"}
+                            {t(pending === "save" ? "common.saving" : "common.save")}
                         </Button>
-                        <Button style="white-2-black" disabled={pending !== null} onClick={() => setEditing(false)}>Отмена</Button>
+                        <Button style="white-2-black" disabled={pending !== null} onClick={() => setEditing(false)}>{t("common.cancel")}</Button>
                     </div>
                 </>
                 :
                 <div style={{ display: "flex", gap: "8px" }}>
-                    <Button style="white-2-black" disabled={pending !== null} onClick={startEdit}>Редактировать</Button>
+                    <Button style="white-2-black" disabled={pending !== null} onClick={startEdit}>{t("common.edit")}</Button>
                     <Button style="red" disabled={pending !== null} onClick={remove}>
-                        {pending === "delete" ? "Удаляем…" : "Удалить"}
+                        {t(pending === "delete" ? "common.deleting" : "common.delete")}
                     </Button>
                 </div>
             }
@@ -317,6 +368,7 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
 });
 
 function ShareButton() {
+    const { t } = useT();
     const [copied, setCopied] = useState(false);
     const timer = useRef<number | undefined>(undefined);
 
@@ -327,7 +379,7 @@ function ShareButton() {
         try {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(url);
-            } else if (window.prompt("Скопируйте ссылку", url) === null) {
+            } else if (window.prompt(t("mark.copyLinkPrompt"), url) === null) {
                 return;
             }
             setCopied(true);
@@ -335,70 +387,45 @@ function ShareButton() {
             timer.current = window.setTimeout(() => setCopied(false), 2000);
         } catch (error) {
             console.error(error);
-            notificationsStore.showError(error, "Не удалось скопировать ссылку");
+            notificationsStore.showError(error, t("mark.copyLinkFailed"));
         }
     };
 
     return (
         <div>
             <Button style="white-2-black" isMini onClick={share}>
-                {copied ? "Ссылка скопирована" : "Поделиться"}
+                {t(copied ? "mark.linkCopied" : "mark.share")}
             </Button>
         </div>
     );
 }
 
 function getTitle(mark_status_id: number): string {
-    let title: string = "";
-    switch (mark_status_id) {
-        case MarkStatusType.UnconfirmedStatus:
-            title = "Проблема отмечена";
-            break;
-        case MarkStatusType.ConfirmedStatus:
-            title = "Проблема подтверждена";
-            break;
-        case MarkStatusType.UnderReviewStatus:
-            title = "Проблема на проверке";
-            break;
-        case MarkStatusType.RediscoveredStatus:
-            title = "Проблема переоткрыта";
-            break;
-        case MarkStatusType.ClosedStatus:
-            title = "Проблема решена";
-            break;
-        case MarkStatusType.RefutedStatus:
-            title = "Проблема опровергнута";
-            break;
-    }
-    return title
+    return tOr(`mark.title.${mark_status_id}`, "");
 }
 
 function getQuestion(mark_status_id: number): string {
-    let question: string = "";
     switch (mark_status_id) {
         case MarkStatusType.UnconfirmedStatus:
-            question = "Проблема существует?";
-            break;
         case MarkStatusType.ConfirmedStatus:
-            question = "Проблема существует?";
-            break;
-        case MarkStatusType.UnderReviewStatus:
-            question = "Проблема решена?";
-            break;
         case MarkStatusType.RediscoveredStatus:
-            question = "Проблема существует?";
-            break;
+            return tOr("mark.question.exists", "");
+        case MarkStatusType.UnderReviewStatus:
+            return tOr("mark.question.solved", "");
     }
-    return question
+    return "";
 }
 
-function getDate(dateStr: string): string {
+function getDate(dateStr: string, locale: string): string {
     const date = new Date(dateStr)
-    return `${date.toLocaleDateString()} ${date.getHours()}:${date.getMinutes()}`;
+    return date.toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
 }
 
 function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
+    const { t, lang } = useT();
     const [showChecks, setShowChecks] = useState(false);
+    // `lang` re-renders the group when the language changes (titles/questions are read via tOr)
+    void lang;
 
     const allChecks: Check[] = [];
     group.forEach(item => {
@@ -424,14 +451,14 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
                     {allChecks.length > 0 &&
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
                             <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
-                                <p>Проверки</p>
+                                <p>{t("mark.checks")}</p>
                             </div>
 
                             {!showChecks ?
                                 <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
                                     {allChecks.map((check) => (
                                         check.photos.map((photo) => (
-                                            <ThumbPhoto src={photo} confirmed={check.result} />
+                                            <ThumbPhoto key={`${check.check_id}-${photo}`} src={photo} confirmed={check.result} />
                                         ))
                                     ))}
                                 </div>
@@ -458,11 +485,12 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
 }
 
 function HistoryItem({ item }: { item: MarkStatusHistoryItem }) {
+    const { lang } = useT();
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <p>{getTitle(item.new_mark_status_id)}</p>
-                <p style={{ fontSize: 12 }}>{getDate(item.changed_at)}</p>
+                <p style={{ fontSize: 12 }}>{getDate(item.changed_at, localeOf(lang))}</p>
             </div>
         </div>
     )
@@ -479,20 +507,21 @@ function ShowButton({ isShow, onClick }: { isShow: boolean, onClick: React.Mouse
     )
 }
 function CheckItem({ check }: { check: Check }) {
+    const { t, lang } = useT();
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <p>{check.username}</p>
-                <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleString()}</p>
+                <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleString(localeOf(lang))}</p>
             </div>
             {check.result
                 ?
-                <p style={{ fontSize: 12, color: "green" }}>Подтвердил</p>
+                <p style={{ fontSize: 12, color: "green" }}>{t("mark.confirmedBy")}</p>
                 :
-                <p style={{ fontSize: 12, color: "red" }}>Опроверг</p>
+                <p style={{ fontSize: 12, color: "red" }}>{t("mark.refutedBy")}</p>
             }
             {check.comment !== "" && <>
-                <p>Комментарий</p>
+                <p>{t("common.comment")}</p>
                 <p style={{ fontSize: 14 }}>{check.comment}</p>
             </>}
             <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>

@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { makePersistable } from 'mobx-persist-store';
-import { Role, canModerate } from '../utils/role';
+import { Role, canModerate, isService } from '../utils/role';
 
 class User {
     username: string = "";
@@ -20,6 +20,10 @@ class User {
 
     get isModerator(): boolean {
         return this.id !== 0 && canModerate(this.role);
+    }
+
+    get isService(): boolean {
+        return this.id !== 0 && isService(this.role);
     }
 
     setUser = (username: string, id: number, role: Role = "user") => {

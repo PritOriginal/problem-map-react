@@ -25,6 +25,7 @@ export const COLOR_MARK_STATUSES = {
   3: "#e5d600",
   5: "#00e500",
   6: "#000",
+  7: "#ff8c00",
 } as {
   [index: number]: string
 };

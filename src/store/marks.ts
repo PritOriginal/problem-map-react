@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { t } from "../i18n";
 import MarksService, { GetMarksRequest, Mark, MarkStatusType } from '../services/MarksService';
 import notificationsStore from './notifications';
 
@@ -11,6 +12,7 @@ export const DEFAULT_FILTERS: Readonly<GetMarksRequest> = {
         MarkStatusType.UnderReviewStatus,
         MarkStatusType.RediscoveredStatus,
         MarkStatusType.ClosedStatus,
+        MarkStatusType.InWorkStatus,
     ],
 };
 
@@ -40,7 +42,7 @@ class MarksStore {
         } catch (error) {
             console.error(error);
             runInAction(() => {
-                this.error = notificationsStore.showError(error, 'Ошибка загрузки меток');
+                this.error = notificationsStore.showError(error, t("errors.marks"));
                 this.isLoading = false;
             });
         }

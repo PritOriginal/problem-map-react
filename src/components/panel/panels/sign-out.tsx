@@ -8,19 +8,22 @@ import notificationsStore from "../../../store/notifications";
 import UsersService, { CurrentUser, UserStats } from "../../../services/UsersService";
 import MarksService, { Mark } from "../../../services/MarksService";
 import ChecksService, { Check } from "../../../services/ChecksService";
-import markStatusesStore from "../../../store/mark-statuses";
 import { StatTile } from "../../stat-tile/stat-tile";
 import markTypesStore from "../../../store/mark-types";
-import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../mark/mark";
+import { TypeMarkIcons } from "../../mark/mark";
+import { MarkBadges } from "../../badges/badges";
+import { TranslationKey, localeOf, useT } from "../../../i18n";
+import organizationsStore from "../../../store/organizations";
 import { observer } from "mobx-react-lite";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import { Role, parseRole } from "../../../utils/role";
 import { useNavigateKeepSearch, useToKeepSearch } from "../../../utils/navigation";
 
-const ROLE_NAMES: Record<Role, string> = {
-    user: "Пользователь",
-    moderator: "Модератор",
-    admin: "Администратор",
+const ROLE_NAMES: Record<Role, TranslationKey> = {
+    user: "role.user",
+    moderator: "role.moderator",
+    admin: "role.admin",
+    service: "role.service",
 };
 
 const Profile = observer(function Profile() {
@@ -34,6 +37,7 @@ const Profile = observer(function Profile() {
 
     const navigate = useNavigateKeepSearch();
     const toKeepSearch = useToKeepSearch();
+    const { t } = useT();
 
     const [me, setMe] = useState<CurrentUser | null>(null);
     const [marks, setMarks] = useState<Mark[]>([]);
@@ -65,19 +69,19 @@ const Profile = observer(function Profile() {
                 user.setUser(profile.username, profile.user_id, parseRole(profile.role));
             } else {
                 console.error(meRes.reason);
-                notificationsStore.showError(meRes.reason, "Не удалось загрузить профиль");
+                notificationsStore.showError(meRes.reason, t("profile.loadFailed"));
             }
             if (marksRes.status === "fulfilled") {
                 setMarks(marksRes.value.payload.marks ?? []);
             } else {
                 console.error(marksRes.reason);
-                notificationsStore.showError(marksRes.reason, "Не удалось загрузить ваши метки");
+                notificationsStore.showError(marksRes.reason, t("profile.marksLoadFailed"));
             }
             if (checksRes.status === "fulfilled") {
                 setChecks(checksRes.value.payload.checks ?? []);
             } else {
                 console.error(checksRes.reason);
-                notificationsStore.showError(checksRes.reason, "Не удалось загрузить ваши проверки");
+                notificationsStore.showError(checksRes.reason, t("profile.checksLoadFailed"));
             }
             if (statsRes.status === "fulfilled") {
                 setStats(statsRes.value.payload);
@@ -87,9 +91,11 @@ const Profile = observer(function Profile() {
                 setStats(null);
             }
         });
+        organizationsStore.fetch();
         return () => {
             ignore = true;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
     const onClickSignOut = () => {
@@ -104,42 +110,42 @@ const Profile = observer(function Profile() {
                 className="panel__header"
                 onClick={() => panelStore.toggle()}
             >
-                <p><b>Профиль</b></p>
+                <p><b>{t("profile.title")}</b></p>
             </div>
             <div className="panel__content">
                 {userId === 0 ?
-                    <UnauthorizedBlock text="Чтобы посмотреть профиль, войдите в аккаунт" />
+                    <UnauthorizedBlock text={t("unauth.profile")} />
                     :
                     <>
-                        <p><b>Имя:</b> {me?.username ?? user.username}</p>
-                        <p><b>Логин:</b> {me?.login ?? "—"}</p>
-                        <p><b>Рейтинг:</b> {me?.rating ?? "—"}</p>
-                        <p><b>Роль:</b> {ROLE_NAMES[me?.role ?? user.role]}</p>
+                        <p><b>{t("profile.name")}:</b> {me?.username ?? user.username}</p>
+                        <p><b>{t("profile.login")}:</b> {me?.login ?? "—"}</p>
+                        <p><b>{t("profile.rating")}:</b> {me?.rating ?? "—"}</p>
+                        <p><b>{t("profile.role")}:</b> {t(ROLE_NAMES[me?.role ?? user.role] ?? "role.user")}</p>
                         {me?.home_point &&
-                            <p><b>Домашняя точка:</b> {me.home_point.coordinates[1].toFixed(6)}, {me.home_point.coordinates[0].toFixed(6)}</p>
+                            <p><b>{t("profile.homePoint")}:</b> {me.home_point.coordinates[1].toFixed(6)}, {me.home_point.coordinates[0].toFixed(6)}</p>
                         }
                         <hr />
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                            <p style={{ fontSize: 18 }}><b>Статистика</b></p>
-                            <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>Рейтинг участников →</Link>
+                            <p style={{ fontSize: 18 }}><b>{t("profile.stats")}</b></p>
+                            <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
                         </div>
-                        {stats ? <StatsBlock stats={stats} /> : !isLoading && <p style={{ fontSize: 14 }}>Статистика недоступна</p>}
+                        {stats ? <StatsBlock stats={stats} /> : !isLoading && <p style={{ fontSize: 14 }}>{t("profile.statsUnavailable")}</p>}
                         <hr />
-                        <p style={{ fontSize: 18 }}><b>Мои метки</b> {isLoading ? "" : `(${marks.length})`}</p>
-                        {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>Вы ещё не отмечали проблем</p>}
+                        <p style={{ fontSize: 18 }}><b>{t("profile.myMarks")}</b> {isLoading ? "" : `(${marks.length})`}</p>
+                        {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>{t("profile.noMarks")}</p>}
                         <div className="profile-list">
                             {marks.map((mark) => <MarkRow key={mark.mark_id} mark={mark} to={toKeepSearch(`/problem/${mark.mark_id}`)} />)}
                         </div>
                         <hr />
-                        <p style={{ fontSize: 18 }}><b>Мои проверки</b> {isLoading ? "" : `(${checks.length})`}</p>
-                        {!isLoading && checks.length === 0 && <p style={{ fontSize: 14 }}>Вы ещё не делали проверок</p>}
+                        <p style={{ fontSize: 18 }}><b>{t("profile.myChecks")}</b> {isLoading ? "" : `(${checks.length})`}</p>
+                        {!isLoading && checks.length === 0 && <p style={{ fontSize: 14 }}>{t("profile.noChecks")}</p>}
                         <div className="profile-list">
                             {checks.map((check) => <CheckRow key={check.check_id} check={check} to={toKeepSearch(`/problem/${check.mark_id}`)} />)}
                         </div>
                         <hr />
                         <div>
                             <Button style="white-2-black" onClick={onClickSignOut}>
-                                <p>Выйти из аккаунта</p>
+                                <p>{t("auth.signOut")}</p>
                             </Button>
                         </div>
                     </>
@@ -150,13 +156,14 @@ const Profile = observer(function Profile() {
 });
 
 function StatsBlock({ stats }: { stats: UserStats }) {
+    const { t } = useT();
     const items: { value: number | string; label: string }[] = [
-        { value: stats.rating, label: "Рейтинг" },
-        { value: stats.tasks_completed, label: "Заданий выполнено" },
-        { value: stats.marks_total, label: "Меток всего" },
-        { value: `${stats.marks_confirmed} / ${stats.marks_refuted}`, label: "Подтверждено / опровергнуто" },
-        { value: stats.checks_total, label: "Проверок всего" },
-        { value: stats.checks_correct, label: "Верных проверок" },
+        { value: stats.rating, label: t("profile.stat.rating") },
+        { value: stats.tasks_completed, label: t("profile.stat.tasks") },
+        { value: stats.marks_total, label: t("profile.stat.marks") },
+        { value: `${stats.marks_confirmed} / ${stats.marks_refuted}`, label: t("profile.stat.confirmedRefuted") },
+        { value: stats.checks_total, label: t("profile.stat.checks") },
+        { value: stats.checks_correct, label: t("profile.stat.correctChecks") },
     ];
     return (
         <div className="stat-grid">
@@ -166,38 +173,34 @@ function StatsBlock({ stats }: { stats: UserStats }) {
 }
 
 const MarkRow = observer(function MarkRow({ mark, to }: { mark: Mark, to: To }) {
-    const status = markStatusesStore.statuses.find((s) => s.mark_status_id === mark.mark_status_id);
+    const { t, lang } = useT();
     const type = markTypesStore.types.find((t) => t.mark_type_id === mark.mark_type_id);
     const Icon = TypeMarkIcons[mark.mark_type_id];
     return (
         <Link className="profile-list__item" to={to}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 {Icon && Icon({ color: "#000" })}
-                <p style={{ fontSize: 14 }}><b>№{mark.mark_id}</b> {type?.name ?? ""}</p>
+                <p style={{ fontSize: 14 }}><b>{t("mark.n", { id: mark.mark_id })}</b> {type?.name ?? ""}</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                <span
-                    className="profile-list__status"
-                    style={{ borderColor: COLOR_MARK_STATUSES[mark.mark_status_id] ?? "#000" }}
-                >
-                    {status?.name ?? `Статус ${mark.mark_status_id}`}
-                </span>
-                <p style={{ fontSize: 12 }}>{new Date(mark.created_at).toLocaleDateString()}</p>
+                <MarkBadges mark={mark} />
+                <p style={{ fontSize: 12 }}>{new Date(mark.created_at).toLocaleDateString(localeOf(lang))}</p>
             </div>
         </Link>
     );
 });
 
 function CheckRow({ check, to }: { check: Check, to: To }) {
+    const { t, lang } = useT();
     return (
         <Link className="profile-list__item" to={to}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
-                <p style={{ fontSize: 14 }}><b>Проблема №{check.mark_id}</b></p>
-                <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleDateString()}</p>
+                <p style={{ fontSize: 14 }}><b>{t("common.problemN", { id: check.mark_id })}</b></p>
+                <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleDateString(localeOf(lang))}</p>
             </div>
             {check.result
-                ? <p style={{ fontSize: 12, color: "green" }}>Подтвердил</p>
-                : <p style={{ fontSize: 12, color: "red" }}>Опроверг</p>
+                ? <p style={{ fontSize: 12, color: "green" }}>{t("mark.confirmedBy")}</p>
+                : <p style={{ fontSize: 12, color: "red" }}>{t("mark.refutedBy")}</p>
             }
             {check.comment !== "" && <p style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>{check.comment}</p>}
         </Link>

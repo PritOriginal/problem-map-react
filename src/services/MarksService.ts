@@ -18,6 +18,12 @@ export interface Mark {
     followers_count?: number;
     /** Whether the current user follows the mark (only meaningful when authorized). */
     is_following?: boolean;
+    /** Organization assigned to the mark (backend integration/wave-4); null when none. */
+    organization_id?: number | null;
+    /** SLA deadline for the assigned organization (ISO date-time); null when none. */
+    sla_due_at?: string | null;
+    /** True when `sla_due_at` has passed and the mark is still not resolved. */
+    is_overdue?: boolean;
 }
 
 /** A mark near the point being reported, with the distance to it in meters. */
@@ -48,12 +54,16 @@ export interface FollowMarkResponse extends IResponse {
 export interface MarkType {
     mark_type_id: number;
     name: string;
+    /** Language-independent code (backend integration/wave-4). */
+    code?: string;
 }
 
 export interface MarkStatus {
     mark_status_id: number;
     name: string;
     parent_id: number | null;
+    /** Language-independent code (backend integration/wave-4). */
+    code?: string;
 }
 
 export enum MarkStatusType {
@@ -62,7 +72,47 @@ export enum MarkStatusType {
 	UnderReviewStatus,
 	RediscoveredStatus,
 	ClosedStatus,
-	RefutedStatus
+	RefutedStatus,
+	/** Taken by an organization (backend integration/wave-4). */
+	InWorkStatus,
+}
+
+/** Export formats of `GET /marks/export`. */
+export type ExportFormat = "geojson" | "csv";
+
+/**
+ * Wave-4 dictionaries come as `{ id, code, name }` (localized `name`); older backends
+ * return `{ mark_type_id, name }` in `payload.mark_types`. Accept both shapes.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function dictList(payload: unknown, legacyKey: string): Record<string, unknown>[] {
+    const list = Array.isArray(payload) ? payload : isRecord(payload) ? payload[legacyKey] : [];
+    return Array.isArray(list) ? list.filter(isRecord) : [];
+}
+
+function dictId(item: Record<string, unknown>, legacyKey: string): number {
+    const id = item.id ?? item[legacyKey];
+    return typeof id === "number" ? id : Number(id);
+}
+
+export function normalizeMarkTypes(payload: unknown): MarkType[] {
+    return dictList(payload, "mark_types").map((item) => ({
+        mark_type_id: dictId(item, "mark_type_id"),
+        name: String(item.name ?? ""),
+        code: typeof item.code === "string" ? item.code : undefined,
+    }));
+}
+
+export function normalizeMarkStatuses(payload: unknown): MarkStatus[] {
+    return dictList(payload, "mark_statuses").map((item) => ({
+        mark_status_id: dictId(item, "mark_status_id"),
+        name: String(item.name ?? ""),
+        parent_id: typeof item.parent_id === "number" ? item.parent_id : null,
+        code: typeof item.code === "string" ? item.code : undefined,
+    }));
 }
 
 export interface AddMarkRequest {
@@ -125,19 +175,11 @@ export interface GetMarksByUserIdResponsePayload {
 }
 
 export interface GetMarkTypesResponse extends IResponse {
-    payload: GetMarkTypesResponsePayload;
-}
-
-export interface GetMarkTypesResponsePayload {
-    mark_types: MarkType[]
+    payload: MarkType[];
 }
 
 export interface GetMarkStatusesResponse extends IResponse {
-    payload: GetMarkStatusesResponsePayload;
-}
-
-export interface GetMarkStatusesResponsePayload {
-    mark_statuses: MarkStatus[]
+    payload: MarkStatus[];
 }
 
 export interface ModerateMarkResponse extends IResponse {
@@ -165,15 +207,7 @@ export interface GetMarkStatusHistoryByMarkIdResponsePayload {
 
 class MarksService extends BaseService {
     public getMarks(req: GetMarksRequest): Promise<GetMarksResponse> {
-        const params = new URLSearchParams();
-        if (req.mark_type_ids.length > 0) {
-            params.append("mark_type_ids", req.mark_type_ids.join(","));
-        }
-        if (req.mark_status_ids.length > 0) {
-            params.append("mark_status_ids", req.mark_status_ids.join(","));
-        }
-
-        return this.request<GetMarksResponse>(`/api/marks?${params}`)
+        return this.request<GetMarksResponse>(`/api/marks?${this.filterParams(req)}`)
     }
 
     public getMarkById(id: number): Promise<GetMarkByIdResponse> {
@@ -250,11 +284,55 @@ class MarksService extends BaseService {
     }
 
     public getMarkTypes(): Promise<GetMarkTypesResponse> {
-        return this.request<GetMarkTypesResponse>("/api/marks/types")
+        return this.request<IResponse>("/api/marks/types")
+            .then((res) => ({ ...res, payload: normalizeMarkTypes(res.payload) }));
     }
 
     public getMarkStatuses(): Promise<GetMarkStatusesResponse> {
-        return this.request<GetMarkStatusesResponse>("/api/marks/statuses")
+        return this.request<IResponse>("/api/marks/statuses")
+            .then((res) => ({ ...res, payload: normalizeMarkStatuses(res.payload) }));
+    }
+
+    /** Service (organization staff): Confirmed -> In work (`POST /marks/{id}/start`). */
+    public startMark(id: number): Promise<ModerateMarkResponse> {
+        return this.requestWithAuth<ModerateMarkResponse>(`/api/marks/${id}/start`, { method: "POST" })
+    }
+
+    /** Service: In work -> Under review with a report (`POST /marks/{id}/resolve`, multipart). */
+    public resolveMark(id: number, comment: string, photos: File[]): Promise<ModerateMarkResponse> {
+        const form = new FormData();
+        form.append("comment", comment);
+        photos.forEach((photo) => {
+            form.append("photos", photo);
+        });
+        return this.requestWithAuth<ModerateMarkResponse>(`/api/marks/${id}/resolve`, { method: "POST", body: form })
+    }
+
+    /** Moderator/admin: assigns the mark to an organization (`PATCH /marks/{id}/assign`). */
+    public assignMark(id: number, organizationId: number): Promise<IResponse> {
+        return this.requestWithAuth(`/api/marks/${id}/assign`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json;charset=utf-8" },
+            body: JSON.stringify({ organization_id: organizationId }),
+        })
+    }
+
+    /** URL of `GET /marks/export` for the given filters (opened by the browser as a download). */
+    public exportUrl(req: GetMarksRequest, format: ExportFormat): string {
+        const params = this.filterParams(req);
+        params.set("format", format);
+        return `/api/marks/export?${params}`;
+    }
+
+    private filterParams(req: GetMarksRequest): URLSearchParams {
+        const params = new URLSearchParams();
+        if (req.mark_type_ids.length > 0) {
+            params.append("mark_type_ids", req.mark_type_ids.join(","));
+        }
+        if (req.mark_status_ids.length > 0) {
+            params.append("mark_status_ids", req.mark_status_ids.join(","));
+        }
+        return params;
     }
 
     public getMarkStatusHistoryByMarkId(id: number, withChecks: boolean): Promise<GetMarkStatusHistoryByMarkIdResponse> {

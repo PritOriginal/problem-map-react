@@ -11,10 +11,13 @@ import selectedMark from "../../../../store/selected_mark";
 import marksStore from "../../../../store/marks";
 import { LngLat } from "@yandex/ymaps3-types";
 import { MarkContext, MarkReloadContext, emptyMark } from "./mark-context";
+import { useT } from "../../../../i18n";
+import { OrgLabel, SlaBadge } from "../../../badges/badges";
 
 
 const ProblemPanel = observer(() => {
     const params = useParams();
+    const { t } = useT();
 
     const panelHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +42,7 @@ const ProblemPanel = observer(() => {
         }
     }
 
-    let markStatus: MarkStatus = { mark_status_id: 0, parent_id: null, name: "Статус" };
+    let markStatus: MarkStatus = { mark_status_id: 0, parent_id: null, name: t("common.status") };
     if (markStatusesStore.statuses.length > 0 && mark.mark_status_id !== 0) {
         const findStatus = markStatusesStore.statuses.find((status) => status.mark_status_id == mark.mark_status_id);
         if (findStatus) {
@@ -63,11 +66,12 @@ const ProblemPanel = observer(() => {
                     return;
                 }
                 console.error(error);
-                notificationsStore.showError(error, "Не удалось загрузить проблему");
+                notificationsStore.showError(error, t("mark.loadFailed"));
             });
         return () => {
             ignore = true;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id, version])
 
     return (
@@ -83,12 +87,18 @@ const ProblemPanel = observer(() => {
                         <p style={{ color: "#000" }}><b>{markStatus.name}</b></p>
                     </div>
                 </div>
-                <p style={{ fontSize: "12px" }}>№{mark.mark_id}</p>
-                <p style={{ fontSize: 12 }}>Координаты: <b>{mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}</b></p>
+                <p style={{ fontSize: "12px" }}>{t("mark.n", { id: mark.mark_id })}</p>
+                <p style={{ fontSize: 12 }}>{t("common.coordinates")}: <b>{mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}</b></p>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
                     <p style={{ fontSize: 14 }}><b>{markType.name}</b></p>
                 </div>
+                {(mark.sla_due_at || mark.organization_id) &&
+                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
+                        <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
+                        <OrgLabel organizationId={mark.organization_id} />
+                    </div>
+                }
             </div>
             <div className="panel__content">
                 <Outlet />

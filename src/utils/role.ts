@@ -1,8 +1,8 @@
 import { jwtDecode } from "jwt-decode";
 
-export type Role = "user" | "moderator" | "admin";
+export type Role = "user" | "moderator" | "admin" | "service";
 
-export const ROLES: readonly Role[] = ["user", "moderator", "admin"];
+export const ROLES: readonly Role[] = ["user", "moderator", "admin", "service"];
 
 /** Normalizes an arbitrary value to a known role; unknown values fall back to "user". */
 export function parseRole(value: unknown): Role {
@@ -24,4 +24,9 @@ export function getRoleFromToken(token: string | null): Role {
 
 export function canModerate(role: Role): boolean {
     return role === "moderator" || role === "admin";
+}
+
+/** Organization staff: sees the service desk (`/org`). */
+export function isService(role: Role): boolean {
+    return role === "service";
 }

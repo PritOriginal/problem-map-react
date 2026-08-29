@@ -19,10 +19,9 @@
         align-items: center;
         gap: var(--space-7);
         height: var(--header-height);
-        // Without a bound the mark and the account drifted to the far edges of a
-        // 2000px monitor with a field of nothing between them.
-        max-width: 1320px;
-        margin: 0 auto;
+        // Full width on purpose: the header sits directly on the map, which is
+        // itself edge to edge, and a centred column inside it read as a stripe
+        // floating over the page rather than as the app's own chrome.
         padding: 0 var(--space-7);
 
         @include mobile {

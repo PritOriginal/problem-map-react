@@ -326,3 +326,41 @@ a {
     }
   }
 }
+.heatmap-legend {
+  position: absolute;
+  right: 16px;
+  bottom: 160px;
+  z-index: 1;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border: 2px solid rgb(201, 201, 201);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__title {
+    font-weight: bold;
+  }
+
+  &__empty {
+    color: #555;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    i {
+      display: inline-block;
+      width: 16px;
+      height: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  @include mobile {
+    bottom: calc(160px + var(--panel-header-height));
+  }
+}

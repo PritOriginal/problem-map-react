@@ -1,5 +1,5 @@
 import BaseService, { IResponse } from "./BaseService"
-import { MultiPolygonGeometry } from "@yandex/ymaps3-types";
+import { MultiPolygonGeometry, PolygonGeometry } from "@yandex/ymaps3-types";
 
 export interface AdminBoundary {
     id: number;
@@ -44,7 +44,49 @@ export interface GetAdminBoundariesMarksCountResponsePayload {
 }
 
 
+/** Bounding box as `[minLon, minLat, maxLon, maxLat]`. */
+export type BBox = [number, number, number, number];
+
+export interface GetHeatmapRequest {
+    bbox: BBox;
+    cell_m: number;
+    mark_type_ids: number[];
+    mark_status_ids: number[];
+}
+
+export interface HeatmapFeature {
+    type: "Feature";
+    id?: string | number;
+    geometry: PolygonGeometry;
+    properties: {
+        count: number;
+    };
+}
+
+export interface HeatmapFeatureCollection {
+    type: "FeatureCollection";
+    features: HeatmapFeature[];
+}
+
+export interface GetHeatmapResponse extends IResponse {
+    payload: HeatmapFeatureCollection;
+}
+
 class MapService extends BaseService {
+    /** Grid heatmap of marks over the bbox (`GET /map/heatmap`). */
+    public getHeatmap(req: GetHeatmapRequest): Promise<GetHeatmapResponse> {
+        const params = new URLSearchParams();
+        params.set("bbox", req.bbox.map((v) => v.toFixed(6)).join(","));
+        params.set("cell_m", String(req.cell_m));
+        if (req.mark_type_ids.length > 0) {
+            params.set("mark_type_ids", req.mark_type_ids.join(","));
+        }
+        if (req.mark_status_ids.length > 0) {
+            params.set("mark_status_ids", req.mark_status_ids.join(","));
+        }
+        return this.request<GetHeatmapResponse>(`/api/map/heatmap?${params}`);
+    }
+
     public getAdminBoundaries(req: GetAdminBoundariesRequest): Promise<GetAdminBoundariesResponse> {
         const params = new URLSearchParams();
         if (req.admin_levels.length > 0) {

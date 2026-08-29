@@ -37,6 +37,12 @@ import markTypesStore from "./store/mark-types";
 import panelStore from "./store/panel";
 import notificationsStore from "./store/notifications";
 import { useDeviceDetect } from "./utils/hooks";
+import heatmapStore from "./store/heatmap";
+import { bboxFromBounds, cellSizeForZoom, heatColor, heatLegend } from "./utils/heatmap";
+import { BBox, HeatmapFeature } from "./services/MapService";
+
+/** Debounce for heatmap reloads while the map is being moved. */
+const HEATMAP_DEBOUNCE_MS = 400;
 
 const YMAPS_API_KEY = import.meta.env.VITE_YMAPS_API_KEY ?? "";
 
@@ -128,7 +134,30 @@ const Map = observer(() => {
     navigate(`/problem/${mark.mark_id}`);
   }, [navigate])
 
+  // heatmap: current view (bbox + cell size) and a debounced reload on every move
+  const viewRef = useRef<{ bbox: BBox; cellM: number } | null>(null);
+  const heatmapTimer = useRef<number | undefined>(undefined);
+  const scheduleHeatmap = useCallback((immediate: boolean = false) => {
+    window.clearTimeout(heatmapTimer.current);
+    const run = () => {
+      const view = viewRef.current;
+      if (view && heatmapStore.enabled) {
+        heatmapStore.fetch(view.bbox, view.cellM);
+      }
+    };
+    if (immediate) {
+      run();
+    } else {
+      heatmapTimer.current = window.setTimeout(run, HEATMAP_DEBOUNCE_MS);
+    }
+  }, []);
+  useEffect(() => () => window.clearTimeout(heatmapTimer.current), []);
+
   const onUpdate: MapEventUpdateHandler = useCallback((o) => {
+    if (o.location.bounds) {
+      viewRef.current = { bbox: bboxFromBounds(o.location.bounds), cellM: cellSizeForZoom(o.location.zoom) };
+      scheduleHeatmap();
+    }
     if (o.location.zoom <= ZOOMS.small) {
       setSize(MarkerSize.small);
     } else if (o.location.zoom <= ZOOMS.big && o.location.zoom >= ZOOMS.small) {
@@ -138,7 +167,9 @@ const Map = observer(() => {
     }
     zoomRef.current = o.location.zoom;
     selectedPoint.setCoords(o.location.center);
-  }, []);
+  }, [scheduleHeatmap]);
+
+
 
   const flyTo = useCallback((center: LngLat, minZoom: number) => {
     map?.setLocation({
@@ -160,6 +191,14 @@ const Map = observer(() => {
   useEffect(() => {
     setSearchParams((prev) => serializeFilters(marksStore.filters, DEFAULT_FILTERS, prev), { replace: true });
   }, [filtersQuery, setSearchParams]);
+
+  // heatmap: reload when toggled on or when the mark filters change
+  const heatmapEnabled = heatmapStore.enabled;
+  useEffect(() => {
+    if (heatmapEnabled) {
+      scheduleHeatmap(true);
+    }
+  }, [heatmapEnabled, filtersQuery, scheduleHeatmap]);
 
   useEffect(() => {
     adminBoundariesStore.fetchBoundaries();
@@ -248,6 +287,7 @@ const Map = observer(() => {
       {showNewMarkButton && isMobile ? <></> : < AddMarkButton />}
       {showNewMarkButton && isMobile && <OpenPanelButton />}
       <Filters />
+      {heatmapEnabled && <HeatmapLegend />}
       <LocateButton onClick={() => getUserLocation(true)} />
       <div className={`map ${panelIsOpen && "panel-open"}`}>
         <YMapComponentsProvider apiKey={YMAPS_API_KEY}>
@@ -275,7 +315,10 @@ const Map = observer(() => {
             }
             <SelectedPoint />
             <YMapListener onUpdate={onUpdate} />
-            <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
+            {heatmapEnabled
+              ? <HeatmapLayer />
+              : <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
+            }
           </YMap>
         </YMapComponentsProvider>
       </div>
@@ -302,6 +345,53 @@ const SelectedPoint = observer(() => {
     </>
   );
 })
+
+/** Grid cells of the heatmap, filled by the number of marks in each. */
+const HeatmapLayer = observer(() => {
+  const { features, maxCount } = heatmapStore;
+  return (
+    <>
+      {features.map((feature, index) => (
+        <HeatmapCell key={feature.id ?? index} feature={feature} max={maxCount} />
+      ))}
+    </>
+  );
+});
+
+const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, max: number }) {
+  const count = feature.properties?.count ?? 0;
+  if (count <= 0) {
+    return null;
+  }
+  return (
+    <YMapFeature
+      style={{
+        stroke: [{ color: "#ffffff", width: 0.5, opacity: 0.6 }],
+        fill: heatColor(count, max),
+        fillOpacity: 0.55,
+      }}
+      geometry={feature.geometry}
+      properties={{ count }}
+    />
+  );
+});
+
+const HeatmapLegend = observer(() => {
+  const { maxCount, isLoading, features } = heatmapStore;
+  const steps = heatLegend(maxCount);
+  return (
+    <div className="heatmap-legend" aria-label="Легенда тепловой карты">
+      <p className="heatmap-legend__title">Проблем в ячейке{isLoading && " · загрузка…"}</p>
+      {features.length === 0 && !isLoading && <p className="heatmap-legend__empty">Нет данных в этой области</p>}
+      {steps.map((step) => (
+        <div key={step.label} className="heatmap-legend__row">
+          <i style={{ backgroundColor: step.color }} />
+          <span>{step.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+});
 
 const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBoundary, count: AdminBoundaryMarksCount }) {
   const color = '#' + getColorPolygon(count);
@@ -385,6 +475,14 @@ const Filters = observer(() => {
           <div className="filters__content">
             <div className="filters__content__title">
               <p>Фильтры проблем</p>
+            </div>
+            <div className="filters__content__block">
+              <FilterItem
+                icon={<div style={{ height: "12px", width: "12px", background: "linear-gradient(90deg, #fee5d9, #a50f15)", border: "1px solid gray" }}></div>}
+                name="Тепловая карта"
+                checked={heatmapStore.enabled}
+                onClick={() => heatmapStore.toggle()}
+              />
             </div>
             <div className="filters__content__block">
               <p><b>Статусы</b></p>

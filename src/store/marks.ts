@@ -31,22 +31,45 @@ class MarksStore {
     isLoading: boolean = false;
     error: string | null = null;
 
+    /** Sequence number of the newest `fetch`; a response with an older id is dropped. */
+    private requestId: number = 0;
+    /** Controller of the in-flight `fetch`, aborted when a newer one starts. */
+    private controller: AbortController | null = null;
+
     constructor() {
-        makeAutoObservable(this);
+        makeAutoObservable<MarksStore, "requestId" | "controller">(this, { requestId: false, controller: false });
     }
 
+    /**
+     * Full reload for the current filters. Rapid filter toggling would otherwise let the
+     * last *returning* response win instead of the last *requested* one: the previous request
+     * is aborted and every stale response (payload, `since` bookmark and error alike) is dropped.
+     */
     fetch = async () => {
+        this.controller?.abort();
+        const controller = new AbortController();
+        this.controller = controller;
+        const id = ++this.requestId;
         this.isLoading = true;
         this.error = null;
         const startedAt = new Date().toISOString();
         try {
-            const response = await MarksService.getMarks(this.filters);
+            const response = await MarksService.getMarks(this.filters, { signal: controller.signal });
+            if (id !== this.requestId) {
+                return;
+            }
             runInAction(() => {
                 this.marks = unwrapList<Mark>(response.payload, "marks");
                 this.isLoading = false;
             });
+            // only the winning response may move the incremental-sync bookmark forward
             writeSince(startedAt);
         } catch (error) {
+            // a superseded request must not clear the loading flag of its successor, and an
+            // abort is our own doing — never a failure worth a toast
+            if (id !== this.requestId || isAbortError(error, controller.signal)) {
+                return;
+            }
             console.error(error);
             runInAction(() => {
                 this.error = notificationsStore.showError(error, t("errors.marks"));
@@ -112,6 +135,11 @@ function readSince(): string | null {
     } catch {
         return null;
     }
+}
+
+/** True for the rejection `fetch` produces when its signal is aborted. */
+function isAbortError(error: unknown, signal: AbortSignal): boolean {
+    return signal.aborted || (error instanceof DOMException && error.name === "AbortError");
 }
 
 function writeSince(value: string): void {

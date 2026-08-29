@@ -164,7 +164,16 @@ describe("service payloads match the backend contract", () => {
         const mark = { mark_id: 1, name: "", geom: { type: "Point", coordinates: [1, 2] }, mark_type_id: 1, description: "", user_id: 1, mark_status_id: 1, created_at: "", updated_at: "" };
         fetchMock.mockImplementation(ok({ marks: [mark] }));
         expect((await MarksService.getMarks({ mark_type_ids: [], mark_status_ids: [] })).payload.marks).toEqual([mark]);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks?");
         expect((await MarksService.getMarksByUserId(1)).payload.marks).toEqual([mark]);
+
+        // the optional `init` only carries the abort signal through to fetch (src/store/marks.ts
+        // cancels a superseded filter request); the URL and the envelope stay untouched
+        fetchMock.mockClear();
+        const controller = new AbortController();
+        expect((await MarksService.getMarks({ mark_type_ids: [1, 2], mark_status_ids: [3] }, { signal: controller.signal })).payload.marks).toEqual([mark]);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks?mark_type_ids=1%2C2&mark_status_ids=3");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(controller.signal);
         fetchMock.mockImplementation(ok({ mark }));
         expect((await MarksService.getMarkById(1)).payload.mark).toEqual(mark);
         fetchMock.mockImplementation(ok({ items: [{ id: 1, mark_id: 1, old_mark_status_id: null, new_mark_status_id: 2, changed_at: "" }] }));

@@ -250,8 +250,12 @@ export interface GetMarkStatusHistoryByMarkIdResponsePayload {
 }
 
 class MarksService extends BaseService {
-    public getMarks(req: GetMarksRequest): Promise<GetMarksResponse> {
-        return this.request<GetMarksResponse>(`/api/marks?${this.filterParams(req)}`)
+    /**
+     * `GET /marks?mark_type_ids=&mark_status_ids=` returns `{ marks: Mark[] }`.
+     * `init.signal` lets the caller cancel a superseded request (see `src/store/marks.ts`).
+     */
+    public getMarks(req: GetMarksRequest, init?: Pick<RequestInit, "signal">): Promise<GetMarksResponse> {
+        return this.request<GetMarksResponse>(`/api/marks?${this.filterParams(req)}`, init)
     }
 
     public getMarkById(id: number): Promise<GetMarkByIdResponse> {

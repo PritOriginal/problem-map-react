@@ -33,7 +33,13 @@ const AboutProblem = observer(function AboutProblem() {
     const reload = useContext(MarkReloadContext)
     const { data: historyItems = [] } = useAsyncData<MarkStatusHistoryItem[]>(
         (signal) => MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true, { signal }).then((res) => res.payload.items),
-        [mark],
+        // Fields, not the object: MarkContext hands down a freshly parsed `mark` on every
+        // load of the panel above, so depending on its identity re-read the history even
+        // when nothing about the mark had changed -- which is most of the time, since the
+        // panel re-reads the mark after any action. The two fields kept are the ones the
+        // history actually follows: a status change, and anything else the backend stamps
+        // into `updated_at` (a check, for instance).
+        [mark.mark_id, mark.mark_status_id, mark.updated_at],
         { enabled: mark.mark_id !== 0, errorMessage: t("mark.historyLoadFailed") },
     );
 

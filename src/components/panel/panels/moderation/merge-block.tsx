@@ -6,12 +6,14 @@ import markTypesStore from "../../../../store/mark-types";
 import MarksService, { Mark, SimilarMark } from "../../../../services/MarksService";
 import { parseSimilarMarks, formatDistance } from "../../../../utils/similar";
 import { Button } from "../../../button/button";
+import { useConfirm } from "../../../confirm/use-confirm";
 import { useAsyncData } from "../../../../utils/use-async-data";
 import { useT } from "../../../../i18n";
 
 /** "Merge into…": similar marks from `GET /marks/similar` plus a manual id -> `POST /marks/{id}/merge-into/{target}`. */
 export const MergeForm = observer(function MergeForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => void; onDone: (target: Mark) => void }) {
     const { t } = useT();
+    const confirm = useConfirm();
     const [manualId, setManualId] = useState("");
     const [pending, setPending] = useState(false);
 
@@ -28,11 +30,11 @@ export const MergeForm = observer(function MergeForm({ mark, onCancel, onDone }:
         { silent: true },
     );
 
-    const merge = (targetId: number) => {
+    const merge = async (targetId: number) => {
         if (!Number.isInteger(targetId) || targetId <= 0 || targetId === mark.mark_id) {
             return;
         }
-        if (!window.confirm(t("moderation.mergeQuestion", { id: mark.mark_id, target: targetId }))) {
+        if (!await confirm({ question: t("moderation.mergeQuestion", { id: mark.mark_id, target: targetId }) })) {
             return;
         }
         setPending(true);

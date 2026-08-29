@@ -8,6 +8,7 @@ import selectedMark from "../../../../store/selected_mark";
 import ReportsService, { Report } from "../../../../services/ReportsService";
 import MarksService, { Mark, MarkStatusType } from "../../../../services/MarksService";
 import { Button } from "../../../button/button";
+import { useConfirm } from "../../../confirm/use-confirm";
 import { MarkBadges } from "../../../badges/badges";
 import { TypeIcon } from "../../../mark/mark";
 import { REASON_LABELS } from "../../../../utils/report";
@@ -20,6 +21,7 @@ import "../../../badges/badges.scss";
 /** One report in the moderation queue, with the actions that can be taken on it. */
 export const ReportCard = observer(function ReportCard({ report, mark: loadedMark, onDone }: { report: Report; mark: Mark | null; onDone: () => void }) {
     const { t, lang } = useT();
+    const confirm = useConfirm();
     const navigate = useNavigateKeepSearch();
     const [pending, setPending] = useState<string | null>(null);
     const [merging, setMerging] = useState(false);
@@ -50,12 +52,12 @@ export const ReportCard = observer(function ReportCard({ report, mark: loadedMar
 
     const setStatus = (status: "resolved" | "dismissed") => run(status, () => ReportsService.setReportStatus(report.report_id, status), "moderation.statusFailed");
 
-    const toggleHidden = () => {
+    const toggleHidden = async () => {
         if (!mark) {
             return;
         }
         const hidden = !mark.hidden;
-        if (hidden && !window.confirm(t("moderation.hideQuestion", { id: mark.mark_id }))) {
+        if (hidden && !await confirm({ question: t("moderation.hideQuestion", { id: mark.mark_id }), danger: true })) {
             return;
         }
         run("hidden", () => MarksService.setMarkHidden(mark.mark_id, hidden), "moderation.hiddenFailed", () => {

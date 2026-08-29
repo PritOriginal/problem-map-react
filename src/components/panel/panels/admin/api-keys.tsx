@@ -3,11 +3,13 @@ import notificationsStore from "../../../../store/notifications";
 import AdminService, { ApiKey, CreatedApiKey } from "../../../../services/AdminService";
 import { useAsyncData } from "../../../../utils/use-async-data";
 import { Button } from "../../../button/button";
+import { useConfirm } from "../../../confirm/use-confirm";
 import { localeOf, useT } from "../../../../i18n";
 
 /** Keys tab of `/admin`: issue an API key (shown once) and revoke the existing ones. */
 export const ApiKeysBlock = function ApiKeysBlock() {
     const { t, lang } = useT();
+    const confirm = useConfirm();
     const [name, setName] = useState("");
     const [created, setCreated] = useState<CreatedApiKey | null>(null);
     const [copied, setCopied] = useState(false);
@@ -54,8 +56,8 @@ export const ApiKeysBlock = function ApiKeysBlock() {
         }
     };
 
-    const revoke = (key: ApiKey) => {
-        if (!window.confirm(t("admin.keys.revokeQuestion", { name: key.name }))) {
+    const revoke = async (key: ApiKey) => {
+        if (!await confirm({ question: t("admin.keys.revokeQuestion", { name: key.name }), danger: true })) {
             return;
         }
         setPending(`revoke-${key.id}`);

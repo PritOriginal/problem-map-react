@@ -125,6 +125,30 @@ if (typeof globalThis.ResizeObserver === "undefined") {
     globalThis.ResizeObserver = StubResizeObserver;
 }
 
+/**
+ * jsdom implements the <dialog> element but none of its methods: `showModal`, `show` and
+ * `close` are simply absent, so a component that opens one throws. The stubs below do the
+ * part tests can observe -- the `open` attribute and the `close` event -- and nothing
+ * else: the top layer, the focus trap and the Escape key are the browser's, and code that
+ * needs Escape to work without them has to handle it itself.
+ */
+const dialogProto = window.HTMLDialogElement?.prototype as HTMLDialogElement | undefined;
+
+if (dialogProto && typeof dialogProto.showModal !== "function") {
+    const open = function (this: HTMLDialogElement) {
+        this.setAttribute("open", "");
+    };
+    dialogProto.show = open;
+    dialogProto.showModal = open;
+    dialogProto.close = function (this: HTMLDialogElement, returnValue?: string) {
+        if (returnValue !== undefined) {
+            this.returnValue = returnValue;
+        }
+        this.removeAttribute("open");
+        this.dispatchEvent(new Event("close"));
+    };
+}
+
 afterEach(() => {
     cleanup();
     resetMatchMedia();

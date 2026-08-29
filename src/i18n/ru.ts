@@ -66,6 +66,10 @@ export const ru = {
     "common.meters": "м",
     "common.kilometers": "км",
 
+    // confirmation dialog
+    "confirm.ok": "Подтвердить",
+    "confirm.cancel": "Отмена",
+
     // unauthorized block
     "unauth.title": "Вы не авторизованы",
     "unauth.addMark": "Для того чтобы отметить проблему, авторизуйтесь или создайте новый аккаунт",

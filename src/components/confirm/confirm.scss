@@ -1,0 +1,37 @@
+// The confirmation dialog. A native <dialog> opened with showModal(), so the focus
+// trap, the Escape key and the top layer come from the browser -- this file only has
+// to paint it, and to undo the UA's own dialog box (its border, padding and margins).
+
+.confirm {
+    padding: 0;
+    max-width: min(360px, calc(100vw - 2 * var(--space-8)));
+
+    color: var(--ink);
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-2);
+
+    &::backdrop {
+        background-color: var(--scrim);
+    }
+
+    &__box {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-7);
+        padding: var(--space-7);
+    }
+
+    &__question {
+        margin: 0;
+        font-size: var(--fs-base);
+        line-height: 1.4;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-4);
+    }
+}

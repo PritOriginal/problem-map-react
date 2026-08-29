@@ -50,7 +50,6 @@ describe("MergeForm", () => {
             ],
             "POST /api/marks/1/merge-into/7": { mark: mark(7) },
         });
-        vi.spyOn(window, "confirm").mockReturnValue(true);
         const onDone = vi.fn();
         const user = userEvent.setup();
 
@@ -60,6 +59,8 @@ describe("MergeForm", () => {
         expect(screen.queryByText(t("mark.n", { id: 1 }))).not.toBeInTheDocument();
 
         await user.click(screen.getAllByRole("button", { name: t("moderation.mergeConfirm") })[0]);
+        // The merge is guarded by the confirmation dialog now, not by window.confirm.
+        await user.click(await screen.findByRole("button", { name: t("confirm.ok") }));
 
         await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
         expect(onDone.mock.calls[0][0]).toMatchObject({ mark_id: 7 });
@@ -67,7 +68,6 @@ describe("MergeForm", () => {
 
     it("does not merge a mark into itself", async () => {
         mockFetchRoutes({ "GET /api/marks/similar": [] });
-        const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
         const onDone = vi.fn();
         const user = userEvent.setup();
 
@@ -79,7 +79,7 @@ describe("MergeForm", () => {
         await user.click(screen.getByRole("button", { name: t("moderation.mergeConfirm") }));
 
         // rejected before the confirmation dialog, so no request was ever made
-        expect(confirm).not.toHaveBeenCalled();
+        expect(screen.queryByRole("dialog", { hidden: true })).not.toBeInTheDocument();
         expect(onDone).not.toHaveBeenCalled();
     });
 });

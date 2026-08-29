@@ -3,6 +3,7 @@ import MarksService, { MarkStatusType } from "../../../../../services/MarksServi
 import { TranslationKey, useT } from "../../../../../i18n";
 import notificationsStore from "../../../../../store/notifications";
 import { Button } from "../../../../button/button";
+import { useConfirm } from "../../../../confirm/use-confirm";
 import { MarkContext } from "../mark-context";
 
 const MODERATABLE_STATUSES = [
@@ -44,15 +45,16 @@ const MODERATION_ACTIONS: Record<ModerationAction, {
 export function ModerationBlock({ onDone }: { onDone: () => void }) {
     const mark = useContext(MarkContext);
     const { t } = useT();
+    const confirm = useConfirm();
     const [pending, setPending] = useState<ModerationAction | null>(null);
 
     if (!MODERATABLE_STATUSES.includes(mark.mark_status_id)) {
         return null;
     }
 
-    const moderate = (action: ModerationAction) => {
+    const moderate = async (action: ModerationAction) => {
         const spec = MODERATION_ACTIONS[action];
-        if (!window.confirm(t(spec.question, { id: mark.mark_id }))) {
+        if (!await confirm({ question: t(spec.question, { id: mark.mark_id }), danger: spec.style === "negative" })) {
             return;
         }
         setPending(action);

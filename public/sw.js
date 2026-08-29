@@ -39,8 +39,15 @@ function isCacheableApi(url) {
     return CACHEABLE_API.some((re) => re.test(path));
 }
 
-/** Network first; a successful response is cached (keyed by URL + Accept-Language). */
+/**
+ * Network first; a successful response is cached (keyed by URL + Accept-Language).
+ * Authenticated requests are never cached or served from the cache: their responses
+ * may carry per-user data (e.g. `is_following`) that must not outlive the session.
+ */
 async function networkFirst(request) {
+    if (request.headers.has("Authorization")) {
+        return fetch(request);
+    }
     const key = cacheKey(request);
     const cache = await caches.open(API_CACHE);
     try {
@@ -94,6 +101,13 @@ async function cacheFirst(request) {
     }
     return Response.error();
 }
+
+/** `{ type: "clear-api-cache" }` from the page (sign-out): drop everything cached from the API. */
+self.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "clear-api-cache") {
+        event.waitUntil(caches.delete(API_CACHE));
+    }
+});
 
 self.addEventListener("fetch", (event) => {
     const request = event.request;

@@ -12,3 +12,11 @@ export function registerServiceWorker(): void {
         });
     });
 }
+
+/** Asks the active service worker to drop the API cache (call on sign-out). */
+export function clearApiCache(): void {
+    if (!("serviceWorker" in navigator)) {
+        return;
+    }
+    navigator.serviceWorker.controller?.postMessage({ type: "clear-api-cache" });
+}

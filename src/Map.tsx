@@ -13,7 +13,7 @@ import {
 import customization from './customization.json'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
-import { type KeyboardEvent, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
 import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeMarkIcons } from "./components/mark/mark";
 import { Feature } from "@yandex/ymaps3-clusterer";
@@ -24,7 +24,6 @@ import { filtersEqual, parseFilters, serializeFilters } from "./utils/filters";
 import { useNavigateKeepSearch } from "./utils/navigation";
 import MarksService, { ExportFormat, Mark, MarkStatusType } from "./services/MarksService";
 import { useT } from "./i18n";
-import { Button } from "./components/button/button";
 import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
 import { observer } from "mobx-react-lite";
@@ -466,10 +465,18 @@ function AddMarkButton() {
   );
 }
 
-/** Opens `GET /marks/export` for the current filters; the browser handles the download. */
-function exportMarks(format: ExportFormat) {
-  window.open(MarksService.exportUrl(marksStore.filters, format), "_blank", "noopener");
-}
+/** Download link to `GET /marks/export` for the current filters (a real anchor is not blocked by popup blockers). */
+const ExportLink = observer(({ format, children }: { format: ExportFormat; children: ReactNode }) => (
+  <a
+    className="white-2-black mini"
+    href={MarksService.exportUrl(marksStore.filters, format)}
+    download={`marks.${format}`}
+    target="_blank"
+    rel="noopener"
+  >
+    {children}
+  </a>
+));
 
 const Filters = observer(() => {
   const { t } = useT();
@@ -530,8 +537,8 @@ const Filters = observer(() => {
             </div>
             <div className="filters__content__block export-row" title={t("map.exportHint")}>
               <p><b>{t("map.export")}</b></p>
-              <Button style="white-2-black" isMini onClick={() => exportMarks("geojson")}>{t("map.exportGeojson")}</Button>
-              <Button style="white-2-black" isMini onClick={() => exportMarks("csv")}>{t("map.exportCsv")}</Button>
+              <ExportLink format="geojson">{t("map.exportGeojson")}</ExportLink>
+              <ExportLink format="csv">{t("map.exportCsv")}</ExportLink>
             </div>
           </div>
         </div>

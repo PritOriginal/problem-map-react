@@ -125,4 +125,9 @@
     align-items: center;
     flex-wrap: wrap;
     font-size: 13px;
+
+    a {
+        width: auto;
+        text-decoration: none;
+    }
 }

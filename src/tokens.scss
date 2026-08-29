@@ -89,6 +89,8 @@
     --highlight-rule: #e5d600;
 
     // ---- Accents --------------------------------------------------------
+    // The "confirm this spot" button that appears while placing a mark.
+    --cta: #ff0000;
     --focus: #2e4ce5;
     --assigned: #1e6fff;
     --selected-ring: rgba(35, 174, 255, 0.3);
@@ -109,6 +111,11 @@
     // ---- Elevation & overlay --------------------------------------------
     --shadow-1: 2px 2px 5px rgba(0, 0, 0, 0.2);
     --scrim: rgba(0, 0, 0, 0.5);
+    // Hairline over unknown content (heat-legend swatches).
+    --rule-translucent: rgba(0, 0, 0, 0.2);
+    // Marker ring and veil: light strokes that must read over any status colour.
+    --marker-ring: rgba(255, 255, 255, 0.7);
+    --marker-veil: rgba(255, 255, 255, 0.3);
 
     // ---- Spacing --------------------------------------------------------
     --space-1: 2px;

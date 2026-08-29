@@ -4,11 +4,11 @@ header {
     margin: 0 auto;
     height: var(--header-height);
     align-content: center;
-    background-color: #202020;
-    color: white;
+    background-color: var(--chrome);
+    color: var(--on-chrome);
 
     a {
-        color: white;
+        color: var(--on-chrome);
     }
 }
 
@@ -18,7 +18,7 @@ header {
     align-items: center;
     padding: 0 16px;
     margin: 0 auto;
-    font-size: 16px;
+    font-size: var(--fs-base);
 
     &__menu {
         display: flex;
@@ -39,7 +39,7 @@ header {
     }
 
     @include mobile {
-        font-size: 12px;
+        font-size: var(--fs-caption);
     }
 }
 .header-bell {
@@ -54,10 +54,10 @@ header {
         min-width: 16px;
         height: 16px;
         padding: 0 4px;
-        border-radius: 8px;
-        background-color: #e50000;
-        color: white;
-        font-size: 10px;
+        border-radius: var(--radius-3);
+        background-color: var(--alert);
+        color: var(--on-chrome);
+        font-size: var(--fs-micro);
         line-height: 16px;
         text-align: center;
         font-weight: bold;
@@ -66,31 +66,31 @@ header {
 
 .header-lang {
     display: flex;
-    border: 1px solid #777;
-    border-radius: 4px;
+    border: 1px solid var(--rule-chrome);
+    border-radius: var(--radius-1);
     overflow: hidden;
 
     &__item {
         border: none;
         background: none;
-        color: #bdbdbd;
-        font-size: 12px;
+        color: var(--on-chrome-muted);
+        font-size: var(--fs-caption);
         padding: 2px 6px;
         cursor: pointer;
 
         &.active {
-            background-color: white;
-            color: #202020;
+            background-color: var(--paper);
+            color: var(--chrome);
             font-weight: bold;
         }
     }
 }
 
 .offline-banner {
-    background-color: #fff3cd;
-    color: #664d03;
-    border-bottom: 1px solid #ffe69c;
-    font-size: 13px;
+    background-color: var(--warn-bg);
+    color: var(--warn-ink);
+    border-bottom: 1px solid var(--warn-rule);
+    font-size: var(--fs-small);
     text-align: center;
     padding: 4px 8px;
 }
@@ -99,10 +99,10 @@ header {
     display: flex;
     align-items: center;
     padding: 2px 8px;
-    border-radius: 4px;
-    background-color: #ffe69c;
-    color: #664d03;
-    font-size: 13px;
+    border-radius: var(--radius-1);
+    background-color: var(--warn-rule);
+    color: var(--warn-ink);
+    font-size: var(--fs-small);
 
     p {
         color: inherit;

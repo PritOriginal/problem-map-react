@@ -3,61 +3,61 @@
 	height: 100%;
 	padding: 8px;
 	cursor: pointer;
-	border: 1px solid black;
-	font-size: 16px;
+	border: 1px solid var(--ink);
+	font-size: var(--fs-base);
 	// font-family: "Century Gothic";
 	transition: all 0.3s ease-in-out;
 
 	&.mini {
-		font-size: 12px;
+		font-size: var(--fs-caption);
 		height: auto;
 	}
 
 	&:disabled {
-		background-color: #e2e2e2 !important;
-		color: black !important;
+		background-color: var(--disabled-bg) !important;
+		color: var(--ink) !important;
 	}
 }
 
 .white-2-black {
 	@extend %color2color;
-	background-color: white;
-	color: black;
+	background-color: var(--paper);
+	color: var(--ink);
 
 	&:hover {
-		background-color: black;
-		color: white;
+		background-color: var(--ink);
+		color: var(--on-chrome);
 	}
 }
 
 .black-2-white {
 	@extend %color2color;
-	background-color: black;
-	color: white;
+	background-color: var(--ink);
+	color: var(--on-chrome);
 
 	&:hover {
-		background-color: white;
-		color: black;
+		background-color: var(--paper);
+		color: var(--ink);
 	}
 }
 
 .green {
 	@extend %color2color;
-	background-color: rgb(194, 253, 183);
-	color: black;
+	background-color: var(--btn-green-bg);
+	color: var(--ink);
 
 	&:hover {
-		background-color: rgb(56, 230, 21);
+		background-color: var(--btn-green-bg-hover);
 	}
 }
 
 .red {
 	@extend %color2color;
-	background-color: rgb(255, 160, 160);
-	color: black;
+	background-color: var(--btn-red-bg);
+	color: var(--ink);
 
 	&:hover {
-		background-color: rgb(211, 12, 12);
-		color: white;
+		background-color: var(--btn-red-bg-hover);
+		color: var(--on-chrome);
 	}
 }

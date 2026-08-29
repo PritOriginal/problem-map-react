@@ -1,14 +1,14 @@
 .report-button {
     border: none;
     background: none;
-    color: #a40000;
-    font-size: 13px;
+    color: var(--danger-ink);
+    font-size: var(--fs-small);
     cursor: pointer;
     padding: 4px 0;
     text-decoration: underline dotted;
 
     &.small {
-        font-size: 12px;
+        font-size: var(--fs-caption);
         padding: 0;
     }
 
@@ -22,9 +22,9 @@
     flex-direction: column;
     gap: 6px;
     padding: 8px;
-    background-color: #fff5f5;
-    border: 1px solid #ff8a8a;
-    font-size: 13px;
+    background-color: var(--danger-bg-soft);
+    border: 1px solid var(--danger-rule);
+    font-size: var(--fs-small);
 
     &__field {
         display: flex;
@@ -33,7 +33,7 @@
 
         select {
             padding: 4px;
-            font-size: 13px;
+            font-size: var(--fs-small);
         }
     }
 

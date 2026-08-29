@@ -8,9 +8,9 @@
     height: calc(100dvh - var(--header-height));
     width: var(--panel-width);
 
-    background-color: #f9f9f9;
+    background-color: var(--surface);
 
-    border-right: 2px solid rgb(201, 201, 201);
+    border-right: 2px solid var(--rule);
 
     transition: transform .3s ease-in-out 0s;
 
@@ -33,8 +33,8 @@
         flex-direction: column;
         gap: 8px;
         height: fit-content;
-        background-color: rgb(36, 36, 36);
-        color: white;
+        background-color: var(--chrome-2);
+        color: var(--on-chrome);
 
         padding: 16px;
 
@@ -46,10 +46,10 @@
             position: absolute;
             right: 16px;
             top: 16px;
-            font-size: 12px;
+            font-size: var(--fs-caption);
 
             @include mobile {
-                font-size: 10px;
+                font-size: var(--fs-micro);
             }
         }
     }
@@ -83,18 +83,18 @@
         height: 48px;
         width: 48px;
 
-        background-color: white;
-        border-radius: 50%;
+        background-color: var(--paper);
+        border-radius: var(--radius-round);
 
-        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--shadow-1);
 
         z-index: 1;
 
         transition: all 0.2s ease-in-out;
 
         &:hover {
-            fill: white;
-            background-color: black;
+            fill: var(--on-chrome);
+            background-color: var(--ink);
         }
     }
 
@@ -104,7 +104,7 @@
 }
 
 .photo {
-    background-color: #e5e5e5;
+    background-color: var(--placeholder);
     max-height: 150px;
     min-height: 150px;
 
@@ -113,29 +113,29 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 64px;
+        font-size: var(--fs-jumbo);
 
         cursor: pointer;
         transition: all 0.2s ease-in-out;
 
         &:hover {
-            color: white;
-            background-color: black;
+            color: var(--on-chrome);
+            background-color: var(--ink);
         }
     }
 }
 
 .thumb-photo {
-    background-color: #e5e5e5;
+    background-color: var(--placeholder);
     max-height: 100px;
     min-height: 100px;
 
     &.confirm {
-        border-bottom: 1px solid rgb(83, 237, 124);
+        border-bottom: 1px solid var(--vote-confirm);
     }
 
     &.reject {
-        border-bottom: 1px solid rgb(255, 31, 31);
+        border-bottom: 1px solid var(--vote-reject);
     }
 }
 
@@ -145,13 +145,13 @@
     width: 100%;
     padding: 4px;
     border: none;
-    background-color: #f9f9f9;
+    background-color: var(--surface);
     cursor: pointer;
     transition: all 0.3s ease-in-out;
 
     &:hover {
-        fill: white;
-        background-color: rgb(36, 36, 36);
+        fill: var(--on-chrome);
+        background-color: var(--chrome-2);
     }
 }
 .profile-list {
@@ -164,28 +164,28 @@
         flex-direction: column;
         gap: 4px;
         padding: 8px;
-        background-color: white;
-        border: 1px solid rgb(201, 201, 201);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
         color: inherit;
         text-decoration: none;
         cursor: pointer;
 
         &:hover {
-            border-color: black;
+            border-color: var(--ink);
         }
     }
 
     &__status {
-        font-size: 12px;
+        font-size: var(--fs-caption);
         border: 2px solid;
-        border-radius: 4px;
+        border-radius: var(--radius-1);
         padding: 2px 4px;
-        background-color: white;
+        background-color: var(--paper);
     }
 }
 
 .profile-list__item.unread {
-    border-left: 3px solid #e50000;
+    border-left: 3px solid var(--alert);
 }
 
 .notification-dot {
@@ -193,23 +193,23 @@
     width: 8px;
     height: 8px;
     margin-right: 6px;
-    border-radius: 50%;
-    background-color: #e50000;
+    border-radius: var(--radius-round);
+    background-color: var(--alert);
     vertical-align: middle;
 }
 
 .leaderboard {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: var(--fs-body);
 
     tr {
-        background-color: white;
-        border-bottom: 1px solid rgb(201, 201, 201);
+        background-color: var(--paper);
+        border-bottom: 1px solid var(--rule);
 
         &.me {
             font-weight: bold;
-            background-color: #fff8dc;
+            background-color: var(--highlight-bg);
         }
     }
 
@@ -220,7 +220,7 @@
     &__place {
         width: 32px;
         text-align: right;
-        color: #555;
+        color: var(--ink-muted);
     }
 
     &__rating {
@@ -234,8 +234,8 @@
     flex-direction: column;
     gap: 8px;
     padding: 8px;
-    background-color: #fff8dc;
-    border: 2px solid #e5d600;
+    background-color: var(--highlight-bg);
+    border: 2px solid var(--highlight-rule);
 
     &__list {
         display: flex;
@@ -251,9 +251,9 @@
         align-items: center;
         gap: 8px;
         padding: 6px 8px;
-        background-color: white;
-        border: 1px solid rgb(201, 201, 201);
-        font-size: 13px;
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        font-size: var(--fs-small);
     }
 }
 
@@ -266,16 +266,16 @@
         display: flex;
         flex-direction: column;
         padding: 8px;
-        background-color: white;
-        border: 1px solid rgb(201, 201, 201);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
 
         b {
-            font-size: 18px;
+            font-size: var(--fs-lead);
         }
 
         span {
-            font-size: 12px;
-            color: #555;
+            font-size: var(--fs-caption);
+            color: var(--ink-muted);
         }
     }
 }
@@ -284,7 +284,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    font-size: 12px;
+    font-size: var(--fs-caption);
 
     &__item {
         display: flex;
@@ -303,7 +303,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    font-size: 12px;
+    font-size: var(--fs-caption);
 
     label {
         display: flex;
@@ -313,6 +313,6 @@
 
     input, select {
         padding: 4px;
-        font-size: 13px;
+        font-size: var(--fs-small);
     }
 }

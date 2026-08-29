@@ -43,6 +43,15 @@
         box-shadow: 0px 0px 0px 8px var(--selected-ring);
     }
 }
+/* Built-in type SVG inside a marker: a fixed 16px box. It is a class rather than an
+   inline style because the same five properties were rebuilt for every marker on the map. */
+.type-svg {
+  min-width: 16px;
+  max-width: 16px;
+  min-height: 16px;
+  max-height: 16px;
+}
+
 .type-glyph {
   font-size: var(--fs-body);
   line-height: 16px;

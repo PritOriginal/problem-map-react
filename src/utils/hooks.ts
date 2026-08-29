@@ -4,22 +4,56 @@ import { useEffect, useState, useSyncExternalStore } from "react";
  * which cannot be shared with JS because `@media` cannot read CSS custom properties. */
 export const MOBILE_BREAKPOINT = 768;
 
-export const useDeviceDetect = () => {
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+const MOBILE_QUERY = `(max-width: ${MOBILE_BREAKPOINT}px)`;
 
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+/**
+ * One shared media query for every `useIsMobile` subscriber (the map, the header and
+ * the panel → one listener instead of three).
+ *
+ * A `resize` listener fires on every pixel and would have to be throttled; a media
+ * query fires only when the breakpoint is actually crossed, which is the only moment
+ * the answer can change. Dragging a window across 200px inside one side of the
+ * breakpoint now costs nothing at all, where before it rerendered the map ~200 times.
+ *
+ * The `MediaQueryList` is created on the first subscription and released with the last
+ * one, so a page with no consumer holds no listener.
+ */
+const mobileQuery = (() => {
+    const listeners = new Set<() => void>();
+    let list: MediaQueryList | null = null;
+    let isMobile = typeof window === "undefined" ? false : window.matchMedia(MOBILE_QUERY).matches;
 
-    useEffect(() => {
-        setIsMobile(windowWidth <= MOBILE_BREAKPOINT)
-    }, [windowWidth])
+    const onChange = (event: MediaQueryListEvent) => {
+        isMobile = event.matches;
+        listeners.forEach((listener) => listener());
+    };
 
-    return { isMobile, windowWidth };
-};
+    return {
+        get: () => isMobile,
+        subscribe: (listener: () => void) => {
+            listeners.add(listener);
+            if (list === null) {
+                list = window.matchMedia(MOBILE_QUERY);
+                // the breakpoint may have been crossed while nobody was listening
+                isMobile = list.matches;
+                list.addEventListener("change", onChange);
+            }
+            return () => {
+                listeners.delete(listener);
+                if (listeners.size === 0 && list !== null) {
+                    list.removeEventListener("change", onChange);
+                    list = null;
+                }
+            };
+        },
+    };
+})();
+
+/** `true` below the mobile breakpoint, from a single shared media query. */
+export const useIsMobile = (): boolean => useSyncExternalStore(mobileQuery.subscribe, mobileQuery.get, mobileQuery.get);
+
+/** Back-compatible shape of `useIsMobile` for the components that destructure `{ isMobile }`. */
+export const useDeviceDetect = () => ({ isMobile: useIsMobile() });
 
 const NOW_INTERVAL_MS = 30_000;
 

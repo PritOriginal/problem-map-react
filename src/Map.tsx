@@ -75,6 +75,16 @@ export const ZOOMS = {
   big: 16
 };
 
+/**
+ * Map centres arrive with full float precision and jitter in the last bits while the
+ * map settles. Five decimals is ~1 m — finer than the point can be placed by hand —
+ * and it lets `setCoords` recognise an unchanged position instead of invalidating the
+ * zone polygon on every frame. Cheaper than a throttle, and with no lag.
+ */
+const COORD_PRECISION = 1e5;
+const roundCoords = (coords: LngLat): LngLat =>
+  [Math.round(coords[0] * COORD_PRECISION) / COORD_PRECISION, Math.round(coords[1] * COORD_PRECISION) / COORD_PRECISION];
+
 const getColorByFeatues = (features: Feature[]) => {
   let numsConfirmed = 0;
   let numsUnderReview = 0;
@@ -101,7 +111,7 @@ const getColorByFeatues = (features: Feature[]) => {
   }
 }
 
-const getColorPolygon = (count: AdminBoundaryMarksCount) => {
+const getColorPolygon = (count: AdminBoundaryMarksCount | undefined) => {
   if (!count) {
     return "00cc00"
   }
@@ -164,6 +174,8 @@ const Map = observer(() => {
 
   const [map, setMap] = useState<YMapInstance | null>(null);
   const zoomRef = useRef<number>((LOCATION as { zoom: number }).zoom);
+  /** Latest map centre, tracked without touching the store. */
+  const centerRef = useRef<LngLat>((LOCATION as YMapCenterLocation).center);
 
   const [panelIsOpen, setPanelIsOpen] = useState(false);
   const [showNewMarkButton, setShowNewMarkButton] = useState(false);
@@ -175,13 +187,17 @@ const Map = observer(() => {
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [size, setSize] = useState<MarkerSize>(MarkerSize.small);
 
-  const filteredBoundaries = adminBoundariesStore.boundaries.filter((boundary) => {
+  const boundaries = adminBoundariesStore.boundaries;
+  // Detail level follows the marker size (i.e. the zoom): districts only when
+  // zoomed out. Memoized so panning, which rerenders the map, does not refilter
+  // every polygon.
+  const filteredBoundaries = useMemo(() => boundaries.filter((boundary) => {
     if (size === MarkerSize.small) {
       return boundary.admin_level <= 9;
     } else {
       return boundary.admin_level <= 10;
     }
-  });
+  }), [boundaries, size]);
 
   const { marks } = marksStore;
 
@@ -222,8 +238,22 @@ const Map = observer(() => {
       setSize(MarkerSize.big);
     }
     zoomRef.current = o.location.zoom;
-    selectedPoint.setCoords(o.location.center);
+    centerRef.current = o.location.center;
+    // The point follows the map centre only while it is on screen (/add, /signup).
+    // Off screen the centre is only remembered, so that showing the point still puts
+    // it where the map is looking -- see the effect below.
+    if (selectedPoint.visibility) {
+      selectedPoint.setCoords(roundCoords(o.location.center));
+    }
   }, [scheduleHeatmap]);
+
+  // the point appears at the current centre, however far the map moved while it was hidden
+  const pointVisible = selectedPoint.visibility;
+  useEffect(() => {
+    if (pointVisible) {
+      selectedPoint.setCoords(roundCoords(centerRef.current));
+    }
+  }, [pointVisible]);
 
   const flyTo = useCallback((center: LngLat, minZoom: number) => {
     map?.setLocation({
@@ -316,22 +346,22 @@ const Map = observer(() => {
     </YMapMarker>
   ), []);
 
-  const selectedId = selectedMark.id;
-  const types = markTypesStore.types;
   const assignedMarkIds = tasksStore.assignedMarkIds;
+  // Selection and assignment are NOT read here: `MarkItem` is an observer and
+  // reads them itself, so this callback keeps its identity across a click and
+  // the clusterer does not rebuild every marker.
+  const typesById = markTypesStore.byId;
   const marker = useCallback((feature: Feature) => {
     const mark = feature.properties!.mark as Mark;
     return (
       <MarkItem
         mark={mark}
-        type={types.find((x) => x.mark_type_id === mark.mark_type_id)}
+        type={typesById.get(mark.mark_type_id)}
         size={size}
-        selected={mark.mark_id === selectedId}
-        assigned={assignedMarkIds.has(mark.mark_id)}
         onClick={onClickOnMark}
       />
     );
-  }, [size, selectedId, onClickOnMark, types, assignedMarkIds]);
+  }, [size, onClickOnMark, typesById]);
 
   // back online: incremental refresh instead of a full reload (wave-5 `GET /marks/changes`)
   useEffect(() => {
@@ -399,7 +429,7 @@ const Map = observer(() => {
               <BoundaryItem
                 key={boundary.id}
                 boundary={boundary}
-                count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
+                count={adminBoundariesStore.countById.get(boundary.id)}
               />
             ))}
             {userLocation &&
@@ -453,10 +483,10 @@ const SelectedPoint = observer(() => {
 
 /** Grid cells of the heatmap, filled by the number of marks in each. */
 const HeatmapLayer = observer(() => {
-  const { features, maxCount } = heatmapStore;
+  const { visibleFeatures, maxCount } = heatmapStore;
   return (
     <>
-      {features.map((feature, index) => (
+      {visibleFeatures.map((feature, index) => (
         <HeatmapCell key={feature.id ?? index} feature={feature} max={maxCount} />
       ))}
     </>
@@ -465,10 +495,8 @@ const HeatmapLayer = observer(() => {
 
 const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, max: number }) {
   const { resolved } = useTheme();
+  // empty cells are filtered out in the store, before the element is built
   const count = feature.properties?.count ?? 0;
-  if (count <= 0) {
-    return null;
-  }
   return (
     <YMapFeature
       style={{
@@ -500,7 +528,7 @@ const HeatmapLegend = observer(() => {
   );
 });
 
-const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBoundary, count: AdminBoundaryMarksCount }) {
+const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBoundary, count: AdminBoundaryMarksCount | undefined }) {
   const { resolved } = useTheme();
   const color = '#' + getColorPolygon(count);
   return (

@@ -36,7 +36,7 @@ const AboutProblem = observer(function AboutProblem() {
     let groupHistoryItems: MarkStatusHistoryItem[] = []
     for (let index = historyItems.length - 1; index >= 0; index--) {
         const historyItem = historyItems[index];
-        const markStatus = markStatusesStore.statuses.find((satus) => satus.mark_status_id == historyItem.new_mark_status_id);
+        const markStatus = markStatusesStore.byId.get(historyItem.new_mark_status_id);
 
         groupHistoryItems.unshift(historyItem);
         // statuses with a parent are grouped under their parent status

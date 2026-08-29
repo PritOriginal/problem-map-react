@@ -9,7 +9,6 @@ import notificationsStore from "./notifications";
 class HeatmapStore {
     enabled: boolean = false;
     features: HeatmapFeature[] = [];
-    maxCount: number = 0;
     isLoading: boolean = false;
 
     private lastKey: string = "";
@@ -19,13 +18,23 @@ class HeatmapStore {
         makeAutoObservable<HeatmapStore, "lastKey" | "requestId">(this, { lastKey: false, requestId: false });
     }
 
+    /** Cells that actually have marks — the empty ones are never drawn, so they are dropped
+     * here rather than by each cell returning `null` after React has already built it. */
+    get visibleFeatures(): HeatmapFeature[] {
+        return this.features.filter((feature) => (feature.properties?.count ?? 0) > 0);
+    }
+
+    /** The busiest cell, which sets the top of the colour ramp. */
+    get maxCount(): number {
+        return this.features.reduce((m, f) => Math.max(m, f.properties?.count ?? 0), 0);
+    }
+
     setEnabled = (enabled: boolean) => {
         this.enabled = enabled;
         if (!enabled) {
             // invalidate in-flight requests so a late response does not repopulate a disabled layer
             this.requestId++;
             this.features = [];
-            this.maxCount = 0;
             this.isLoading = false;
             this.lastKey = "";
         }
@@ -55,7 +64,6 @@ class HeatmapStore {
             }
             runInAction(() => {
                 this.features = response.payload?.features ?? [];
-                this.maxCount = this.features.reduce((m, f) => Math.max(m, f.properties?.count ?? 0), 0);
                 this.isLoading = false;
             });
         } catch (error) {

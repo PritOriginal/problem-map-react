@@ -98,7 +98,9 @@ describe("ModerationPanel", () => {
 
         renderPanel(<ModerationPanel />);
 
-        await waitFor(() => expect(screen.getByText("mark-desc-20")).toBeInTheDocument());
+        // 20 marks at concurrency 6, each with a real tick: the default 1s waitFor is
+        // tight once this file runs alongside the rest of the suite.
+        await waitFor(() => expect(screen.getByText("mark-desc-20")).toBeInTheDocument(), { timeout: 5000 });
 
         expect(counters.queueCalls).toBe(1);
         expect(counters.markCalls).toBe(20);

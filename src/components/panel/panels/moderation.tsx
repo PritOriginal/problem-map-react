@@ -166,7 +166,7 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
         }
         run("hidden", () => MarksService.setMarkHidden(mark.mark_id, hidden), "moderation.hiddenFailed", () => {
             setMark({ ...mark, hidden });
-            marksStore.fetch();
+            marksStore.sync();
         });
     };
 

@@ -58,7 +58,7 @@ export interface GetOrganizationMarksResponse extends IResponse {
     meta?: ListMeta;
 }
 
-/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
+/** Some reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`); see each method. */
 /** Organizations / service desk (backend integration/wave-4). */
 class OrganizationsService extends BaseService {
     /** Organization of the signed-in service user (`GET /organizations/me`). */

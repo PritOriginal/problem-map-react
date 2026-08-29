@@ -51,7 +51,7 @@ export interface AddCheckResponsePayload {
 }
 
 
-/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
+/** Some reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`); see each method. */
 class ChecksService extends BaseService {
     public getCheckById(id: number): Promise<GetCheckByIdResponse> {
         return this.request<GetCheckByIdResponse>(`/api/checks/${id}`)

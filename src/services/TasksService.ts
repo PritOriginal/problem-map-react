@@ -43,7 +43,7 @@ export interface GetTaskStatusesResponse extends IResponse {
     payload: TaskStatus[];
 }
 
-/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
+/** Some reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`); see each method. */
 /** Tasks of a user (backend integration/wave-4). Completing a task = adding a check on its mark. */
 class TasksService extends BaseService {
     public getUserTasks(userId: number, req: GetTasksRequest = {}, init?: Pick<RequestInit, "signal">): Promise<GetTasksResponse> {

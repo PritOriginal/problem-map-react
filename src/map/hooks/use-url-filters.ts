@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { filtersEqual, parseFilters, serializeFilters } from "../../utils/filters";
@@ -15,12 +15,14 @@ import marksStore, { DEFAULT_FILTERS } from "../../store/marks";
 export function useUrlFilters(): { filtersQuery: string } {
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // the URL wins *once*, so what the effect needs is the query as it was on mount --
+    // a ref, not the live value the rule would otherwise insist on re-running for
+    const initialSearchParams = useRef(searchParams);
     useEffect(() => {
-        const fromUrl = parseFilters(searchParams, DEFAULT_FILTERS);
+        const fromUrl = parseFilters(initialSearchParams.current, DEFAULT_FILTERS);
         if (!filtersEqual(fromUrl, marksStore.filters)) {
             marksStore.setFilters(fromUrl);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const filtersQuery = serializeFilters(marksStore.filters, DEFAULT_FILTERS).toString();

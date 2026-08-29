@@ -141,13 +141,17 @@ const Map = observer(() => {
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [size, setSize] = useState<MarkerSize>(MarkerSize.small);
 
-  const filteredBoundaries = adminBoundariesStore.boundaries.filter((boundary) => {
+  const boundaries = adminBoundariesStore.boundaries;
+  // Detail level follows the marker size (i.e. the zoom): districts only when
+  // zoomed out. Memoized so panning, which rerenders the map, does not refilter
+  // every polygon.
+  const filteredBoundaries = useMemo(() => boundaries.filter((boundary) => {
     if (size === MarkerSize.small) {
       return boundary.admin_level <= 9;
     } else {
       return boundary.admin_level <= 10;
     }
-  });
+  }), [boundaries, size]);
 
   const { marks } = marksStore;
 
@@ -419,10 +423,10 @@ const SelectedPoint = observer(() => {
 
 /** Grid cells of the heatmap, filled by the number of marks in each. */
 const HeatmapLayer = observer(() => {
-  const { features, maxCount } = heatmapStore;
+  const { visibleFeatures, maxCount } = heatmapStore;
   return (
     <>
-      {features.map((feature, index) => (
+      {visibleFeatures.map((feature, index) => (
         <HeatmapCell key={feature.id ?? index} feature={feature} max={maxCount} />
       ))}
     </>
@@ -431,10 +435,8 @@ const HeatmapLayer = observer(() => {
 
 const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, max: number }) {
   const { resolved } = useTheme();
+  // empty cells are filtered out in the store, before the element is built
   const count = feature.properties?.count ?? 0;
-  if (count <= 0) {
-    return null;
-  }
   return (
     <YMapFeature
       style={{

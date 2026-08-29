@@ -93,7 +93,7 @@ export function resetStores(): void {
         adminBoundariesStore.errorBoundaries = null;
         adminBoundariesStore.errorMarkCount = null;
 
-        // heatmap -- setEnabled(false) also drops features, maxCount and the request guard
+        // heatmap -- setEnabled(false) also drops features (and so maxCount) and the request guard
         heatmapStore.setEnabled(false);
 
         // inbox -- stopPolling clears the interval and calls reset()

@@ -334,6 +334,10 @@ const Map = observer(() => {
             restrictMapArea={RESTRICT_AREA}
             zoomRange={ZOOM_RANGE}
             copyrightsPosition={"top right"}
+            // The SDK styles its own controls, logo and copyright from this. Without
+            // it they stay in light mode: the "Открыть Яндекс Карты" label goes
+            // dark-on-dark and the black wordmark disappears into the basemap.
+            theme={resolvedTheme}
           >
             <YMapDefaultSchemeLayer customization={(resolvedTheme === "dark" ? customizationDark : customization) as VectorCustomization} />
             <YMapDefaultFeaturesLayer />
@@ -468,7 +472,12 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
           }
         ],
         fill: color,
-        fillOpacity: 0.01 + 0.09 * Math.exp(boundary.admin_level - 10),
+        // The same alpha does not read the same on both basemaps. Over the light
+        // ground a 10% red wash is a pale pink; over the near-black one it is the
+        // only luminance in the frame, and a single district at close zoom turns
+        // the whole map brown. Halved on dark to keep the tint at the strength it
+        // was designed for.
+        fillOpacity: (0.01 + 0.09 * Math.exp(boundary.admin_level - 10)) * (resolved === "dark" ? 0.5 : 1),
       }}
       geometry={boundary.geom}
     />

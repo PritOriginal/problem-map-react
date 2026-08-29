@@ -115,6 +115,11 @@
         width: 48px;
 
         background-color: var(--paper);
+        // The close glyph is an SVG path with no fill attribute of its own, so it
+        // inherits this one. Without it the path falls back to black and
+        // disappears against the dark disc.
+        fill: var(--ink);
+        color: var(--ink);
         border: 1px solid var(--rule);
         border-radius: var(--radius-round);
 

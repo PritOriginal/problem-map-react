@@ -1,5 +1,10 @@
+// The single breakpoint. This MUST be a Sass variable, not a custom property:
+// `@media` cannot read CSS custom properties.
+// Kept in sync with MOBILE_BREAKPOINT in `src/utils/hooks.ts`.
+$bp-mobile: 768px;
+
 @mixin mobile {
-    @media (max-width: 768px) {
+    @media (max-width: $bp-mobile) {
         @content;
     }
 }

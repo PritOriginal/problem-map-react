@@ -1,9 +1,5 @@
 @use "../../mixins" as *;
 
-:root {
-    --panel-header-height: 0px;
-}
-
 .panel {
     position: absolute;
     left: 0;

@@ -1,0 +1,145 @@
+// Design tokens — the single source of truth for colour, spacing, type and motion.
+//
+// Consumed as CSS custom properties, which inherit through the cascade into every
+// element regardless of which stylesheet declared them. Component SCSS therefore
+// does NOT need `@use "tokens"` — it just writes `var(--token)`. This file is
+// `@use`d from exactly one place, `src/index.scss`, because Vite compiles each
+// SCSS entry imported from a .tsx as its own compilation unit: importing it from
+// every component would emit one copy of this `:root` block per file.
+//
+// Comments here are silent (`//`) on purpose: a loud `/* */` comment survives into
+// the compiled CSS and makes Sass prepend `@charset` for the non-ASCII characters.
+//
+// The one thing that CANNOT live here is the breakpoint — `@media` cannot read
+// custom properties. It stays a Sass variable in `src/mixins.scss`.
+//
+// Direction: "field marking" — the vernacular of municipal survey and road works.
+// The map is the only place saturated colour is allowed: the eight mark-status
+// colours and the heat ramp are DATA. The chrome around them stays quiet so that
+// data reads. See `src/styles/tokens.ts` for the values consumed by WebGL/canvas,
+// which cannot resolve var().
+
+:root {
+    // ---- Type families --------------------------------------------------
+    --font-body: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    --font-display: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    // ---- Type scale -----------------------------------------------------
+    --fs-micro: 10px;
+    --fs-caption: 12px;
+    --fs-small: 13px;
+    --fs-body: 14px;
+    --fs-base: 16px;
+    --fs-lead: 18px;
+    --fs-display: 32px;
+    --fs-jumbo: 64px;
+
+    // ---- Chrome (header, panel header) ----------------------------------
+    --chrome: #202020;
+    // A second, near-identical black used by the panel header. Kept distinct
+    // through the mechanical migration; merged with --chrome deliberately later.
+    --chrome-2: #242424;
+    --on-chrome: #ffffff;
+    --on-chrome-muted: #bdbdbd;
+    --rule-chrome: #777777;
+
+    // ---- Surfaces -------------------------------------------------------
+    --surface: #f9f9f9;
+    --paper: #ffffff;
+    --neutral-bg: #eeeeee;
+    --placeholder: #e5e5e5;
+    --disabled-bg: #e2e2e2;
+    --track: #f5f5f5;
+
+    // ---- Ink ------------------------------------------------------------
+    --ink: #000000;
+    --ink-soft: #333333;
+    --ink-muted: #555555;
+    --ink-faint: #777777;
+
+    // ---- Rules ----------------------------------------------------------
+    --rule: #c9c9c9;
+    --rule-soft: #dadada;
+    --rule-hover: #bebebe;
+    --rule-faint: #8a8a8a;
+
+    // ---- Status: danger -------------------------------------------------
+    --alert: #e50000;
+    --danger-ink: #a40000;
+    --danger-bg: #ffe5e5;
+    --danger-bg-soft: #fff5f5;
+    --danger-rule: #ff8a8a;
+
+    // ---- Status: warning ------------------------------------------------
+    --warn-ink: #664d03;
+    --warn-bg: #fff3cd;
+    --warn-rule: #ffe69c;
+
+    // ---- Status: info ---------------------------------------------------
+    --info-ink: #0b4f8a;
+    --info-bg: #e8f4ff;
+    --info-rule: #9cc7ee;
+
+    // ---- Status: success ------------------------------------------------
+    --success-ink: #00a000;
+
+    // ---- Highlight (similar-mark block, own row in the leaderboard) ------
+    --highlight-bg: #fff8dc;
+    --highlight-rule: #e5d600;
+
+    // ---- Accents --------------------------------------------------------
+    --focus: #2e4ce5;
+    --assigned: #1e6fff;
+    --selected-ring: rgba(35, 174, 255, 0.3);
+
+    // ---- Buttons --------------------------------------------------------
+    --btn-green-bg: #c2fdb7;
+    --btn-green-bg-hover: #38e615;
+    --btn-red-bg: #ffa0a0;
+    --btn-red-bg-hover: #d30c0c;
+
+    // ---- Confirm / refute vote scale ------------------------------------
+    --vote-reject: #ff1f1f;
+    --vote-reject-soft: #fda3a3;
+    --vote-mid: #ffb52b;
+    --vote-confirm: #53ed7c;
+    --vote-confirm-soft: #d6fda3;
+
+    // ---- Elevation & overlay --------------------------------------------
+    --shadow-1: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    --scrim: rgba(0, 0, 0, 0.5);
+
+    // ---- Spacing --------------------------------------------------------
+    --space-1: 2px;
+    --space-2: 4px;
+    --space-3: 6px;
+    --space-4: 8px;
+    --space-5: 10px;
+    --space-6: 12px;
+    --space-7: 16px;
+    --space-8: 24px;
+    --space-9: 32px;
+
+    // ---- Radius ---------------------------------------------------------
+    --radius-1: 4px;
+    --radius-2: 6px;
+    --radius-3: 8px;
+    --radius-4: 12px;
+    --radius-round: 50%;
+
+    // ---- Motion ---------------------------------------------------------
+    --dur-fast: 0.2s;
+    --dur-slow: 0.3s;
+    --ease: ease-in-out;
+
+    // ---- Layout ---------------------------------------------------------
+    --panel-width: 420px;
+    --header-height: 48px;
+
+    // Runtime state, not design: written by `src/store/panel.ts` as an inline
+    // style on <html>, which outranks this declaration. Consumers must spell it
+    // `var(--panel-header-height, 0px)` — an unresolved custom property inside
+    // calc() invalidates the whole declaration.
+    --panel-header-height: 0px;
+}

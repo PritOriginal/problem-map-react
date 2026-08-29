@@ -1,3 +1,4 @@
+@use "tokens";
 @use "mixins" as *;
 
 *,
@@ -9,9 +10,7 @@
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --panel-width: 420px;
-  --header-height: 48px;
+  font-family: var(--font-body);
 }
 
 a {
@@ -20,7 +19,7 @@ a {
 
 .main {
   width: 100%;
-  height: calc(100vh - 48px);
+  height: calc(100vh - var(--header-height));
   position: relative;
 }
 

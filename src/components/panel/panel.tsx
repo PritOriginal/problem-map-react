@@ -7,24 +7,8 @@ import {
     Outlet,
     useParams,
 } from "react-router-dom";
-import AboutProblem from "./panels/problem/about-problem";
-import AddProblem from "./panels/add-problem";
-import SignIn from "./panels/sign-in";
-import SignUp from "./panels/sign-up";
-import Profile from "./panels/sign-out";
-import AddCheck from "./panels/problem/add-check";
-import ProblemPanel from "./panels/problem/problem";
-import NotificationsPanel from "./panels/notifications";
-import Leaderboard from "./panels/leaderboard";
-import Analytics from "./panels/analytics";
-import TasksPanel from "./panels/tasks";
-import OrgPanel from "./panels/org";
-import ModerationPanel from "./panels/moderation";
-import AdminPanel from "./panels/admin";
-import UserProfilePanel from "./panels/user-profile";
-import QueuePanel from "./panels/queue";
 import { useT } from "../../i18n";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import selectedMark from "../../store/selected_mark";
 import selectedPoint from "../../store/selected_point";
 import { observer } from "mobx-react-lite";
@@ -32,6 +16,28 @@ import panelStore from "../../store/panel";
 import { useDeviceDetect } from "../../utils/hooks";
 import { useNavigateKeepSearch } from "../../utils/navigation";
 import ErrorBanner from "../error-banner/error-banner";
+
+/* Panels are the bulk of the bundle (~3700 lines across 15 screens) and a
+   visitor opens one or two of them. Loading them on demand keeps the moderation,
+   admin and analytics screens out of the first paint for everyone who never
+   opens them. */
+const AboutProblem = lazy(() => import("./panels/problem/about-problem"));
+const AddProblem = lazy(() => import("./panels/add-problem"));
+const SignIn = lazy(() => import("./panels/sign-in"));
+const SignUp = lazy(() => import("./panels/sign-up"));
+const Profile = lazy(() => import("./panels/sign-out"));
+const AddCheck = lazy(() => import("./panels/problem/add-check"));
+const ProblemPanel = lazy(() => import("./panels/problem/problem"));
+const NotificationsPanel = lazy(() => import("./panels/notifications"));
+const Leaderboard = lazy(() => import("./panels/leaderboard"));
+const Analytics = lazy(() => import("./panels/analytics"));
+const TasksPanel = lazy(() => import("./panels/tasks"));
+const OrgPanel = lazy(() => import("./panels/org"));
+const ModerationPanel = lazy(() => import("./panels/moderation"));
+const AdminPanel = lazy(() => import("./panels/admin"));
+const UserProfilePanel = lazy(() => import("./panels/user-profile"));
+const QueuePanel = lazy(() => import("./panels/queue"));
+
 export default function PanelRoute() {
     return (
         <Routes>
@@ -107,7 +113,12 @@ const Panel = observer(() => {
                         </div>
                     }
                     <ErrorBanner />
-                    <Outlet />
+                    {/* Inside the shell, not around <Routes>: a boundary above the
+                        shell would tear down the close button and the error banner
+                        on every panel-to-panel move and flash the whole panel. */}
+                    <Suspense fallback={<p className="empty-state">{t("common.loading")}</p>}>
+                        <Outlet />
+                    </Suspense>
                 </div >
                 :
                 <></>

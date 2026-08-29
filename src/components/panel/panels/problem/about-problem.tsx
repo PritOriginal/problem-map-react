@@ -15,6 +15,9 @@ import notificationsStore from "../../../../store/notifications";
 import marksStore from "../../../../store/marks";
 import organizationsStore from "../../../../store/organizations";
 import { TranslationKey, localeOf, tOr, useT } from "../../../../i18n";
+import ReportButton from "../../../report/report-button";
+import CommentsBlock from "./comments";
+import { DuplicateBadge, HiddenBadge } from "../../../badges/badges";
 
 const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigateKeepSearch();
@@ -41,7 +44,8 @@ const AboutProblem = observer(function AboutProblem() {
     let possibilityAddCheck = true;
     if (user.id != 0 && historyItems.length > 0) {
         if (mark.mark_status_id == MarkStatusType.ClosedStatus ||
-            mark.mark_status_id == MarkStatusType.RefutedStatus) {
+            mark.mark_status_id == MarkStatusType.RefutedStatus ||
+            mark.mark_status_id == MarkStatusType.DuplicateStatus) {
             possibilityAddCheck = false;
         }
 
@@ -88,7 +92,14 @@ const AboutProblem = observer(function AboutProblem() {
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                 <ShareButton />
                 {user.id !== 0 && mark.mark_id !== 0 && <FollowButton onDone={reload} />}
+                {user.id !== 0 && mark.mark_id !== 0 && user.id !== mark.user_id && <ReportButton targetType="mark" targetId={mark.mark_id} />}
             </div>
+            {(mark.hidden || mark.merged_into_id) &&
+                <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
+                    <HiddenBadge hidden={mark.hidden} />
+                    <DuplicateBadge mergedIntoId={mark.merged_into_id} />
+                </div>
+            }
             {user.isModerator && mark.mark_id !== 0 && <ModerationBlock onDone={reload} />}
             {user.isModerator && mark.mark_id !== 0 && <AssignBlock onDone={reload} />}
             {user.id !== 0 && user.id === mark.user_id && mark.mark_status_id === MarkStatusType.UnconfirmedStatus && <OwnerBlock onDone={reload} />}
@@ -104,6 +115,7 @@ const AboutProblem = observer(function AboutProblem() {
             {groups.map((group, index) => (
                 <HistoryGroup key={index} group={group} />
             ))}
+            {mark.mark_id !== 0 && <CommentsBlock />}
             {possibilityAddCheck &&
                 <div style={{ position: "sticky", bottom: "0" }}>
                     <Button style="white-2-black" onClick={handleOnClickNewCheck}>
@@ -506,7 +518,7 @@ function ShowButton({ isShow, onClick }: { isShow: boolean, onClick: React.Mouse
         </button>
     )
 }
-function CheckItem({ check }: { check: Check }) {
+const CheckItem = observer(function CheckItem({ check }: { check: Check }) {
     const { t, lang } = useT();
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
@@ -529,9 +541,10 @@ function CheckItem({ check }: { check: Check }) {
                     <Photo key={index} src={src} />
                 ))}
             </div>
+            {check.user_id !== user.id && <div><ReportButton targetType="check" targetId={check.check_id} small /></div>}
         </div>
     )
-}
+});
 
 function ThumbPhoto({ src, confirmed}: { src: string, confirmed: boolean }) {
     return (

@@ -1,0 +1,97 @@
+.comments {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &__thread {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+.comment {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    background-color: white;
+    border: 1px solid rgb(201, 201, 201);
+
+    &.reply {
+        margin-left: 20px;
+        border-left: 3px solid #dadada;
+    }
+
+    &.deleted {
+        opacity: 0.7;
+    }
+
+    &__head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 12px;
+    }
+
+    &__author {
+        font-weight: bold;
+        color: inherit;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__date {
+        color: #555;
+    }
+
+    &__body {
+        font-size: 14px;
+        white-space: pre-wrap;
+        word-break: break-word;
+
+        &--deleted {
+            font-style: italic;
+            color: #777;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    &__link {
+        border: none;
+        background: none;
+        padding: 0;
+        font-size: 12px;
+        color: #0b4f8a;
+        cursor: pointer;
+        text-decoration: underline dotted;
+
+        &.danger {
+            color: #a40000;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+    }
+}
+
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    button[type="submit"] {
+        width: auto;
+    }
+}

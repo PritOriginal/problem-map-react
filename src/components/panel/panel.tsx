@@ -21,6 +21,9 @@ import selectedPoint from "../../store/selected_point";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../store/panel";
 import { useDeviceDetect } from "../../utils/hooks";
+import TasksPanel from "./tasks/tasks";
+import CurrentTasksPanel from "./tasks/current-tasks";
+import CompletedTasksPanel from "./tasks/completed-tasks";
 export default function PanelRoute() {
     return (
         <Routes>
@@ -34,6 +37,10 @@ export default function PanelRoute() {
                 <Route path='/signin' element={<SignIn />} />
                 <Route path='/signup' element={<SignUp />} />
                 <Route path='/profile' element={<Profile />} />
+                <Route path='/tasks' element={<TasksPanel />}>
+                    <Route path="current" element={<CurrentTasksPanel />} />
+                    <Route path="completed" element={<CompletedTasksPanel />} />
+                </Route>
             </Route>
         </Routes>
     );
@@ -53,9 +60,11 @@ const Panel = observer(() => {
 
     useEffect(() => {
         if (location.pathname == "/add") {
-            selectedPoint.showPoint();
+            selectedPoint.setAddMode();
+        } else if (location.pathname == "/signup") {
+            selectedPoint.setSignupMode();
         } else {
-            selectedPoint.hidePoint();
+            selectedPoint.hideAll();
         }
         if (location.pathname == "/") {
             panelStore.setHeight(0);

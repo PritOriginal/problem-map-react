@@ -42,4 +42,9 @@
     &.selected {
         box-shadow: 0px 0px 0px 8px rgba(35, 174, 255, 0.3);
     }
+
+    &.assigned {
+        border: 2px solid rgba(87, 165, 255, 0.7);
+    }
+
 }

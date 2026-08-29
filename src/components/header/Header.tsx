@@ -15,7 +15,9 @@ const Header = observer(function Header() {
             <div className="header-container">
                 <div className="header-container__menu">
                     <MapIcon style={{ fill: "white", width: "32px" }} />
-                    <p style={{ color: "#bdbdbdff" }}>Задания</p>
+                    <Link to={"/tasks/current"}>
+                        <p>Задания</p>
+                    </Link>
                     <p style={{ color: "#bdbdbdff" }}>Рейтинг</p>
                 </div>
                 <div className="header-container__user-info">

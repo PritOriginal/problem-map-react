@@ -8,13 +8,15 @@ import {
   YMapMarker,
   YMapCustomClusterer,
   YMapDefaultMarker,
+  YMapLayer,
+  YMapFeatureDataSource
 } from "ymap3-components";
 
 import customization from './customization.json'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { memo, useCallback, useEffect, useId, useMemo, useState } from "react";
-import { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
+import { LngLat, LngLatBounds, MapEventUpdateHandler, PolygonGeometry, VectorCustomization, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
 import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeMarkIcons } from "./components/mark/mark";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
@@ -33,6 +35,8 @@ import markStatusesStore from "./store/mark-statuses";
 import markTypesStore from "./store/mark-types";
 import panelStore from "./store/panel";
 import { useDeviceDetect } from "./utils/hooks";
+import tasksStore from "./store/tasks";
+import { TaskStatusType } from "./services/TasksService";
 
 const LOCATION: YMapLocationRequest = {
   center: [41.452746, 52.722408],
@@ -101,6 +105,7 @@ const Map = observer(() => {
   useEffect(() => {
     setPanelIsOpen(location.pathname !== "/");
     setShowNewMarkButton(location.pathname === "/add")
+    selectedPoint.initCircle();
   }, [location.pathname])
 
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
@@ -138,6 +143,9 @@ const Map = observer(() => {
     marksStore.fetch();
     markTypesStore.fetch();
     markStatusesStore.fetch();
+    tasksStore.fetch({
+      statuses: [TaskStatusType.UnfulfilledStatus],
+    })
     getUserLocation();
     selectedPoint.setCoords((LOCATION as YMapCenterLocation).center)
   }, []);
@@ -161,7 +169,7 @@ const Map = observer(() => {
   };
 
   const cluster = useCallback((coordinates: LngLat, features: Feature[]) => (
-    <YMapMarker coordinates={coordinates}>
+    <YMapMarker source="markerSource" coordinates={coordinates}>
       <div className="circle">
         <div className="circle-content" style={{ backgroundColor: '#' + getColorByFeatues(features) }}>
           <span className="circle-text">
@@ -173,7 +181,13 @@ const Map = observer(() => {
   ), []);
 
   const marker = useCallback((feature: Feature) => (
-    <MarkItem mark={feature.properties!.mark as Mark} size={size} selected={(feature.properties!.mark as Mark).mark_id === selectedMark.id} onClick={onClickOnMark} />
+    <MarkItem
+      mark={feature.properties!.mark as Mark}
+      size={size}
+      selected={(feature.properties!.mark as Mark).mark_id === selectedMark.id}
+      assigned={tasksStore.tasks.some(task => task.mark_id === (feature.properties!.mark as Mark).mark_id)}
+      onClick={onClickOnMark}
+    />
   ), [size, selectedMark]);
 
   const points = useMemo(() => {
@@ -207,6 +221,9 @@ const Map = observer(() => {
           >
             <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
             <YMapDefaultFeaturesLayer />
+
+            <YMapFeatureDataSource id="boundariesSource" />
+            <YMapLayer source="boundariesSource" type="features" />
             {filteredBoundaries.map((boundary) => (
               <BoundaryItem
                 key={boundary.id}
@@ -214,15 +231,24 @@ const Map = observer(() => {
                 count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
               />
             ))}
+
+            <YMapFeatureDataSource id="userPolygonsSource" />
+            <YMapLayer source="userPolygonsSource" type="features" />
+
+            <YMapFeatureDataSource id="markerSource" />
+            <YMapLayer source="markerSource" type="markers" />
+            <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
             {userLocation &&
               < MarkerItem
                 coordinates={[userLocation?.longitude, userLocation?.latitude]}
                 color={"white"}
               />
             }
+
+            <YMapFeatureDataSource id="userSource" />
+            <YMapLayer source="userSource" type="markers" />
             <SelectedPoint />
             <YMapListener onUpdate={onUpdate} />
-            <YMapCustomClusterer marker={marker} cluster={cluster} gridSize={32} features={points!} />
           </YMap>
         </YMapComponentsProvider>
       </div>
@@ -235,14 +261,58 @@ const SelectedPoint = observer(() => {
     selectedPoint.setCoords(coordinates);
   }, []);
 
+
   return (
     <>
-      {selectedPoint.visibility ?
+      {selectedPoint.visibilityPoint ?
         <YMapDefaultMarker
+          source="userSource"
+          color={selectedPoint.color}
           coordinates={selectedPoint.coords}
           onDragMove={handleDragMoveHandler}
-          zIndex={1}
         />
+        :
+        <></>
+      }
+      {selectedPoint.visibilityCircle ?
+        <YMapFeature
+          source="userPolygonsSource"
+          style={{
+            fillOpacity: 0.1,
+          }}
+          geometry={selectedPoint.circleGeom}
+        />
+        :
+        <></>
+      }
+    </>
+  );
+})
+
+const SelectUserZone = observer(() => {
+  const handleDragMoveHandler = useCallback((coordinates: LngLat) => {
+    selectedPoint.setCoords(coordinates);
+    selectedPoint.initCircle();
+  }, []);
+
+  return (
+    <>
+      {selectedPoint.visibilityPoint ?
+        <>
+          <YMapFeature
+            source="userPolygonsSource"
+            style={{
+              fillOpacity: 0.1,
+            }}
+            geometry={selectedPoint.circleGeom}
+          />
+          <YMapDefaultMarker
+            source="userSource"
+            color={selectedPoint.color}
+            coordinates={selectedPoint.coords}
+            onDragMove={handleDragMoveHandler}
+          />
+        </>
         :
         <></>
       }
@@ -254,6 +324,7 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
   const color = '#' + getColorPolygon(count);
   return (
     <YMapFeature
+      source="boundariesSource"
       style={{
         stroke: [
           {
@@ -262,6 +333,8 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
             opacity: 0.5,
           }
         ],
+        // zIndex: 5,
+        // zIndex: boundary.admin_level,
         fill: color,
         fillOpacity: 0.01 + 0.09 * Math.exp(boundary.admin_level - 10),
       }}

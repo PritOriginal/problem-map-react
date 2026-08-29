@@ -111,15 +111,27 @@ export function Sign({ color }: { color: string }) {
   )
 }
 
-const MarkItem = memo(function ({ mark, size, selected, onClick }: { mark: Mark, size: MarkerSize, selected: boolean, onClick: (mark: Mark) => void }) {
+interface MarkItemProps {
+  mark: Mark;
+  size: MarkerSize;
+  selected: boolean;
+  assigned: boolean;
+  onClick: (mark: Mark) => void;
+}
+
+const MarkItem = memo(function ({ mark, size, selected, assigned, onClick }: MarkItemProps) {
   const color = COLOR_MARK_STATUSES[mark.mark_status_id];
 
   return (
     <YMapMarker
+      source="markerSource"
       coordinates={mark.geom.coordinates}
       onClick={() => { onClick(mark) }}
     >
-      <div className={`mark ${size} ${selected ? "selected" : ""}`} style={{ backgroundColor: color }}>
+      <div
+        className={`mark ${size} ${selected ? "selected" : ""} ${assigned ? "assigned" : ""}`}
+        style={{ backgroundColor: color }}
+      >
         {size == MarkerSize.big &&
           <>
             <div className="circle-content" style={{ backgroundColor: color }}>
@@ -140,6 +152,7 @@ export function MarkerItem({ coordinates, color }: { coordinates: LngLat, color:
   return (
     <YMapMarker
       coordinates={coordinates}
+      source="markerSource"
     >
       <div className="mark medium" style={{ backgroundColor: color }}>
         <div>

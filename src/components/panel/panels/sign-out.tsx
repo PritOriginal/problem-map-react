@@ -31,6 +31,13 @@ export default function Profile() {
             </div>
             <div className="panel__content">
                 <p><b>Логин:</b> {user.username}</p>
+
+                {/* <div>
+                    <p><b>Точка дома</b></p>
+                    <p style={{ fontSize: 12 }}>Координаты: {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}</p>
+                    <p style={{ fontSize: 12 }}>(Синяя метка с зоной на карте)</p>
+                </div> */}
+                
                 <div>
                     <Button style="white-2-black" onClick={onClickSignOut}>
                         <p>Выйти из аккаунта</p>

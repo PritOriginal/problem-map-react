@@ -58,6 +58,22 @@
         }
     }
 
+    &__tab-bar {
+        display: flex;
+        gap: 16px;
+        padding: 8px 16px;
+        background-color: white;
+
+        &__item {
+            color: black;
+            font-size: 14px;
+
+            &.active {
+                font-weight: bold;
+            }
+        }
+    }
+
     &__content {
         display: flex;
         flex-direction: column;

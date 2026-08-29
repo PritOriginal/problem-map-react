@@ -1,3 +1,4 @@
+import { PointGeometry } from "@yandex/ymaps3-types"
 import user from "../store/user"
 import BaseService, { IResponse } from "./BaseService"
 
@@ -5,6 +6,7 @@ export interface SignUpRequest {
     username: string
     login: string
     password: string
+    home_point: PointGeometry
 }
 
 export interface SignUpResponse extends IResponse {

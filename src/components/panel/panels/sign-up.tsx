@@ -5,8 +5,10 @@ import { jwtDecode } from "jwt-decode";
 import user from "../../../store/user";
 import { Link, useNavigate } from "react-router-dom";
 import panelStore from "../../../store/panel";
+import selectedPoint from "../../../store/selected_point";
+import { observer } from "mobx-react-lite";
 
-export default function SignUp() {
+const SignUp = observer(() => {
     const panelHeaderRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (panelHeaderRef.current) {
@@ -25,7 +27,11 @@ export default function SignUp() {
         const req: SignUpRequest = {
             username: username,
             login: login,
-            password: password
+            password: password,
+            home_point: {
+                type: "Point",
+                coordinates: selectedPoint.coords,
+            }
         }
 
         AuthService.signUp(req)
@@ -104,6 +110,13 @@ export default function SignUp() {
                         setPassword(e.target.value)
                     }}
                 />
+
+                <div>
+                    <p><b>Точка дома</b></p>
+                    <p style={{ fontSize: 12 }}>Координаты: {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}</p>
+                    <p style={{ fontSize: 12 }}>(Синяя метка с зоной на карте)</p>
+                </div>
+
                 <div>
                     <Button style="white-2-black" onClick={onClick}>
                         <p>Зарегистрироваться</p>
@@ -118,4 +131,6 @@ export default function SignUp() {
             </div>
         </>
     )
-}
+});
+
+export default SignUp;

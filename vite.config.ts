@@ -41,6 +41,9 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       setupFiles: ["./src/test/setup.ts"],
       globals: false,
+      // Agent worktrees under .claude/ hold full copies of src/; without this
+      // every test file would be collected twice per live worktree.
+      exclude: ["**/node_modules/**", "**/dist/**", ".claude/worktrees/**"],
       coverage: {
         provider: "v8",
         reporter: ["text", "lcov"],

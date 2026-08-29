@@ -215,6 +215,55 @@ describe("service payloads match the backend contract", () => {
         expect(localStorage.getItem("etag:v2:ru:/api/badges")).toBeNull();
     });
 
+    /**
+     * Every read below gained a trailing `init?: Pick<RequestInit, "signal">` so a component
+     * effect (`src/utils/use-async-data.ts`) can cancel a superseded request. The parameter is
+     * pass-through only: it reaches `fetch` untouched and changes neither the URL, the envelope
+     * nor the unwrapping -- all of which the cases above already pin down per method. What is
+     * left to prove is exactly that the signal arrives, so it is proved once, for the whole set.
+     */
+    it("reads forward `init.signal` to fetch without touching their URL", async () => {
+        const controller = new AbortController();
+        const signal = controller.signal;
+        const calls: [string, () => Promise<unknown>][] = [
+            ["ReportsService.getQueue", () => ReportsService.getQueue({}, { signal })],
+            ["UsersService.getLeaderboard", () => UsersService.getLeaderboard({}, { signal })],
+            ["UsersService.getProfile", () => UsersService.getProfile(4, { signal })],
+            ["UsersService.getMyStats", () => UsersService.getMyStats({ signal })],
+            ["UsersService.getMyProfile", () => UsersService.getMyProfile({ signal })],
+            ["UsersService.getMe", () => UsersService.getMe({ signal })],
+            ["UsersService.getBadges", () => UsersService.getBadges({ signal })],
+            ["MarksService.getMarks", () => MarksService.getMarks({ mark_type_ids: [], mark_status_ids: [] }, { signal })],
+            ["MarksService.getMarkById", () => MarksService.getMarkById(1, { signal })],
+            ["MarksService.getMarksByUserId", () => MarksService.getMarksByUserId(1, { signal })],
+            ["MarksService.getSimilarMarks", () => MarksService.getSimilarMarks({ point: { longitude: 1, latitude: 2 }, mark_type_id: 1 }, { signal })],
+            ["MarksService.getMarkStatusHistoryByMarkId", () => MarksService.getMarkStatusHistoryByMarkId(1, true, { signal })],
+            ["OrganizationsService.getMe", () => OrganizationsService.getMe({ signal })],
+            ["OrganizationsService.getMarks", () => OrganizationsService.getMarks(5, {}, { signal })],
+            ["TasksService.getUserTasks", () => TasksService.getUserTasks(3, {}, { signal })],
+            ["AnalyticsService.getKpi", () => AnalyticsService.getKpi({}, { signal })],
+            ["AnalyticsService.getTimeseries", () => AnalyticsService.getTimeseries({}, "week", { signal })],
+            ["AdminService.getSettings", () => AdminService.getSettings({ signal })],
+            ["AdminService.getMarkTypes", () => AdminService.getMarkTypes({ signal })],
+            ["AdminService.getApiKeys", () => AdminService.getApiKeys({ signal })],
+            ["ChecksService.getChecksByUserId", () => ChecksService.getChecksByUserId(1, { signal })],
+            ["CommentsService.getComments", () => CommentsService.getComments(3, 100, 0, { signal })],
+        ];
+
+        for (const [name, call] of calls) {
+            // `getBadges` is the one ETag-cached read here; a fresh key per iteration keeps it
+            // from answering out of localStorage instead of calling fetch
+            localStorage.removeItem("etag:v2:ru:/api/badges");
+            fetchMock.mockClear();
+            fetchMock.mockImplementation(ok({}));
+            await call();
+            expect(fetchMock, name).toHaveBeenCalledTimes(1);
+            const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+            expect(String(url), name).toMatch(/^\/api\//);
+            expect(init?.signal, name).toBe(signal);
+        }
+    });
+
     it("GET /organizations and GET /tasks/statuses go through the ETag cache, anonymously", async () => {
         fetchMock.mockResolvedValue(jsonResponse({ success: true, payload: { organizations: [{ id: 5, name: "ЖКХ" }] } }, 200, { ETag: '"o1"' }));
         expect((await OrganizationsService.getOrganizations()).payload[0]).toMatchObject({ organization_id: 5, name: "ЖКХ" });

@@ -119,13 +119,14 @@ export function normalizeLeaderboard(payload: unknown): LeaderboardEntry[] {
     });
 }
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 class UsersService extends BaseService {
-    public getMe(): Promise<GetMeResponse> {
-        return this.requestWithAuth<GetMeResponse>("/api/users/me");
+    public getMe(init?: Pick<RequestInit, "signal">): Promise<GetMeResponse> {
+        return this.requestWithAuth<GetMeResponse>("/api/users/me", init);
     }
 
-    public getMyStats(): Promise<GetUserStatsResponse> {
-        return this.requestWithAuth<IResponse>("/api/users/me/stats")
+    public getMyStats(init?: Pick<RequestInit, "signal">): Promise<GetUserStatsResponse> {
+        return this.requestWithAuth<IResponse>("/api/users/me/stats", init)
             .then((res) => ({ ...res, payload: unwrapOne<UserStats>(res.payload, "stats") }));
     }
 
@@ -134,7 +135,7 @@ class UsersService extends BaseService {
             .then((res) => ({ ...res, payload: unwrapOne<UserStats>(res.payload, "stats") }));
     }
 
-    public getLeaderboard(req: GetLeaderboardRequest = {}): Promise<GetLeaderboardResponse> {
+    public getLeaderboard(req: GetLeaderboardRequest = {}, init?: Pick<RequestInit, "signal">): Promise<GetLeaderboardResponse> {
         const params = new URLSearchParams();
         if (req.boundary_id) {
             params.set("boundary_id", String(req.boundary_id));
@@ -144,23 +145,23 @@ class UsersService extends BaseService {
         }
         params.set("limit", String(req.limit ?? 50));
         params.set("offset", String(req.offset ?? 0));
-        return this.request<IResponse>(`/api/leaderboard?${params}`)
+        return this.request<IResponse>(`/api/leaderboard?${params}`, init)
             .then((res) => ({ ...res, payload: normalizeLeaderboard(res.payload) }));
     }
 
-    public getProfile(id: number): Promise<GetProfileResponse> {
-        return this.request<GetProfileResponse>(`/api/users/${id}/profile`)
+    public getProfile(id: number, init?: Pick<RequestInit, "signal">): Promise<GetProfileResponse> {
+        return this.request<GetProfileResponse>(`/api/users/${id}/profile`, init)
             .then((res) => ({ ...res, payload: parseProfile(res.payload) }));
     }
 
-    public getMyProfile(): Promise<GetProfileResponse> {
-        return this.requestWithAuth<GetProfileResponse>("/api/users/me/profile")
+    public getMyProfile(init?: Pick<RequestInit, "signal">): Promise<GetProfileResponse> {
+        return this.requestWithAuth<GetProfileResponse>("/api/users/me/profile", init)
             .then((res) => ({ ...res, payload: parseProfile(res.payload) }));
     }
 
     /** Catalogue of all badges (`GET /badges`). */
-    public getBadges(): Promise<GetBadgesResponse> {
-        return this.requestCached<IResponse>("/api/badges")
+    public getBadges(init?: Pick<RequestInit, "signal">): Promise<GetBadgesResponse> {
+        return this.requestCached<IResponse>("/api/badges", init)
             .then((res) => ({ ...res, payload: unwrapList<BadgeInfo>(res.payload, "badges") }));
     }
 }

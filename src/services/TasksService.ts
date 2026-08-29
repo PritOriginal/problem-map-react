@@ -43,9 +43,10 @@ export interface GetTaskStatusesResponse extends IResponse {
     payload: TaskStatus[];
 }
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 /** Tasks of a user (backend integration/wave-4). Completing a task = adding a check on its mark. */
 class TasksService extends BaseService {
-    public getUserTasks(userId: number, req: GetTasksRequest = {}): Promise<GetTasksResponse> {
+    public getUserTasks(userId: number, req: GetTasksRequest = {}, init?: Pick<RequestInit, "signal">): Promise<GetTasksResponse> {
         const params = new URLSearchParams();
         if (req.statuses && req.statuses.length > 0) {
             params.set("statuses", req.statuses.join(","));
@@ -57,7 +58,7 @@ class TasksService extends BaseService {
             params.set("offset", String(req.offset));
         }
         const query = params.toString();
-        return this.requestWithAuth<IResponse>(`/api/tasks/user/${userId}${query ? `?${query}` : ""}`)
+        return this.requestWithAuth<IResponse>(`/api/tasks/user/${userId}${query ? `?${query}` : ""}`, init)
             .then((res) => ({ ...res, payload: unwrapList<Task>(res.payload, "tasks") }));
     }
 

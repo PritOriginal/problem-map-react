@@ -58,11 +58,12 @@ export interface GetOrganizationMarksResponse extends IResponse {
     meta?: ListMeta;
 }
 
+/** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 /** Organizations / service desk (backend integration/wave-4). */
 class OrganizationsService extends BaseService {
     /** Organization of the signed-in service user (`GET /organizations/me`). */
-    public getMe(): Promise<GetMyOrganizationResponse> {
-        return this.requestWithAuth<IResponse>("/api/organizations/me")
+    public getMe(init?: Pick<RequestInit, "signal">): Promise<GetMyOrganizationResponse> {
+        return this.requestWithAuth<IResponse>("/api/organizations/me", init)
             .then((res) => ({ ...res, payload: normalizeOrganization(unwrapOne(res.payload, "organization")) }));
     }
 
@@ -77,7 +78,7 @@ class OrganizationsService extends BaseService {
     }
 
     /** Queue of marks assigned to the organization (`GET /organizations/{id}/marks`). */
-    public getMarks(organizationId: number, req: GetOrganizationMarksRequest = {}): Promise<GetOrganizationMarksResponse> {
+    public getMarks(organizationId: number, req: GetOrganizationMarksRequest = {}, init?: Pick<RequestInit, "signal">): Promise<GetOrganizationMarksResponse> {
         const params = new URLSearchParams();
         if (req.status_ids && req.status_ids.length > 0) {
             params.set("status_ids", req.status_ids.join(","));
@@ -92,7 +93,7 @@ class OrganizationsService extends BaseService {
             params.set("offset", String(req.offset));
         }
         const query = params.toString();
-        return this.requestWithAuth<IResponse>(`/api/organizations/${organizationId}/marks${query ? `?${query}` : ""}`)
+        return this.requestWithAuth<IResponse>(`/api/organizations/${organizationId}/marks${query ? `?${query}` : ""}`, init)
             .then((res) => ({ ...res, payload: unwrapList<Mark>(res.payload, "marks") }));
     }
 }

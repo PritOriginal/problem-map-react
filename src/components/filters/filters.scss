@@ -1,5 +1,11 @@
 @use "../../mixins" as *;
 
+// Diameter of the round filter button, which is also the diameter of the circle
+// the panel morphs out of. A Sass variable because it is interpolated into a
+// `calc()` inside a keyframe, and it is mirrored by FILTERS_BUTTON_SIZE in
+// `src/Map.tsx`.
+$filters-button-size: 56px;
+
 // The map filter panel.
 //
 // Two different controls on purpose, because the two lists come from different
@@ -40,16 +46,35 @@
         max-width: 343px;
     }
 
-    // Grown from the round button's own corner, so the two read as one object
-    // rather than as a popover that happens to appear nearby. Short and plain:
-    // this is a control panel, not a reveal.
-    transform-origin: top right;
-    animation: filters-open 0.18s var(--ease) both;
+    // The morph. The panel is clipped back to a 56px circle sitting exactly over
+    // the round button -- same top, same right edge, same diameter -- and that
+    // circle is opened out into the panel's own rounded rectangle. It is not a
+    // popover that appears near the button; it is the button, unfolded.
+    //
+    // Durations are kept in step with FILTERS_OPEN_MS / FILTERS_CLOSE_MS in
+    // `src/Map.tsx`, which is what actually mounts and unmounts the panel.
+    &--open {
+        animation: filters-morph-in 0.22s var(--ease) both;
+    }
 
-    // 0.14s -- kept in step with FILTERS_CLOSE_MS in `src/Map.tsx`, which is what
-    // actually unmounts the panel.
-    &--closing {
-        animation: filters-close 0.14s var(--ease) both;
+    &--close {
+        animation: filters-morph-out 0.18s var(--ease) both;
+    }
+
+    // Inside the circle the content would be a squeezed sliver of text -- and the
+    // tally, which sits in the top-right corner, would be the ONE thing visible
+    // there, turning the button's plain disc into a disc with a number in it. So
+    // everything is held back and brought up once there is a panel to hold it.
+    &--open &__body,
+    &--open &__foot,
+    &--open &__bar > *:not(&__toggle) {
+        animation: filters-content-in 0.16s var(--ease) 0.06s both;
+    }
+
+    &--close &__body,
+    &--close &__foot,
+    &--close &__bar > *:not(&__toggle) {
+        animation: filters-content-out 0.1s var(--ease) both;
     }
 
     &__bar {
@@ -413,25 +438,81 @@
     }
 }
 
-@keyframes filters-open {
+// inset(top right bottom left round radius). 100% - 56px on the bottom and the
+// left leaves exactly the top-right 56x56 square; a 28px radius makes that square
+// the button's circle. Not `round 50%`: percentage radii in inset() resolve
+// against the element's border box, not against the inset rect, so 50% would be
+// half the whole panel and the corner would not close.
+@keyframes filters-morph-in {
+    from {
+        clip-path: inset(0 0 calc(100% - #{$filters-button-size}) calc(100% - #{$filters-button-size}) round #{$filters-button-size * 0.5});
+    }
+
+    to {
+        clip-path: inset(0 0 0 0 round var(--radius-3));
+    }
+}
+
+@keyframes filters-morph-out {
+    from {
+        clip-path: inset(0 0 0 0 round var(--radius-3));
+    }
+
+    to {
+        clip-path: inset(0 0 calc(100% - #{$filters-button-size}) calc(100% - #{$filters-button-size}) round #{$filters-button-size * 0.5});
+    }
+}
+
+@keyframes filters-content-in {
     from {
         opacity: 0;
-        transform: scale(0.94);
     }
 }
 
-@keyframes filters-close {
+@keyframes filters-content-out {
     to {
         opacity: 0;
-        transform: scale(0.94);
     }
 }
 
-// The close path does not depend on `animationend` here -- `Filters` reads the
-// same preference and unmounts straight away -- so the animation can simply go.
+// The button does not blink out and the panel in: for the length of the morph
+// both occupy the same circle, and the disc dissolves into the bar behind it.
+.filters-button--open {
+    pointer-events: none;
+    animation: filters-button-out 0.12s var(--ease) both;
+}
+
+.filters-button--close {
+    pointer-events: none;
+    animation: filters-button-in 0.14s var(--ease) 0.06s both;
+}
+
+@keyframes filters-button-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes filters-button-in {
+    from {
+        opacity: 0;
+    }
+}
+
+// Nothing here depends on `animationend` -- `Filters` reads the same preference
+// and mounts and unmounts straight away -- so the morph can simply go.
 @media (prefers-reduced-motion: reduce) {
     .filters,
-    .filters--closing {
+    .filters--open,
+    .filters--close,
+    .filters--open .filters__body,
+    .filters--open .filters__foot,
+    .filters--open .filters__bar > *,
+    .filters--close .filters__body,
+    .filters--close .filters__foot,
+    .filters--close .filters__bar > *,
+    .filters-button--open,
+    .filters-button--close {
         animation: none;
     }
 }

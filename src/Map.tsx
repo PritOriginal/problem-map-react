@@ -51,8 +51,13 @@ import heatmapStore from "./store/heatmap";
 import { bboxFromBounds, cellSizeForZoom, heatColor, heatLegend, HEAT_COLORS } from "./utils/heatmap";
 import { BBox, HeatmapFeature } from "./services/MapService";
 
-/** Length of the filter panel's closing animation. Kept in step with `filters.scss`. */
-const FILTERS_CLOSE_MS = 140;
+// Lengths of the filter panel's morph, kept in step with `filters.scss`. The
+// panel is clipped back to the round button's own circle, so for the morph to
+// read as one object the button has to stay on screen for part of it.
+const FILTERS_OPEN_MS = 220;
+const FILTERS_CLOSE_MS = 180;
+/** Diameter of the round button, and so of the circle the panel grows out of. */
+export const FILTERS_BUTTON_SIZE = 56;
 
 /** Debounce for heatmap reloads while the map is being moved. */
 const HEATMAP_DEBOUNCE_MS = 400;
@@ -570,26 +575,43 @@ const Filters = observer(() => {
   const { resolved } = useTheme();
   const statuses = statusColors(resolved);
   const [showFilters, setShowFilters] = useState(false);
-  // The panel stays mounted through its closing animation so it does not vanish
-  // before it has finished shrinking, and so it never overlaps the round button.
+  // The panel does not appear beside the round button, it IS the button: it is
+  // clipped back to a 56px circle at the button's exact position and unclipped
+  // outward. The button stays mounted across the morph and crossfades, so the
+  // white disc and the dark bar occupy the same circle at the same moment rather
+  // than one blinking out and the other in.
   //
-  // Unmounting is driven by a timer rather than by `animationend`: that event is
-  // not guaranteed to arrive -- it does not fire at all under reduced motion, and
-  // a headless Chrome dropped it even at full duration -- and the failure mode
-  // would be a panel that never closes again. A timer always fires.
-  const [closing, setClosing] = useState(false);
-  const closeTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+  // Both phases are driven by timers rather than by `animationend`: that event is
+  // not guaranteed to arrive -- it never fires under reduced motion, and a
+  // headless Chrome dropped it even at full duration -- and its failure mode here
+  // would be a panel that can never be closed again. A timer always fires.
+  const [phase, setPhase] = useState<"open" | "close" | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const open = () => {
+    window.clearTimeout(timer.current);
+    setShowFilters(true);
+    if (reducedMotion()) {
+      setPhase(null);
+      return;
+    }
+    setPhase("open");
+    timer.current = window.setTimeout(() => setPhase(null), FILTERS_OPEN_MS);
+  };
 
   const close = () => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) {
+    window.clearTimeout(timer.current);
+    if (reducedMotion()) {
+      setPhase(null);
       setShowFilters(false);
       return;
     }
-    setClosing(true);
-    closeTimer.current = window.setTimeout(() => {
-      setClosing(false);
+    setPhase("close");
+    timer.current = window.setTimeout(() => {
+      setPhase(null);
       setShowFilters(false);
     }, FILTERS_CLOSE_MS);
   };
@@ -605,8 +627,12 @@ const Filters = observer(() => {
 
   return (
     <>
-      {!showFilters &&
-        <div className="circle-button filters-button" title={t("map.filters")} {...buttonProps(t("map.filtersTitle"), () => setShowFilters(true))}>
+      {(!showFilters || phase !== null) &&
+        <div
+          className={`circle-button filters-button${phase ? ` filters-button--${phase}` : ""}`}
+          title={t("map.filters")}
+          {...buttonProps(t("map.filtersTitle"), open)}
+        >
           <div className="circle-button__content">
             <FilterIcon style={{ transform: "translate(0, 2px)" }} />
           </div>
@@ -614,7 +640,7 @@ const Filters = observer(() => {
       }
 
       {showFilters &&
-        <div className={closing ? "filters filters--closing" : "filters"}>
+        <div className={`filters${phase ? ` filters--${phase}` : ""}`}>
           <div className="filters__bar">
             {/* The round button does not sit beside the panel, it becomes it: the
                 panel opens at the button's own position and the glyph moves into

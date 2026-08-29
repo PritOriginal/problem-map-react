@@ -43,7 +43,7 @@ const ProblemPanel = observer(() => {
 
     let markType: MarkType = { mark_type_id: 0, name: "" };
     if (markTypesStore.types.length > 0 && mark.mark_type_id !== 0) {
-        const findType = markTypesStore.types.find((type) => type.mark_type_id == mark.mark_type_id);
+        const findType = markTypesStore.byId.get(mark.mark_type_id);
         if (findType) {
             markType = findType
         }
@@ -51,7 +51,7 @@ const ProblemPanel = observer(() => {
 
     let markStatus: MarkStatus = { mark_status_id: 0, parent_id: null, name: t("common.status") };
     if (markStatusesStore.statuses.length > 0 && mark.mark_status_id !== 0) {
-        const findStatus = markStatusesStore.statuses.find((status) => status.mark_status_id == mark.mark_status_id);
+        const findStatus = markStatusesStore.byId.get(mark.mark_status_id);
         if (findStatus) {
             markStatus = findStatus;
         }

@@ -15,7 +15,7 @@ import "./badges.scss";
 export const StatusBadge = observer(function StatusBadge({ statusId }: { statusId: number }) {
     const { t } = useT();
     const { resolved } = useTheme();
-    const status = markStatusesStore.statuses.find((s) => s.mark_status_id === statusId);
+    const status = markStatusesStore.byId.get(statusId);
     return (
         <span className="profile-list__status" style={{ borderColor: statusColors(resolved)[statusId] ?? INK }}>
             {status?.name ?? t("common.statusN", { id: statusId })}

@@ -16,6 +16,11 @@ class MarkStatusesStore {
         makeAutoObservable<MarkStatusesStore, "loaded" | "inFlight">(this, { loaded: false, inFlight: false });
     }
 
+    /** Statuses by id — a computed index so list rows do not each run a `find()`. */
+    get byId(): Map<number, MarkStatus> {
+        return new Map(this.statuses.map((status) => [status.mark_status_id, status]));
+    }
+
     /**
      * Loads the dictionary once. The map, the admin and the analytics panels all ask for it,
      * and StrictMode runs every effect twice, so concurrent callers share one request instead

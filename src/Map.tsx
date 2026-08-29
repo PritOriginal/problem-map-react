@@ -103,7 +103,7 @@ const getColorByFeatues = (features: Feature[]) => {
   }
 }
 
-const getColorPolygon = (count: AdminBoundaryMarksCount) => {
+const getColorPolygon = (count: AdminBoundaryMarksCount | undefined) => {
   if (!count) {
     return "00cc00"
   }
@@ -286,18 +286,18 @@ const Map = observer(() => {
   // Selection and assignment are NOT read here: `MarkItem` is an observer and
   // reads them itself, so this callback keeps its identity across a click and
   // the clusterer does not rebuild every marker.
-  const types = markTypesStore.types;
+  const typesById = markTypesStore.byId;
   const marker = useCallback((feature: Feature) => {
     const mark = feature.properties!.mark as Mark;
     return (
       <MarkItem
         mark={mark}
-        type={types.find((x) => x.mark_type_id === mark.mark_type_id)}
+        type={typesById.get(mark.mark_type_id)}
         size={size}
         onClick={onClickOnMark}
       />
     );
-  }, [size, onClickOnMark, types]);
+  }, [size, onClickOnMark, typesById]);
 
   // back online: incremental refresh instead of a full reload (wave-5 `GET /marks/changes`)
   useEffect(() => {
@@ -365,7 +365,7 @@ const Map = observer(() => {
               <BoundaryItem
                 key={boundary.id}
                 boundary={boundary}
-                count={adminBoundariesStore.marksCount.find((count) => count.id === boundary.id)!}
+                count={adminBoundariesStore.countById.get(boundary.id)}
               />
             ))}
             {userLocation &&
@@ -466,7 +466,7 @@ const HeatmapLegend = observer(() => {
   );
 });
 
-const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBoundary, count: AdminBoundaryMarksCount }) {
+const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBoundary, count: AdminBoundaryMarksCount | undefined }) {
   const { resolved } = useTheme();
   const color = '#' + getColorPolygon(count);
   return (

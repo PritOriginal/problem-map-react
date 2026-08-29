@@ -156,7 +156,7 @@ const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?:
     const isDone = task.status_id === TaskStatusType.Done;
     const overdue = task.status_id === TaskStatusType.Overdue || (!isDone && deadline?.overdue === true);
 
-    const type = mark ? markTypesStore.types.find((x) => x.mark_type_id === mark.mark_type_id) : undefined;
+    const type = mark ? markTypesStore.byId.get(mark.mark_type_id) : undefined;
 
     const showOnMap = () => {
         if (mark) {

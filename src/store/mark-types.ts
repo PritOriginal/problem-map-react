@@ -16,6 +16,11 @@ class MarkTypesStore {
         makeAutoObservable<MarkTypesStore, "loaded" | "inFlight">(this, { loaded: false, inFlight: false });
     }
 
+    /** Types by id — a computed index so lookups in render loops are not a `find()` per item. */
+    get byId(): Map<number, MarkType> {
+        return new Map(this.types.map((type) => [type.mark_type_id, type]));
+    }
+
     /**
      * Loads the dictionary once. The map, the admin and the analytics panels all ask for it,
      * and StrictMode runs every effect twice, so concurrent callers share one request instead

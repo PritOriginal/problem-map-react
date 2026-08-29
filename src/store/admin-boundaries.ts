@@ -74,6 +74,14 @@ class AdminBoundariesStore {
         }
     }
 
+    /**
+     * Mark counts by boundary id — a computed index. The map draws every boundary in a
+     * `.map()`, and a `find()` per boundary made that O(boundaries x counts) per render.
+     */
+    get countById(): Map<number, AdminBoundaryMarksCount> {
+        return new Map(this.marksCount.map((count) => [count.id, count]));
+    }
+
     fetchMarksCount = async () => {
         this.isLoadingMarksCount = true;
         this.errorMarkCount = null;

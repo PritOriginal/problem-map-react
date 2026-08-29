@@ -2,7 +2,7 @@ import { Outlet, useParams } from "react-router-dom";
 import { TypeIcon } from "../../../mark/mark";
 import { statusColors } from "../../../../styles/tokens";
 import { useTheme } from "../../../../theme";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
@@ -117,7 +117,12 @@ const ProblemPanel = observer(() => {
                 </div>
             </div>
             <div className="panel__content">
-                <Outlet />
+                {/* Its own boundary: the children of /problem/:id are lazy too, and
+                    a boundary only at the panel shell would drop this header while
+                    add-check loads. */}
+                <Suspense fallback={<p className="empty-state">{t("common.loading")}</p>}>
+                    <Outlet />
+                </Suspense>
             </div>
         </MarkReloadContext.Provider>
         </MarkContext.Provider>

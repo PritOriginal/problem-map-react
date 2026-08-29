@@ -88,8 +88,23 @@ function interpolate(template: string, params?: TParams): string {
  * and to the key itself when it is unknown everywhere.
  */
 export function t(key: TranslationKey, params?: TParams, lang: Lang = langStore.get()): string {
-    const template = DICTS[lang][key] ?? ru[key] ?? key;
+    const template = DICTS[lang][key] ?? ru[key];
+    if (template === undefined) {
+        warnMissingOnce(key);
+        return interpolate(key, params);
+    }
     return interpolate(template, params);
+}
+
+const reportedMissing = new Set<string>();
+
+/** Logs an unknown key once per session so a typo shows up in the console without flooding it. */
+function warnMissingOnce(key: string): void {
+    if (reportedMissing.has(key)) {
+        return;
+    }
+    reportedMissing.add(key);
+    console.warn(`i18n: missing translation key "${key}"`);
 }
 
 /** Translates a dynamic key (e.g. built from a status id); unknown keys yield `fallback`. */

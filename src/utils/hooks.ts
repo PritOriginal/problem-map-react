@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 export const useDeviceDetect = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -17,15 +17,36 @@ export const useDeviceDetect = () => {
     return { isMobile, windowWidth };
 };
 
-/** Current time, re-read every `intervalMs` (for countdowns). */
-export const useNow = (intervalMs: number = 30_000): number => {
-    const [now, setNow] = useState(() => Date.now());
-    useEffect(() => {
-        const timer = window.setInterval(() => setNow(Date.now()), intervalMs);
-        return () => window.clearInterval(timer);
-    }, [intervalMs]);
-    return now;
-};
+const NOW_INTERVAL_MS = 30_000;
+
+/** One shared ticker for every `useNow` subscriber (many badges → one interval). */
+const nowTicker = (() => {
+    const listeners = new Set<() => void>();
+    let now = Date.now();
+    let timer: number | undefined;
+    return {
+        get: () => now,
+        subscribe: (listener: () => void) => {
+            listeners.add(listener);
+            if (timer === undefined) {
+                timer = window.setInterval(() => {
+                    now = Date.now();
+                    listeners.forEach((l) => l());
+                }, NOW_INTERVAL_MS);
+            }
+            return () => {
+                listeners.delete(listener);
+                if (listeners.size === 0 && timer !== undefined) {
+                    window.clearInterval(timer);
+                    timer = undefined;
+                }
+            };
+        },
+    };
+})();
+
+/** Current time, refreshed every 30 s by a single shared interval (for countdowns). */
+export const useNow = (): number => useSyncExternalStore(nowTicker.subscribe, nowTicker.get, nowTicker.get);
 
 /** `navigator.onLine`, kept in sync with the `online` / `offline` events. */
 export const useOnline = (): boolean => {

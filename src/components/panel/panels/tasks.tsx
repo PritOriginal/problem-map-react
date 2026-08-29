@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { LngLat } from "@yandex/ymaps3-types";
 import panelStore from "../../../store/panel";
@@ -16,10 +16,13 @@ import { TypeMarkIcons } from "../../mark/mark";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { deadlineState, formatDateTime, formatDeadline } from "../../../utils/deadline";
 import { useNow } from "../../../utils/hooks";
+import { mapWithLimit } from "../../../utils/concurrency";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 
 export const TASKS_LIMIT = 100;
+/** How many `GET /marks/{id}` requests run at once while filling the task cards. */
+const MARKS_CONCURRENCY = 6;
 
 type TabKey = "current" | "done" | "overdue";
 
@@ -62,7 +65,7 @@ const TasksPanel = observer(function TasksPanel() {
                 setTasks(list);
                 // marks are loaded per task (there is no batch endpoint); failures leave the card without details
                 const ids = Array.from(new Set(list.map((task) => task.mark_id)));
-                const loaded = await Promise.allSettled(ids.map((id) => MarksService.getMarkById(id)));
+                const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id));
                 if (ignore) {
                     return;
                 }
@@ -100,6 +103,19 @@ const TasksPanel = observer(function TasksPanel() {
         }
     }, [userId]);
 
+    /** Left/Right arrows move between tabs and focus the newly selected one (WAI-ARIA tabs). */
+    const onTabsKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (step === 0) {
+            return;
+        }
+        e.preventDefault();
+        const index = TABS.findIndex((x) => x.key === tab);
+        const next = TABS[(index + step + TABS.length) % TABS.length].key;
+        setTab(next);
+        document.getElementById(`tasks-tab-${next}`)?.focus();
+    };
+
     return (
         <>
             <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
@@ -111,13 +127,16 @@ const TasksPanel = observer(function TasksPanel() {
                     <UnauthorizedBlock text={t("unauth.tasks")} />
                     :
                     <>
-                        <div className="tabs" role="tablist">
+                        <div className="tabs" role="tablist" aria-label={t("tasks.title")} onKeyDown={onTabsKeyDown}>
                             {TABS.map((item) => (
                                 <button
                                     key={item.key}
+                                    id={`tasks-tab-${item.key}`}
                                     type="button"
                                     role="tab"
                                     aria-selected={tab === item.key}
+                                    aria-controls="tasks-tabpanel"
+                                    tabIndex={tab === item.key ? 0 : -1}
                                     className={`tabs__item ${tab === item.key ? "active" : ""}`}
                                     onClick={() => setTab(item.key)}
                                 >
@@ -125,10 +144,12 @@ const TasksPanel = observer(function TasksPanel() {
                                 </button>
                             ))}
                         </div>
-                        {isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                        {!isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("tasks.empty")}</p>}
-                        <div className="profile-list">
-                            {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks[task.mark_id]} />)}
+                        <div id="tasks-tabpanel" role="tabpanel" aria-labelledby={`tasks-tab-${tab}`}>
+                            {isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
+                            {!isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("tasks.empty")}</p>}
+                            <div className="profile-list">
+                                {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks[task.mark_id]} />)}
+                            </div>
                         </div>
                     </>
                 }

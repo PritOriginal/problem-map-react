@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { markerSizeForZoom } from "./use-map-zoom-size";
 import { ZOOMS, ZOOM_RANGE } from "../map-constants";
-import { MarkerSize } from "../../components/mark/mark";
+import { MarkerSize } from "../../components/mark/marker-size";
 
 describe("markerSizeForZoom", () => {
     it("is small at every zoom the map can start at, up to the first threshold", () => {

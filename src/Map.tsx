@@ -18,7 +18,8 @@ import type { Feature } from "@yandex/ymaps3-clusterer";
 import { observer } from "mobx-react-lite";
 import { useLocation } from "react-router-dom";
 
-import MarkItem, { MarkerItem, MarkerSize } from "./components/mark/mark";
+import MarkItem, { MarkerItem } from "./components/mark/mark";
+import { MarkerSize } from "./components/mark/marker-size";
 import { useNavigateKeepSearch } from "./utils/navigation";
 import { useDeviceDetect } from "./utils/hooks";
 import { Mark } from "./services/MarksService";
@@ -163,15 +164,20 @@ const Map = observer(() => {
         }
     }, [pointVisible]);
 
+    // `locate` is rebuilt whenever the language changes (its failure messages go through
+    // `t`), and the load below must not run again for that -- so the effect reaches it
+    // through a ref, the way `useAsyncData` holds its fetcher.
+    const locateRef = useRef(locate);
+    locateRef.current = locate;
+
     useEffect(() => {
         adminBoundariesStore.fetchBoundaries();
         adminBoundariesStore.fetchMarksCount();
         marksStore.fetch();
         markTypesStore.fetch();
         markStatusesStore.fetch();
-        locate(false);
+        locateRef.current(false);
         selectedPoint.setCoords(INITIAL_CENTER)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // deep link: /problem/:id opened directly -> center the map on the mark

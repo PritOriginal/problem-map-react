@@ -50,8 +50,7 @@ export function useUserLocation(flyTo: FlyTo): {
             },
             { enableHighAccuracy: center, timeout: 10_000 },
         );
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [flyTo]);
+    }, [flyTo, t]);
 
     return { userLocation, locate };
 }

@@ -3,9 +3,9 @@ import { TranslationKey, useT } from "../../../i18n";
 import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
 import user from "../../../store/user";
-import notificationsStore from "../../../store/notifications";
 import adminBoundariesStore from "../../../store/admin-boundaries";
 import UsersService, { LEADERBOARD_PERIODS, LeaderboardEntry, LeaderboardPeriod } from "../../../services/UsersService";
+import { useAsyncData } from "../../../utils/use-async-data";
 import { useToKeepSearch } from "../../../utils/navigation";
 import PanelHeader from "../panel-header";
 
@@ -29,35 +29,14 @@ const Leaderboard = observer(function Leaderboard() {
 
     const [boundaryId, setBoundaryId] = useState(0);
     const [period, setPeriod] = useState<LeaderboardPeriod>("all");
-    const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        let ignore = false;
-        setIsLoading(true);
-        UsersService.getLeaderboard({ boundary_id: boundaryId || undefined, period, limit: LEADERBOARD_LIMIT, offset: 0 })
-            .then((data) => {
-                if (!ignore) {
-                    setEntries(data.payload);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("leaderboard.loadFailed"));
-            })
-            .finally(() => {
-                if (!ignore) {
-                    setIsLoading(false);
-                }
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [boundaryId, period]);
+    const { data, isLoading } = useAsyncData(
+        (signal) => UsersService
+            .getLeaderboard({ boundary_id: boundaryId || undefined, period, limit: LEADERBOARD_LIMIT, offset: 0 }, { signal })
+            .then((res) => res.payload),
+        [boundaryId, period],
+        { errorMessage: t("leaderboard.loadFailed") },
+    );
+    const entries: LeaderboardEntry[] = data ?? [];
 
     const rawBoundaries = adminBoundariesStore.boundaries;
     const boundaries = useMemo(

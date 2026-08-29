@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { MarkerSize } from "../../components/mark/mark";
+import { MarkerSize } from "../../components/mark/marker-size";
 import { ZOOMS } from "../map-constants";
 
 /**

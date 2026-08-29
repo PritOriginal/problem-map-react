@@ -18,7 +18,8 @@ import type { Feature } from "@yandex/ymaps3-clusterer";
 import { observer } from "mobx-react-lite";
 import { useLocation } from "react-router-dom";
 
-import MarkItem, { MarkerItem, MarkerSize } from "./components/mark/mark";
+import MarkItem, { MarkerItem } from "./components/mark/mark";
+import { MarkerSize } from "./components/mark/marker-size";
 import { useNavigateKeepSearch } from "./utils/navigation";
 import { useDeviceDetect } from "./utils/hooks";
 import { Mark } from "./services/MarksService";

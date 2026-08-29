@@ -14,9 +14,13 @@ class InboxStore {
     isLoading: boolean = false;
 
     private pollTimer: number | null = null;
+    private visibilityListener: (() => void) | null = null;
 
     constructor() {
-        makeAutoObservable<InboxStore, "pollTimer">(this, { pollTimer: false });
+        makeAutoObservable<InboxStore, "pollTimer" | "visibilityListener">(this, {
+            pollTimer: false,
+            visibilityListener: false,
+        });
     }
 
     fetchUnreadCount = async () => {
@@ -100,22 +104,45 @@ class InboxStore {
         }
     }
 
-    /** Starts polling the unread counter; idempotent. */
+    /**
+     * Starts polling the unread counter; idempotent. The timer only runs while the tab is
+     * visible: a backgrounded tab keeps neither the interval nor the traffic, and coming
+     * back refetches at once, since the counter is stale after any time away.
+     */
     startPolling = () => {
-        if (this.pollTimer !== null) {
+        if (this.visibilityListener !== null) {
             return;
         }
-        this.fetchUnreadCount();
-        this.pollTimer = window.setInterval(this.fetchUnreadCount, UNREAD_POLL_MS);
+        this.visibilityListener = () => {
+            if (document.hidden) {
+                this.clearTimer();
+            } else if (this.pollTimer === null) {
+                this.fetchUnreadCount();
+                this.pollTimer = window.setInterval(this.fetchUnreadCount, UNREAD_POLL_MS);
+            }
+        };
+        document.addEventListener("visibilitychange", this.visibilityListener);
+        if (!document.hidden) {
+            this.fetchUnreadCount();
+            this.pollTimer = window.setInterval(this.fetchUnreadCount, UNREAD_POLL_MS);
+        }
     }
 
     /** Stops polling and clears the inbox (called when the bell unmounts, i.e. on sign-out). */
     stopPolling = () => {
+        this.clearTimer();
+        if (this.visibilityListener !== null) {
+            document.removeEventListener("visibilitychange", this.visibilityListener);
+            this.visibilityListener = null;
+        }
+        this.reset();
+    }
+
+    private clearTimer = () => {
         if (this.pollTimer !== null) {
             window.clearInterval(this.pollTimer);
             this.pollTimer = null;
         }
-        this.reset();
     }
 
     reset = () => {

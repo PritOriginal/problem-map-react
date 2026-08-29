@@ -14,6 +14,35 @@ export interface Mark {
     mark_status_id: number;
     created_at: string;
     updated_at: string;
+    /** Number of users following the mark (backend integration/wave-3). */
+    followers_count?: number;
+    /** Whether the current user follows the mark (only meaningful when authorized). */
+    is_following?: boolean;
+}
+
+/** A mark near the point being reported, with the distance to it in meters. */
+export type SimilarMark = Mark & { distance_m: number };
+
+export interface GetSimilarMarksRequest {
+    point: Point;
+    mark_type_id: number;
+    /** Search radius in meters (backend default when omitted). */
+    radius?: number;
+}
+
+export interface GetSimilarMarksResponse extends IResponse {
+    payload: SimilarMark[];
+}
+
+export interface UpdateMarkRequest {
+    description?: string;
+    mark_type_id?: number;
+}
+
+export interface FollowMarkResponse extends IResponse {
+    payload?: {
+        followers_count?: number;
+    };
 }
 
 export interface MarkType {
@@ -155,7 +184,24 @@ class MarksService extends BaseService {
         return this.request<GetMarksByUserIdResponse>(`/api/marks/user/${userId}`)
     }
 
-    public addMark(req: AddMarkRequest, photos: File[]): Promise<AddMarkResponse> {
+    /** Marks of the same type near the point. */
+    public getSimilarMarks(req: GetSimilarMarksRequest): Promise<GetSimilarMarksResponse> {
+        const params = new URLSearchParams({
+            lon: String(req.point.longitude),
+            lat: String(req.point.latitude),
+            mark_type_id: String(req.mark_type_id),
+        });
+        if (req.radius !== undefined) {
+            params.set("radius", String(req.radius));
+        }
+        return this.request<GetSimilarMarksResponse>(`/api/marks/similar?${params}`);
+    }
+
+    /**
+     * Creates a mark. Without `force` the backend may reject with 409 when similar marks
+     * exist nearby (`ApiError.payload.similar_marks`); pass `force = true` to create anyway.
+     */
+    public addMark(req: AddMarkRequest, photos: File[], force: boolean = false): Promise<AddMarkResponse> {
         const form = new FormData();
         form.append("longitude", req.point.longitude.toString());
         form.append("latitude", req.point.latitude.toString());
@@ -165,10 +211,32 @@ class MarksService extends BaseService {
             form.append("photos", photo)
         });
 
-        return this.requestWithAuth<AddMarkResponse>("/api/marks", {
+        return this.requestWithAuth<AddMarkResponse>(`/api/marks${force ? "?force=true" : ""}`, {
             method: "POST",
             body: form
         })
+    }
+
+    /** Owner only (unconfirmed mark): updates description and/or type. */
+    public updateMark(id: number, req: UpdateMarkRequest): Promise<IResponse> {
+        return this.requestWithAuth(`/api/marks/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json;charset=utf-8" },
+            body: JSON.stringify(req),
+        })
+    }
+
+    /** Owner only (unconfirmed mark): deletes the mark. */
+    public deleteMark(id: number): Promise<IResponse> {
+        return this.requestWithAuth(`/api/marks/${id}`, { method: "DELETE" })
+    }
+
+    public followMark(id: number): Promise<FollowMarkResponse> {
+        return this.requestWithAuth<FollowMarkResponse>(`/api/marks/${id}/follow`, { method: "POST" })
+    }
+
+    public unfollowMark(id: number): Promise<FollowMarkResponse> {
+        return this.requestWithAuth<FollowMarkResponse>(`/api/marks/${id}/follow`, { method: "DELETE" })
     }
 
     /** Moderator/admin only: confirms the mark and moves it to a new status. */

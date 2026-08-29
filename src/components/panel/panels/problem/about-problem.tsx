@@ -1,5 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import MarksService, { MarkStatusHistoryItem, MarkStatusType } from "../../../../services/MarksService";
+import MarksService, { MarkStatusHistoryItem, MarkStatusType, MarkType } from "../../../../services/MarksService";
+import Select from "react-select";
+import markTypesStore from "../../../../store/mark-types";
 import { Button } from "../../../button/button";
 import DoubleProgressBar from "../../../double-progress-bar/double-progress-bar";
 import { useNavigateKeepSearch } from "../../../../utils/navigation";
@@ -10,6 +12,7 @@ import user from "../../../../store/user";
 import Arrow from "../../../arrow/arrow";
 import markStatusesStore from "../../../../store/mark-statuses";
 import notificationsStore from "../../../../store/notifications";
+import marksStore from "../../../../store/marks";
 
 const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigateKeepSearch();
@@ -78,8 +81,12 @@ const AboutProblem = observer(function AboutProblem() {
 
     return (
         <>
-            <ShareButton />
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                <ShareButton />
+                {user.id !== 0 && mark.mark_id !== 0 && <FollowButton onDone={reload} />}
+            </div>
             {user.isModerator && mark.mark_id !== 0 && <ModerationBlock onDone={reload} />}
+            {user.id !== 0 && user.id === mark.user_id && mark.mark_status_id === MarkStatusType.UnconfirmedStatus && <OwnerBlock onDone={reload} />}
             {mark.description !== "" &&
                 <>
                     <p style={{ fontSize: 18 }}><b>Описание</b></p>
@@ -180,6 +187,134 @@ function ModerationBlock({ onDone }: { onDone: () => void }) {
         </>
     );
 }
+
+/** "Слежу" toggle with the followers counter (`POST/DELETE /marks/{id}/follow`). */
+const FollowButton = observer(function FollowButton({ onDone }: { onDone: () => void }) {
+    const mark = useContext(MarkContext);
+    const [pending, setPending] = useState(false);
+    const following = mark.is_following === true;
+    const count = mark.followers_count;
+
+    const toggle = () => {
+        setPending(true);
+        (following ? MarksService.unfollowMark(mark.mark_id) : MarksService.followMark(mark.mark_id))
+            .then(() => {
+                notificationsStore.clear();
+                onDone();
+            })
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, following ? "Не удалось отписаться" : "Не удалось подписаться");
+            })
+            .finally(() => setPending(false));
+    };
+
+    return (
+        <Button style={following ? "black-2-white" : "white-2-black"} isMini disabled={pending} onClick={toggle}>
+            {following ? "Слежу" : "Следить"}{count !== undefined && ` · ${count}`}
+        </Button>
+    );
+});
+
+/** Owner-only actions for an unconfirmed mark: edit description/type, delete. */
+const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void }) {
+    const mark = useContext(MarkContext);
+    const navigate = useNavigateKeepSearch();
+    const [editing, setEditing] = useState(false);
+    const [description, setDescription] = useState(mark.description);
+    const [typeId, setTypeId] = useState(mark.mark_type_id);
+    const [pending, setPending] = useState<"save" | "delete" | null>(null);
+
+    const startEdit = () => {
+        setDescription(mark.description);
+        setTypeId(mark.mark_type_id);
+        setEditing(true);
+    };
+
+    const save = () => {
+        const req: { description?: string; mark_type_id?: number } = {};
+        if (description !== mark.description) {
+            req.description = description;
+        }
+        if (typeId !== mark.mark_type_id) {
+            req.mark_type_id = typeId;
+        }
+        if (Object.keys(req).length === 0) {
+            setEditing(false);
+            return;
+        }
+        setPending("save");
+        MarksService.updateMark(mark.mark_id, req)
+            .then(() => {
+                notificationsStore.clear();
+                setEditing(false);
+                onDone();
+            })
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, "Не удалось сохранить изменения");
+            })
+            .finally(() => setPending(null));
+    };
+
+    const remove = () => {
+        if (!window.confirm(`Удалить проблему №${mark.mark_id}? Это действие нельзя отменить.`)) {
+            return;
+        }
+        setPending("delete");
+        MarksService.deleteMark(mark.mark_id)
+            .then(() => {
+                notificationsStore.clear();
+                marksStore.fetch();
+                navigate("/");
+            })
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, "Не удалось удалить проблему");
+                setPending(null);
+            });
+    };
+
+    const options = markTypesStore.types.map((t: MarkType) => ({ value: t.mark_type_id, label: t.name }));
+
+    return (
+        <>
+            <p style={{ fontSize: 18 }}><b>Моя метка</b></p>
+            {editing ?
+                <>
+                    <p><b>Категория</b></p>
+                    <Select
+                        options={options}
+                        value={options.find((o) => o.value === typeId) ?? null}
+                        onChange={(val) => { if (val) { setTypeId(val.value); } }}
+                        isDisabled={options.length === 0}
+                    />
+                    <p><b>Описание</b></p>
+                    <textarea
+                        className="edit-multiline-text"
+                        name="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    ></textarea>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                        <Button style="green" disabled={pending !== null} onClick={save}>
+                            {pending === "save" ? "Сохраняем…" : "Сохранить"}
+                        </Button>
+                        <Button style="white-2-black" disabled={pending !== null} onClick={() => setEditing(false)}>Отмена</Button>
+                    </div>
+                </>
+                :
+                <div style={{ display: "flex", gap: "8px" }}>
+                    <Button style="white-2-black" disabled={pending !== null} onClick={startEdit}>Редактировать</Button>
+                    <Button style="red" disabled={pending !== null} onClick={remove}>
+                        {pending === "delete" ? "Удаляем…" : "Удалить"}
+                    </Button>
+                </div>
+            }
+            <hr />
+        </>
+    );
+});
 
 function ShareButton() {
     const [copied, setCopied] = useState(false);

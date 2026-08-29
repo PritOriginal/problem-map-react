@@ -1,0 +1,195 @@
+import { useEffect, useRef, useState } from "react";
+import { observer } from "mobx-react-lite";
+import { LngLat } from "@yandex/ymaps3-types";
+import panelStore from "../../../store/panel";
+import user from "../../../store/user";
+import notificationsStore from "../../../store/notifications";
+import markTypesStore from "../../../store/mark-types";
+import taskStatusesStore from "../../../store/task-statuses";
+import selectedMark from "../../../store/selected_mark";
+import TasksService, { Task, TaskStatusType } from "../../../services/TasksService";
+import MarksService, { Mark } from "../../../services/MarksService";
+import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
+import { Button } from "../../button/button";
+import { MarkBadges } from "../../badges/badges";
+import { TypeMarkIcons } from "../../mark/mark";
+import { useNavigateKeepSearch } from "../../../utils/navigation";
+import { deadlineState, formatDateTime, formatDeadline } from "../../../utils/deadline";
+import { useNow } from "../../../utils/hooks";
+import { TranslationKey, localeOf, useT } from "../../../i18n";
+import "../../badges/badges.scss";
+
+export const TASKS_LIMIT = 100;
+
+type TabKey = "current" | "done" | "overdue";
+
+const TABS: { key: TabKey; label: TranslationKey; statuses: number[] }[] = [
+    { key: "current", label: "tasks.tab.current", statuses: [TaskStatusType.Assigned] },
+    { key: "done", label: "tasks.tab.done", statuses: [TaskStatusType.Done] },
+    { key: "overdue", label: "tasks.tab.overdue", statuses: [TaskStatusType.Overdue] },
+];
+
+/** `/tasks`: the user's tasks by status, each with its mark (backend integration/wave-4). */
+const TasksPanel = observer(function TasksPanel() {
+    const { t } = useT();
+    const panelHeaderRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (panelHeaderRef.current) {
+            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
+            panelStore.setOpen(true);
+        }
+    }, []);
+
+    const userId = user.id;
+    const [tab, setTab] = useState<TabKey>("current");
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [marks, setMarks] = useState<Record<number, Mark>>({});
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (userId === 0) {
+            return;
+        }
+        let ignore = false;
+        setIsLoading(true);
+        const statuses = TABS.find((x) => x.key === tab)!.statuses;
+        TasksService.getUserTasks(userId, { statuses, limit: TASKS_LIMIT, offset: 0 })
+            .then(async (data) => {
+                if (ignore) {
+                    return;
+                }
+                const list = data.payload ?? [];
+                setTasks(list);
+                // marks are loaded per task (there is no batch endpoint); failures leave the card without details
+                const ids = Array.from(new Set(list.map((task) => task.mark_id)));
+                const loaded = await Promise.allSettled(ids.map((id) => MarksService.getMarkById(id)));
+                if (ignore) {
+                    return;
+                }
+                const byId: Record<number, Mark> = {};
+                loaded.forEach((res, index) => {
+                    if (res.status === "fulfilled") {
+                        byId[ids[index]] = res.value.payload.mark;
+                    } else {
+                        console.error(res.reason);
+                    }
+                });
+                setMarks(byId);
+            })
+            .catch((error) => {
+                if (ignore) {
+                    return;
+                }
+                console.error(error);
+                notificationsStore.showError(error, t("tasks.loadFailed"));
+            })
+            .finally(() => {
+                if (!ignore) {
+                    setIsLoading(false);
+                }
+            });
+        return () => {
+            ignore = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId, tab]);
+
+    useEffect(() => {
+        if (userId !== 0) {
+            taskStatusesStore.fetch();
+        }
+    }, [userId]);
+
+    return (
+        <>
+            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
+                <p><b>{t("tasks.title")}</b></p>
+                <p style={{ fontSize: 12 }}>{t("tasks.subtitle")}</p>
+            </div>
+            <div className="panel__content">
+                {userId === 0 ?
+                    <UnauthorizedBlock text={t("unauth.tasks")} />
+                    :
+                    <>
+                        <div className="tabs" role="tablist">
+                            {TABS.map((item) => (
+                                <button
+                                    key={item.key}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={tab === item.key}
+                                    className={`tabs__item ${tab === item.key ? "active" : ""}`}
+                                    onClick={() => setTab(item.key)}
+                                >
+                                    {t(item.label)}
+                                </button>
+                            ))}
+                        </div>
+                        {isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
+                        {!isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("tasks.empty")}</p>}
+                        <div className="profile-list">
+                            {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks[task.mark_id]} />)}
+                        </div>
+                    </>
+                }
+            </div>
+        </>
+    );
+});
+
+const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?: Mark }) {
+    const { t, lang } = useT();
+    const navigate = useNavigateKeepSearch();
+    const now = useNow();
+    const deadline = deadlineState(task.due_at, now);
+    const isDone = task.status_id === TaskStatusType.Done;
+    const overdue = task.status_id === TaskStatusType.Overdue || (!isDone && deadline?.overdue === true);
+
+    const type = mark ? markTypesStore.types.find((x) => x.mark_type_id === mark.mark_type_id) : undefined;
+    const Icon = mark ? TypeMarkIcons[mark.mark_type_id] : undefined;
+
+    const showOnMap = () => {
+        if (mark) {
+            selectedMark.setId(mark.mark_id);
+            selectedMark.setLoadedCoords(mark.mark_id, mark.geom.coordinates as LngLat);
+        }
+        navigate(`/problem/${task.mark_id}`);
+    };
+
+    return (
+        <div className={`task-card ${overdue ? "overdue" : ""}`}>
+            <div className="task-card__row">
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                    {Icon && Icon({ color: "#000" })}
+                    <p style={{ fontSize: 14 }}><b>{t("common.problemN", { id: task.mark_id })}</b> {type?.name ?? ""}</p>
+                </div>
+                <span className="profile-list__status" style={{ borderColor: overdue ? "#a40000" : isDone ? "#00a000" : "#555" }}>
+                    {taskStatusesStore.nameOf(task.status_id)}
+                </span>
+            </div>
+            {task.name !== "" && <p style={{ fontSize: 13 }}>{task.name}</p>}
+            {mark && mark.description !== "" && <p className="task-card__desc">{mark.description}</p>}
+            {mark && <MarkBadges mark={mark} />}
+            <div className="task-card__row">
+                <p style={{ fontSize: 12 }}>
+                    {t("tasks.due")}: {task.due_at ? formatDateTime(task.due_at, localeOf(lang)) : t("tasks.noDue")}
+                </p>
+                {deadline && !isDone &&
+                    <span className={`deadline ${deadline.overdue ? "overdue" : deadline.soon ? "soon" : ""}`}>
+                        {formatDeadline(task.due_at, now, lang)}
+                    </span>
+                }
+            </div>
+            <div className="task-card__actions">
+                <Button style="white-2-black" isMini onClick={showOnMap}>{t("tasks.showOnMap")}</Button>
+                {!isDone &&
+                    <Button style="black-2-white" isMini onClick={() => navigate(`/problem/${task.mark_id}/add-check`)}>
+                        {t("tasks.check")}
+                    </Button>
+                }
+            </div>
+        </div>
+    );
+});
+
+export default TasksPanel;

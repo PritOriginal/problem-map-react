@@ -197,7 +197,7 @@ function ResolveForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => v
         MarksService.resolveMark(mark.mark_id, comment, photos)
             .then(() => {
                 notificationsStore.clear();
-                marksStore.fetch();
+                marksStore.sync();
                 onDone();
             })
             .catch((error) => {

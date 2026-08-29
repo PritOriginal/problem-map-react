@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../../../i18n";
 import { Button } from "../../button/button";
 import AuthService, { SignUpRequest } from "../../../services/AuthService";
 import { signIn } from "../../../services/session";
@@ -7,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import panelStore from "../../../store/panel";
 
 export default function SignUp() {
+    const { t } = useT();
     const panelHeaderRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (panelHeaderRef.current) {
@@ -33,7 +35,7 @@ export default function SignUp() {
             .then(() => navigate(-1))
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, "Не удалось зарегистрироваться");
+                notificationsStore.showError(error, t("auth.signUpError"));
             });
     }
 
@@ -44,21 +46,21 @@ export default function SignUp() {
                 className="panel__header"
                 onClick={() => panelStore.toggle()}
             >
-                <p><b>Регистрация</b></p>
+                <p><b>{t("auth.signUpTitle")}</b></p>
             </div>
             <div className="panel__content">
-                <p><b>Имя</b></p>
+                <p><b>{t("auth.name")}</b></p>
                 <input
                     id="sku_edit"
                     className="edit-multiline-text"
                     name="sku"
                     value={username}
-                    placeholder="Имя"
+                    placeholder={t("auth.name")}
                     onChange={(e) => {
                         setUsername(e.target.value)
                     }}
                 />
-                <p><b>Логин</b></p>
+                <p><b>{t("auth.login")}</b></p>
                 <input
                     id="sku_edit"
                     className="edit-multiline-text"
@@ -70,8 +72,8 @@ export default function SignUp() {
                     }}
                 />
                 <div>
-                    <p><b>Пароль</b></p>
-                    <p style={{ fontSize: "12px" }}>Минимум 8 символов</p>
+                    <p><b>{t("auth.password")}</b></p>
+                    <p style={{ fontSize: "12px" }}>{t("auth.passwordHint")}</p>
                 </div>
                 <input
                     id="sku_edit"
@@ -85,13 +87,13 @@ export default function SignUp() {
                 />
                 <div>
                     <Button style="white-2-black" onClick={onClick}>
-                        <p>Зарегистрироваться</p>
+                        <p>{t("nav.signUp")}</p>
                     </Button>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <p>Уже есть аккаунт?</p>
+                    <p>{t("auth.haveAccount")}</p>
                     <Link to={"/signin"}>
-                        Войти
+                        {t("nav.signIn")}
                     </Link>
                 </div>
             </div>

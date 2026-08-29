@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 /** Helpers for the dependency-free SVG line chart on the analytics dashboard. */
 
 export interface ChartSeries {
@@ -89,9 +90,9 @@ export function formatHours(hours: number | null | undefined): string {
         return "—";
     }
     if (hours < 48) {
-        return `${Math.round(hours)} ч`;
+        return `${Math.round(hours)} ${t("common.hours")}`;
     }
-    return `${(hours / 24).toFixed(1)} дн`;
+    return `${(hours / 24).toFixed(1)} ${t("common.days")}`;
 }
 
 /** Formats a 0..1 share as a percentage; `—` when unknown. */

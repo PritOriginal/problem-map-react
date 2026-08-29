@@ -1,3 +1,5 @@
+import { t } from "../i18n";
+
 /** Pagination block returned by list endpoints (`listquery`). */
 export interface ListMeta {
     limit: number;
@@ -31,7 +33,7 @@ export class ApiError extends Error {
     }
 }
 
-export function getErrorMessage(error: unknown, fallback: string = "Произошла ошибка"): string {
+export function getErrorMessage(error: unknown, fallback: string = t("common.error")): string {
     if (error instanceof Error && error.message) {
         return error.message;
     }

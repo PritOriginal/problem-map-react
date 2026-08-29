@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../../../i18n";
 import MarksService, { AddMarkRequest, MarkType, SimilarMark, toApiPoint } from "../../../services/MarksService";
 import SimilarMarksBlock from "../../similar-marks/similar-marks";
 import { parseSimilarMarks, similarMarksFromError } from "../../../utils/similar";
@@ -18,6 +19,7 @@ import { useDeviceDetect } from "../../../utils/hooks";
 
 const AddProblem = observer(function AddProblem() {
     const { isMobile } = useDeviceDetect();
+    const { t } = useT();
 
     const panelHeaderRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -79,7 +81,7 @@ const AddProblem = observer(function AddProblem() {
                     return;
                 }
                 console.error(error);
-                notificationsStore.showError(error, "Не удалось отметить проблему");
+                notificationsStore.showError(error, t("addMark.failed"));
             })
             .finally(() => setPending(false));
     }
@@ -128,33 +130,33 @@ const AddProblem = observer(function AddProblem() {
                 className="panel__header"
                 onClick={() => panelStore.toggle()}
             >
-                <p><b>Отметить проблему</b></p>
+                <p><b>{t("addMark.title")}</b></p>
             </div>
             <div className="panel__content">
                 {user.id === 0 ?
                     <UnauthorizedBlock
-                        text="Для того чтобы отметить проблему, авторизуйтесь или создайте новый аккаунт"
+                        text={t("unauth.addMark")}
                     />
                     :
                     <>
-                        <p style={{ fontSize: 12 }}>Координаты: {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}</p>
+                        <p style={{ fontSize: 12 }}>{t("common.coordinates")}: {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}</p>
 
-                        <p><b>Категория</b></p>
+                        <p><b>{t("common.category")}</b></p>
                         <Select
                             options={markTypesOptions}
                             value={selectedMarkTypeOption === undefined ? null : selectedMarkTypeOption}
-                            placeholder={"Выберите категорию проблемы"}
+                            placeholder={t("addMark.pickCategory")}
                             onChange={(val) => { setSelectedMarkType(markTypesStore.types.find(type => type.mark_type_id === val?.value)) }}
                             isDisabled={markTypesStore.types.length === 0}
                         />
-                        <p><b>Описание</b></p>
+                        <p><b>{t("common.description")}</b></p>
                         <textarea
                             className="edit-multiline-text"
                             name="description"
                             value={description}
                             onChange={(e) => { setDescription(e.target.value) }}
                         ></textarea>
-                        <p><b>Фотографии</b></p>
+                        <p><b>{t("common.photos")}</b></p>
                         <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
                             <SelectFiles onSelectedFiles={onSelectedFile} />
                         </div>
@@ -169,7 +171,7 @@ const AddProblem = observer(function AddProblem() {
                             :
                             <div>
                                 <Button style="white-2-black" disabled={pending} onClick={addMark}>
-                                    <p>{pending ? "Проверяем…" : "Отметить"}</p>
+                                    <p>{pending ? t("addMark.checking") : t("map.add")}</p>
                                 </Button>
                             </div>
                         }

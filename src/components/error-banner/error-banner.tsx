@@ -1,8 +1,10 @@
 import { observer } from "mobx-react-lite";
+import { useT } from "../../i18n";
 import notificationsStore from "../../store/notifications";
 import "./error-banner.scss";
 
 const ErrorBanner = observer(() => {
+    const { t } = useT();
     if (!notificationsStore.error) {
         return null;
     }
@@ -12,7 +14,7 @@ const ErrorBanner = observer(() => {
             <button
                 type="button"
                 className="error-banner__close"
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 onClick={notificationsStore.clear}
             >
                 ×

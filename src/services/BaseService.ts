@@ -1,12 +1,13 @@
 import { ApiError, IResponse, parseResponse } from "./http";
 import { ensureAccessToken, getAccessToken, refreshTokens, signOut } from "./tokens";
+import { getLang, t } from "../i18n";
 
 export type { IResponse } from "./http";
 
 class BaseService {
     /** Performs a request and parses the response; rejects with ApiError on failure. */
     protected request<T extends IResponse = IResponse>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-        return fetch(input, init).then((response) => parseResponse<T>(response));
+        return fetch(input, withLang(init)).then((response) => parseResponse<T>(response));
     }
 
     /** Same as `request`, but authenticated (see `fetchWithAuth`). */
@@ -27,7 +28,7 @@ class BaseService {
 
         if (response.status === 401) {
             if (getAccessToken() === token && !(await refreshTokens())) {
-                throw new ApiError("Требуется авторизация", 401);
+                throw new ApiError(t("common.unauthorized"), 401);
             }
             response = await fetch(input, this.withBearer(init, await ensureAccessToken()));
             if (response.status === 401) {
@@ -39,10 +40,18 @@ class BaseService {
     }
 
     private withBearer(init: RequestInit, token: string): RequestInit {
-        const headers = new Headers(init.headers);
+        const withLangInit = withLang(init);
+        const headers = new Headers(withLangInit.headers);
         headers.set("Authorization", `Bearer ${token}`);
-        return { ...init, headers };
+        return { ...withLangInit, headers };
     }
+}
+
+/** Adds `Accept-Language` (current UI language) so dictionaries come back localized. */
+export function withLang(init: RequestInit = {}): RequestInit {
+    const headers = new Headers(init.headers);
+    headers.set("Accept-Language", getLang());
+    return { ...init, headers };
 }
 
 export default BaseService;

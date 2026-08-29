@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
+import { t } from "../i18n";
 import NotificationsService, { Notification } from "../services/NotificationsService";
 import notificationsStore from "./notifications";
 import user from "./user";
@@ -58,7 +59,7 @@ class InboxStore {
             }
             console.error(error);
             runInAction(() => {
-                notificationsStore.showError(error, "Не удалось загрузить уведомления");
+                notificationsStore.showError(error, t("notifications.loadFailed"));
                 this.isLoading = false;
             });
         }
@@ -77,7 +78,7 @@ class InboxStore {
             });
         } catch (error) {
             console.error(error);
-            notificationsStore.showError(error, "Не удалось отметить уведомление прочитанным");
+            notificationsStore.showError(error, t("notifications.markReadFailed"));
         }
     }
 
@@ -95,7 +96,7 @@ class InboxStore {
             });
         } catch (error) {
             console.error(error);
-            notificationsStore.showError(error, "Не удалось отметить уведомления прочитанными");
+            notificationsStore.showError(error, t("notifications.markAllReadFailed"));
         }
     }
 

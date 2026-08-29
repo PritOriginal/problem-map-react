@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { t } from "../i18n";
 import MarksService, { MarkStatus } from '../services/MarksService';
 import notificationsStore from './notifications';
 
@@ -17,13 +18,13 @@ class MarkStatusesStore {
         try {
             const response = await MarksService.getMarkStatuses();
             runInAction(() => {
-                this.statuses = response.payload.mark_statuses;
+                this.statuses = response.payload;
                 this.isLoading = false;
             });
         } catch (error) {
             console.error(error);
             runInAction(() => {
-                this.error = notificationsStore.showError(error, 'Ошибка загрузки статусов меток');
+                this.error = notificationsStore.showError(error, t("errors.markStatuses"));
                 this.isLoading = false;
             });
         }

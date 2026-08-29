@@ -63,3 +63,34 @@ header {
         font-weight: bold;
     }
 }
+
+.header-lang {
+    display: flex;
+    border: 1px solid #777;
+    border-radius: 4px;
+    overflow: hidden;
+
+    &__item {
+        border: none;
+        background: none;
+        color: #bdbdbd;
+        font-size: 12px;
+        padding: 2px 6px;
+        cursor: pointer;
+
+        &.active {
+            background-color: white;
+            color: #202020;
+            font-weight: bold;
+        }
+    }
+}
+
+.offline-banner {
+    background-color: #fff3cd;
+    color: #664d03;
+    border-bottom: 1px solid #ffe69c;
+    font-size: 13px;
+    text-align: center;
+    padding: 4px 8px;
+}

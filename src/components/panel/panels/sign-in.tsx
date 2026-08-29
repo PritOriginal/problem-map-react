@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../../../i18n";
 import { Button } from "../../button/button";
 import { signIn } from "../../../services/session";
 import notificationsStore from "../../../store/notifications";
@@ -6,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import panelStore from "../../../store/panel";
 
 export default function SignIn() {
+    const { t } = useT();
     const panelHeaderRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (panelHeaderRef.current) {
@@ -24,7 +26,7 @@ export default function SignIn() {
             .then(() => navigate(-1))
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, "Ошибка авторизации");
+                notificationsStore.showError(error, t("auth.signInError"));
             });
     }
 
@@ -35,10 +37,10 @@ export default function SignIn() {
                 className="panel__header"
                 onClick={() => panelStore.toggle()}
             >
-                <p><b>Вход в аккаунт</b></p>
+                <p><b>{t("auth.signInTitle")}</b></p>
             </div>
             <div className="panel__content">
-                <p><b>Логин</b></p>
+                <p><b>{t("auth.login")}</b></p>
                 <input
                     id="sku_edit"
                     className="edit-multiline-text"
@@ -49,7 +51,7 @@ export default function SignIn() {
                         setLogin(e.target.value)
                     }}
                 />
-                <p><b>Пароль</b></p>
+                <p><b>{t("auth.password")}</b></p>
                 <input
                     id="sku_edit"
                     className="edit-multiline-text"
@@ -62,13 +64,13 @@ export default function SignIn() {
                 />
                 <div>
                     <Button style="white-2-black" onClick={onClick}>
-                        <p>Войти</p>
+                        <p>{t("nav.signIn")}</p>
                     </Button>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <p>Нет аккаунта?</p>
+                    <p>{t("auth.noAccount")}</p>
                     <Link to={"/signup"}>
-                        Зарегистрироваться
+                        {t("nav.signUp")}
                     </Link>
                 </div>
             </div>

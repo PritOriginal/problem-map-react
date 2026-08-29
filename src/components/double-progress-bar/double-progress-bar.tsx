@@ -1,7 +1,9 @@
 
 import "./double-progress-bar.scss"
+import { useT } from "../../i18n";
 
 const DoubleProgressBar = ({ question, negative, positive }: { question: string, negative: number, positive: number }) => {
+    const { t } = useT();
     let sum = negative + positive;
     if (sum < 3) {
         sum = 3
@@ -21,8 +23,8 @@ const DoubleProgressBar = ({ question, negative, positive }: { question: string,
                 </div>
             </div>
             <div className="double-progress-bar__signatures">
-                <p>Опровергли</p>
-                <p>Подтвердили</p>
+                <p>{t("mark.refutedVotes")}</p>
+                <p>{t("mark.confirmedVotes")}</p>
             </div>
         </div>
     );

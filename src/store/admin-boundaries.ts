@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
+import { t } from "../i18n";
 import MapService, { AdminBoundary, AdminBoundaryMarksCount, GetAdminBoundariesMarksCountRequest, GetAdminBoundariesRequest } from "../services/MapService";
 import notificationsStore from "./notifications";
 import marksStore from "./marks";
@@ -37,7 +38,7 @@ class AdminBoundariesStore {
         } catch (error) {
             console.error(error);
             runInAction(() => {
-                this.errorBoundaries = notificationsStore.showError(error, 'Ошибка загрузки административных границ');
+                this.errorBoundaries = notificationsStore.showError(error, t("errors.boundaries"));
                 this.isLoadingBoundaries = false;
             });
         }
@@ -58,7 +59,7 @@ class AdminBoundariesStore {
         } catch (error) {
             console.error(error);
             runInAction(() => {
-                this.errorMarkCount = notificationsStore.showError(error, 'Ошибка загрузки статистики по районам');
+                this.errorMarkCount = notificationsStore.showError(error, t("errors.boundaryStats"));
                 this.isLoadingMarksCount = false;
             });
         }

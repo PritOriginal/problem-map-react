@@ -2,6 +2,7 @@ import { jwtDecode } from "jwt-decode";
 import { ApiError, IResponse, parseResponse } from "./http";
 import user from "../store/user";
 import { getRoleFromToken } from "../utils/role";
+import { t } from "../i18n";
 
 export const ACCESS_TOKEN_KEY = "access_token";
 export const REFRESH_TOKEN_KEY = "refresh_token";
@@ -121,7 +122,7 @@ export async function ensureAccessToken(): Promise<string> {
         token = refreshed ? getAccessToken() : null;
     }
     if (!token) {
-        throw new ApiError("Требуется авторизация", 401);
+        throw new ApiError(t("common.unauthorized"), 401);
     }
     return token;
 }

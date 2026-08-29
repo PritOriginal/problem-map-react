@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
+import { t } from "../i18n";
 import MapService, { BBox, HeatmapFeature } from "../services/MapService";
 import { heatmapKey } from "../utils/heatmap";
 import marksStore from "./marks";
@@ -65,7 +66,7 @@ class HeatmapStore {
             runInAction(() => {
                 this.lastKey = "";
                 this.isLoading = false;
-                notificationsStore.showError(error, "Не удалось загрузить тепловую карту");
+                notificationsStore.showError(error, t("errors.heatmap"));
             });
         }
     }

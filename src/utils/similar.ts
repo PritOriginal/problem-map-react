@@ -1,5 +1,6 @@
 import type { Mark, SimilarMark } from "../services/MarksService";
 import { ApiError } from "../services/http";
+import { t } from "../i18n";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
@@ -45,7 +46,7 @@ export function formatDistance(meters: number): string {
         return "";
     }
     if (meters < 1000) {
-        return `${Math.round(meters)} м`;
+        return `${Math.round(meters)} ${t("common.meters")}`;
     }
-    return `${(meters / 1000).toFixed(1)} км`;
+    return `${(meters / 1000).toFixed(1)} ${t("common.kilometers")}`;
 }

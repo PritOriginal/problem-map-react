@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import { useT } from "../../../../i18n";
 import { Button } from "../../../button/button";
 import { observer } from "mobx-react-lite";
 import ChecksService, { AddCheckRequest } from "../../../../services/ChecksService";
@@ -11,8 +12,9 @@ import marksStore from "../../../../store/marks";
 import adminBoundariesStore from "../../../../store/admin-boundaries";
 import notificationsStore from "../../../../store/notifications";
 
-const AddCheck = observer(function AddProblem() {
+const AddCheck = observer(function AddCheck() {
     const navigate = useNavigateKeepSearch();
+    const { t } = useT();
 
     const mark = useContext(MarkContext)
 
@@ -44,7 +46,7 @@ const AddCheck = observer(function AddProblem() {
                 })
                 .catch((error) => {
                     console.error(error);
-                    notificationsStore.showError(error, "Не удалось отправить проверку");
+                    notificationsStore.showError(error, t("check.failed"));
                 })
         }
     }
@@ -57,18 +59,18 @@ const AddCheck = observer(function AddProblem() {
         <>
             {user.id === 0 ?
                 <UnauthorizedBlock
-                    text="Для того чтобы провести проверку, авторизуйтесь или создайте новый аккаунт"
+                    text={t("unauth.addCheck")}
                 />
                 :
                 <>
-                    <p style={{ fontSize: 18 }}><b>Провести проверку</b></p>
+                    <p style={{ fontSize: 18 }}><b>{t("check.title")}</b></p>
 
-                    <p><b>Фотографии</b></p>
+                    <p><b>{t("common.photos")}</b></p>
                     <div style={{ display: "flex", gap: "8px", width: "100%", overflow: "scroll" }}>
                         <SelectFiles onSelectedFiles={onSelectedFile} />
                     </div>
 
-                    <p><b>Комментарий</b></p>
+                    <p><b>{t("common.comment")}</b></p>
                     <textarea
                         className="edit-multiline-text"
                         name="comment"
@@ -82,14 +84,14 @@ const AddCheck = observer(function AddProblem() {
                             onClick={() => addCheck(false)}
                             disabled={!checkValidate()}
                         >
-                            <p>Опровергнуть</p>
+                            <p>{t("check.refute")}</p>
                         </Button>
                         <Button
                             style="green"
                             onClick={() => addCheck(true)}
                             disabled={!checkValidate()}
                         >
-                            <p>Подтвердить</p>
+                            <p>{t("check.confirm")}</p>
                         </Button>
                     </div>
                     <div>
@@ -98,7 +100,7 @@ const AddCheck = observer(function AddProblem() {
                             style="white-2-black"
                             onClick={handleOnClickCancle}
                         >
-                            <p>Отмена</p>
+                            <p>{t("common.cancel")}</p>
                         </Button>
                     </div>
                 </>

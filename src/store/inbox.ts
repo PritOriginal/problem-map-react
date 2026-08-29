@@ -9,10 +9,8 @@ export const UNREAD_POLL_MS = 60_000;
 /** User notifications (bell in the header, `/notifications` panel). */
 class InboxStore {
     items: Notification[] = [];
-    total: number = 0;
     unreadCount: number = 0;
     isLoading: boolean = false;
-    error: string | null = null;
 
     private pollTimer: number | null = null;
 
@@ -43,7 +41,6 @@ class InboxStore {
             return;
         }
         this.isLoading = true;
-        this.error = null;
         try {
             const response = await NotificationsService.getNotifications({ limit, offset });
             if (user.id === 0) {
@@ -51,7 +48,6 @@ class InboxStore {
             }
             runInAction(() => {
                 this.items = response.payload ?? [];
-                this.total = response.meta?.total ?? this.items.length;
                 this.isLoading = false;
             });
             // the list is paginated: the badge is authoritative from the counter endpoint
@@ -62,7 +58,7 @@ class InboxStore {
             }
             console.error(error);
             runInAction(() => {
-                this.error = notificationsStore.showError(error, "Не удалось загрузить уведомления");
+                notificationsStore.showError(error, "Не удалось загрузить уведомления");
                 this.isLoading = false;
             });
         }
@@ -123,10 +119,8 @@ class InboxStore {
 
     reset = () => {
         this.items = [];
-        this.total = 0;
         this.unreadCount = 0;
         this.isLoading = false;
-        this.error = null;
     }
 }
 

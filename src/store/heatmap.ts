@@ -35,13 +35,13 @@ class HeatmapStore {
     }
 
     /** Fetches the heatmap for the view unless the same request was just made. */
-    fetch = async (bbox: BBox, cellM: number, force: boolean = false) => {
+    fetch = async (bbox: BBox, cellM: number) => {
         if (!this.enabled) {
             return;
         }
         const { mark_type_ids, mark_status_ids } = marksStore.filters;
         const key = heatmapKey(bbox, cellM, mark_type_ids, mark_status_ids);
-        if (!force && key === this.lastKey) {
+        if (key === this.lastKey) {
             return;
         }
         this.lastKey = key;

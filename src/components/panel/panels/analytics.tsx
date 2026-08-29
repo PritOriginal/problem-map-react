@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { StatTile } from "../../stat-tile/stat-tile";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../../store/panel";
 import notificationsStore from "../../../store/notifications";
@@ -88,7 +89,11 @@ const Analytics = observer(function Analytics() {
         };
     }, [request, step]);
 
-    const boundaries = [...adminBoundariesStore.boundaries].sort((a, b) => a.admin_level - b.admin_level || a.name.localeCompare(b.name));
+    const rawBoundaries = adminBoundariesStore.boundaries;
+    const boundaries = useMemo(
+        () => [...rawBoundaries].sort((a, b) => a.admin_level - b.admin_level || a.name.localeCompare(b.name)),
+        [rawBoundaries],
+    );
 
     return (
         <>
@@ -133,7 +138,7 @@ const Analytics = observer(function Analytics() {
                 </div>
                 <hr />
                 <p style={{ fontSize: 18 }}><b>Показатели</b> {isLoading && <span style={{ fontSize: 12 }}>загрузка…</span>}</p>
-                {kpi ? <KpiTiles kpi={kpi} /> : !isLoading && <p style={{ fontSize: 14 }}>Нет данных</p>}
+                {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p style={{ fontSize: 14 }}>Нет данных</p>}
                 <hr />
                 <p style={{ fontSize: 18 }}><b>Динамика</b></p>
                 <LineChart points={series} />
@@ -142,39 +147,31 @@ const Analytics = observer(function Analytics() {
     );
 });
 
-const KpiTiles = observer(function KpiTiles({ kpi }: { kpi: Kpi }) {
+const StatTiles = observer(function StatTiles({ kpi }: { kpi: Kpi }) {
     const statusName = (id: string) => markStatusesStore.statuses.find((s) => String(s.mark_status_id) === id)?.name ?? `Статус ${id}`;
     const byStatus = Object.entries(kpi.by_status ?? {}).sort(([a], [b]) => Number(a) - Number(b));
     return (
         <>
-            <div className="kpi-grid">
-                <KpiTile value={kpi.total} label="Всего проблем" />
-                <KpiTile value={kpi.open_older_than_30d} label="Открыты дольше 30 дней" />
-                <KpiTile value={formatHours(kpi.avg_confirm_hours)} label="Среднее время подтверждения" />
-                <KpiTile value={formatHours(kpi.median_confirm_hours)} label="Медиана подтверждения" />
-                <KpiTile value={formatHours(kpi.avg_close_hours)} label="Среднее время решения" />
-                <KpiTile value={formatShare(kpi.refuted_share)} label="Доля опровергнутых" />
+            <div className="stat-grid">
+                <StatTile value={kpi.total} label="Всего проблем" />
+                <StatTile value={kpi.open_older_than_30d} label="Открыты дольше 30 дней" />
+                <StatTile value={formatHours(kpi.avg_confirm_hours)} label="Среднее время подтверждения" />
+                <StatTile value={formatHours(kpi.median_confirm_hours)} label="Медиана подтверждения" />
+                <StatTile value={formatHours(kpi.avg_close_hours)} label="Среднее время решения" />
+                <StatTile value={formatShare(kpi.refuted_share)} label="Доля опровергнутых" />
             </div>
             {byStatus.length > 0 &&
-                <div className="kpi-grid">
-                    {byStatus.map(([id, count]) => <KpiTile key={id} value={count} label={statusName(id)} />)}
+                <div className="stat-grid">
+                    {byStatus.map(([id, count]) => <StatTile key={id} value={count} label={statusName(id)} />)}
                 </div>
             }
         </>
     );
 });
 
-function KpiTile({ value, label }: { value: number | string; label: string }) {
-    return (
-        <div className="kpi-grid__item">
-            <b>{value}</b>
-            <span>{label}</span>
-        </div>
-    );
-}
 
 /** Plain-SVG multi-series line chart (no chart libraries). */
-export function LineChart({ points }: { points: TimeseriesPoint[] }) {
+export const LineChart = memo(function LineChart({ points }: { points: TimeseriesPoint[] }) {
     const layout = DEFAULT_CHART_LAYOUT;
     const { width, height, padding } = layout;
     const series: ChartSeries[] = SERIES_META.map((meta) => ({
@@ -230,6 +227,6 @@ export function LineChart({ points }: { points: TimeseriesPoint[] }) {
             </div>
         </div>
     );
-}
+});
 
 export default Analytics;

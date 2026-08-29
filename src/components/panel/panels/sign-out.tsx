@@ -9,6 +9,7 @@ import UsersService, { CurrentUser, UserStats } from "../../../services/UsersSer
 import MarksService, { Mark } from "../../../services/MarksService";
 import ChecksService, { Check } from "../../../services/ChecksService";
 import markStatusesStore from "../../../store/mark-statuses";
+import { StatTile } from "../../stat-tile/stat-tile";
 import markTypesStore from "../../../store/mark-types";
 import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../mark/mark";
 import { observer } from "mobx-react-lite";
@@ -158,13 +159,8 @@ function StatsBlock({ stats }: { stats: UserStats }) {
         { value: stats.checks_correct, label: "Верных проверок" },
     ];
     return (
-        <div className="stats-grid">
-            {items.map((item) => (
-                <div key={item.label} className="stats-grid__item">
-                    <b>{item.value}</b>
-                    <span>{item.label}</span>
-                </div>
-            ))}
+        <div className="stat-grid">
+            {items.map((item) => <StatTile key={item.label} value={item.value} label={item.label} />)}
         </div>
     );
 }

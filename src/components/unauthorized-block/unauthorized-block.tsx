@@ -9,8 +9,8 @@ const UnauthorizedBlock = ({ text }: { text: string }) => {
 
     return (
         <div className="unauthorized-block">
-            <p><b>{t("unauth.title")}</b></p>
-            <p>{text}</p>
+            <p className="unauthorized-block__title">{t("unauth.title")}</p>
+            <p className="unauthorized-block__text">{text}</p>
             <div className="unauthorized-block__buttons">
                 <Button
                     style="secondary"

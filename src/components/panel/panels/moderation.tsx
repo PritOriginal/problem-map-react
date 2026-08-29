@@ -90,7 +90,7 @@ const ModerationPanel = observer(function ModerationPanel() {
             </div>
             <div className="panel__content">
                 {!isModerator ?
-                    <p style={{ fontSize: 14 }}>{t("moderation.unavailable")}</p>
+                    <p className="empty-state">{t("moderation.unavailable")}</p>
                     :
                     <>
                         <div className="analytics-controls">

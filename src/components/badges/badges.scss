@@ -7,8 +7,9 @@
 
 .sla-badge {
     font-size: var(--fs-caption);
+    font-variant-numeric: tabular-nums;
     border-radius: var(--radius-1);
-    padding: 2px 6px;
+    padding: var(--space-1) var(--space-3);
     background-color: var(--info-bg);
     color: var(--info-ink);
     border: 1px solid var(--info-rule);
@@ -74,10 +75,22 @@
         border-bottom: 2px solid transparent;
         color: var(--ink-muted);
 
+        transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+
+        &:hover {
+            color: var(--ink);
+        }
+
         &.active {
             color: var(--ink);
-            font-weight: bold;
-            border-bottom-color: var(--ink);
+            font-weight: 600;
+            border-bottom-color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+            border-radius: var(--radius-1) var(--radius-1) 0 0;
         }
     }
 }
@@ -85,11 +98,14 @@
 .task-card {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 8px;
+    gap: var(--space-3);
+    padding: var(--space-6);
     background-color: var(--paper);
     border: 1px solid var(--rule);
+    border-radius: var(--radius-1);
 
+    // Overdue is stated on the edge, so a column of cards can be scanned down
+    // the left margin without reading any of them.
     &.overdue {
         border-left: 3px solid var(--danger-ink);
     }

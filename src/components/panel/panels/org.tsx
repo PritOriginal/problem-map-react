@@ -111,7 +111,7 @@ const OrgPanel = observer(function OrgPanel() {
                     :
                     <>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                            <p style={{ fontSize: 18 }}><b>{t("org.queue")}</b> {!isLoading && `(${marks.length})`}</p>
+                            <h2 className="section-title">{t("org.queue")}<span className="section-title__count">{!isLoading && `(${marks.length})`}</span></h2>
                             <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 13, cursor: "pointer" }}>
                                 <input type="checkbox" checked={onlyOverdue} onChange={(e) => setOnlyOverdue(e.target.checked)} />
                                 {t("org.onlyOverdue")}

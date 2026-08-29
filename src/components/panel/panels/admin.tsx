@@ -41,7 +41,7 @@ const AdminPanel = observer(function AdminPanel() {
             </div>
             <div className="panel__content">
                 {!isAdmin ?
-                    <p style={{ fontSize: 14 }}>{t("admin.unavailable")}</p>
+                    <p className="empty-state">{t("admin.unavailable")}</p>
                     :
                     <>
                         <div className="tabs" role="tablist">

@@ -61,7 +61,7 @@ const CommentsBlock = observer(function CommentsBlock() {
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>{t("comments.title")}</b> {!isLoading && `(${count})`}</p>
+            <h2 className="section-title">{t("comments.title")}<span className="section-title__count">{!isLoading && `(${count})`}</span></h2>
             {isLoading && comments.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
             {!isLoading && threads.length === 0 && <p style={{ fontSize: 14 }}>{t("comments.empty")}</p>}
             <div className="comments">

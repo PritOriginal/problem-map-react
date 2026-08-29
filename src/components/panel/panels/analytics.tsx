@@ -141,10 +141,10 @@ const Analytics = observer(function Analytics() {
                     </label>
                 </div>
                 <hr />
-                <p style={{ fontSize: 18 }}><b>{t("analytics.kpi")}</b> {isLoading && <span style={{ fontSize: 12 }}>{t("common.loading")}</span>}</p>
+                <h2 className="section-title">{t("analytics.kpi")}<span className="section-title__count">{isLoading && <span style={{ fontSize: 12 }}>{t("common.loading")}</span>}</span></h2>
                 {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p style={{ fontSize: 14 }}>{t("common.noData")}</p>}
                 <hr />
-                <p style={{ fontSize: 18 }}><b>{t("analytics.dynamics")}</b></p>
+                <h2 className="section-title">{t("analytics.dynamics")}</h2>
                 <LineChart points={series} />
             </div>
         </>

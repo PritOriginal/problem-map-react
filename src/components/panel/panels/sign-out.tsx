@@ -141,24 +141,24 @@ const Profile = observer(function Profile() {
                         {profile &&
                             <>
                                 <LevelBlock rating={profile.rating} level={profile.level} />
-                                <p style={{ fontSize: 18 }}><b>{t("profile.badges")}</b> ({profile.badges.length})</p>
+                                <h2 className="section-title">{t("profile.badges")}<span className="section-title__count">({profile.badges.length})</span></h2>
                                 <BadgesBlock badges={profile.badges} catalogue={catalogue} />
                                 <hr />
                             </>
                         }
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                            <p style={{ fontSize: 18 }}><b>{t("profile.stats")}</b></p>
+                            <h2 className="section-title">{t("profile.stats")}</h2>
                             <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
                         </div>
                         {stats ? <StatsBlock stats={stats} /> : !isLoading && <p style={{ fontSize: 14 }}>{t("profile.statsUnavailable")}</p>}
                         <hr />
-                        <p style={{ fontSize: 18 }}><b>{t("profile.myMarks")}</b> {isLoading ? "" : `(${marks.length})`}</p>
+                        <h2 className="section-title">{t("profile.myMarks")}<span className="section-title__count">{isLoading ? "" : `(${marks.length})`}</span></h2>
                         {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>{t("profile.noMarks")}</p>}
                         <div className="profile-list">
                             {marks.map((mark) => <MarkRow key={mark.mark_id} mark={mark} to={toKeepSearch(`/problem/${mark.mark_id}`)} />)}
                         </div>
                         <hr />
-                        <p style={{ fontSize: 18 }}><b>{t("profile.myChecks")}</b> {isLoading ? "" : `(${checks.length})`}</p>
+                        <h2 className="section-title">{t("profile.myChecks")}<span className="section-title__count">{isLoading ? "" : `(${checks.length})`}</span></h2>
                         {!isLoading && checks.length === 0 && <p style={{ fontSize: 14 }}>{t("profile.noChecks")}</p>}
                         <div className="profile-list">
                             {checks.map((check) => <CheckRow key={check.check_id} check={check} to={toKeepSearch(`/problem/${check.mark_id}`)} />)}

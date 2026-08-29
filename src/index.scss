@@ -459,3 +459,103 @@ a {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
+
+// Section heading. The display face earns its keep here: it names a region of a
+// dense panel, which is exactly where a reader needs a landmark.
+.section-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+
+  // The tally beside a heading is data, not part of the name.
+  &__count {
+    margin-left: var(--space-4);
+    font-family: var(--font-mono);
+    font-size: var(--fs-caption);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--ink-muted);
+  }
+}
+
+// Form controls were entirely unstyled browser defaults, so every panel with a
+// filter or a form fell out of the system. One rule brings all of them in.
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+select,
+textarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-1);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+
+  &::placeholder {
+    color: var(--ink-faint);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--rule-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-bg);
+  }
+
+  &:disabled {
+    background-color: var(--disabled-bg);
+    color: var(--ink-faint);
+    cursor: not-allowed;
+  }
+}
+
+textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+// The accent doubles as the checkbox tick, so the map filters read as one system.
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent-ink);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+input[type="color"] {
+  width: 44px;
+  height: 32px;
+  padding: 2px;
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+}
+
+label {
+  font-size: var(--fs-caption);
+  color: var(--ink-muted);
+}
+
+hr {
+  height: 1px;
+  border: 0;
+  background-color: var(--rule);
+}
+
+// An empty screen is an invitation to act, not a shrug. Kept quiet but present.
+.empty-state {
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}

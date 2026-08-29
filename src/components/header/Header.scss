@@ -15,6 +15,8 @@ header {
 .header-nav-link {
     display: inline-flex;
     align-items: center;
+    flex-shrink: 0;
+    white-space: nowrap;
     color: var(--on-chrome-muted);
 
     // The paint stripe under the section you are in: a survey mark on the ground
@@ -67,6 +69,30 @@ header {
 
     @include mobile {
         font-size: var(--fs-caption);
+        padding: 0 var(--space-4);
+        gap: var(--space-4);
+
+        // At 390px the nav ran past the edge and clipped the profile icon. The
+        // menu scrolls instead, and the user block is pinned so it never leaves.
+        &__menu {
+            gap: var(--space-6);
+            min-width: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+        }
+
+        &__user-info {
+            flex-shrink: 0;
+            gap: var(--space-4);
+
+            &__item {
+                gap: var(--space-4);
+            }
+        }
     }
 }
 .header-bell {

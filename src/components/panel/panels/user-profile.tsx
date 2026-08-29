@@ -83,11 +83,11 @@ const UserProfilePanel = observer(function UserProfilePanel() {
                     <>
                         <LevelBlock rating={profile.rating} level={profile.level} />
                         <hr />
-                        <p style={{ fontSize: 18 }}><b>{t("profile.badges")}</b> ({profile.badges.length})</p>
+                        <h2 className="section-title">{t("profile.badges")}<span className="section-title__count">({profile.badges.length})</span></h2>
                         <BadgesBlock badges={profile.badges} catalogue={catalogue} />
                         <hr />
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                            <p style={{ fontSize: 18 }}><b>{t("profile.stats")}</b></p>
+                            <h2 className="section-title">{t("profile.stats")}</h2>
                             <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
                         </div>
                         <ProfileStats stats={profile.stats} />

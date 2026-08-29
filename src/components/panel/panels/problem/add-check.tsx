@@ -77,7 +77,7 @@ const AddCheck = observer(function AddCheck() {
                 />
                 :
                 <>
-                    <p style={{ fontSize: 18 }}><b>{t("check.title")}</b></p>
+                    <h2 className="section-title">{t("check.title")}</h2>
 
                     <p><b>{t("common.photos")}</b></p>
                     <div style={{ display: "flex", gap: "8px", width: "100%", overflow: "scroll" }}>

@@ -115,12 +115,12 @@ const AboutProblem = observer(function AboutProblem() {
             {user.id !== 0 && user.id === mark.user_id && mark.mark_status_id === MarkStatusType.UnconfirmedStatus && <OwnerBlock onDone={reload} />}
             {mark.description !== "" &&
                 <>
-                    <p style={{ fontSize: 18 }}><b>{t("common.description")}</b></p>
+                    <h2 className="section-title">{t("common.description")}</h2>
                     <p style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{mark.description}</p>
                     <hr />
                 </>
             }
-            <p style={{ fontSize: 18 }}><b>{t("mark.history")}</b></p>
+            <h2 className="section-title">{t("mark.history")}</h2>
             <hr />
             <ol className="core">
                 {groups.map((group, index) => (
@@ -211,7 +211,7 @@ function ModerationBlock({ onDone }: { onDone: () => void }) {
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>{t("mark.moderation")}</b></p>
+            <h2 className="section-title">{t("mark.moderation")}</h2>
             <div style={{ display: "flex", gap: "8px" }}>
                 {(Object.keys(MODERATION_ACTIONS) as ModerationAction[]).map((action) => (
                     <Button key={action} style={MODERATION_ACTIONS[action].style} disabled={pending !== null} onClick={() => moderate(action)}>
@@ -360,7 +360,7 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>{t("mark.mine")}</b></p>
+            <h2 className="section-title">{t("mark.mine")}</h2>
             {editing ?
                 <>
                     <p><b>{t("common.category")}</b></p>

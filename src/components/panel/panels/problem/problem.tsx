@@ -26,9 +26,13 @@ const ProblemPanel = observer(() => {
 
     const [mark, setMark] = useState<Mark>(emptyMark);
     const [version, setVersion] = useState(0);
+    // The version bump re-runs the `getMarkById` effect below, so the panel's own
+    // copy of the mark is already re-read from the server. The store call is only
+    // about the pins on the map behind the panel -- an incremental sync moves the
+    // one changed mark there instead of re-downloading every mark in the city.
     const reload = useCallback(() => {
         setVersion((v) => v + 1);
-        marksStore.fetch();
+        marksStore.sync();
     }, []);
 
     useEffect(() => {

@@ -357,7 +357,7 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
         MarksService.deleteMark(mark.mark_id)
             .then(() => {
                 notificationsStore.clear();
-                marksStore.fetch();
+                marksStore.sync();
                 navigate("/");
             })
             .catch((error) => {

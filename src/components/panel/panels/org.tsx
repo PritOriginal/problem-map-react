@@ -146,7 +146,7 @@ const QueueCard = observer(function QueueCard({ mark, onDone }: { mark: Mark; on
         MarksService.startMark(mark.mark_id)
             .then(() => {
                 notificationsStore.clear();
-                marksStore.fetch();
+                marksStore.sync();
                 onDone();
             })
             .catch((error) => {
@@ -197,7 +197,7 @@ function ResolveForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => v
         MarksService.resolveMark(mark.mark_id, comment, photos)
             .then(() => {
                 notificationsStore.clear();
-                marksStore.fetch();
+                marksStore.sync();
                 onDone();
             })
             .catch((error) => {

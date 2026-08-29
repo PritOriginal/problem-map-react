@@ -14,11 +14,13 @@ import { MarkBadges } from "../../badges/badges";
 import { TypeIcon } from "../../mark/mark";
 import { REASON_LABELS } from "../../../utils/report";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
+import { mapWithLimit } from "../../../utils/concurrency";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import PanelHeader from "../panel-header";
 
 const QUEUE_LIMIT = 100;
+const MARKS_CONCURRENCY = 6;
 
 const STATUS_LABELS: Record<ReportStatus, TranslationKey> = {
     open: "moderation.status.open",
@@ -39,6 +41,7 @@ const ModerationPanel = observer(function ModerationPanel() {
     const [status, setStatus] = useState<ReportStatus>("open");
     const [targetType, setTargetType] = useState<ReportTargetType | "">("");
     const [reports, setReports] = useState<Report[]>([]);
+    const [marks, setMarks] = useState<Record<number, Mark>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [version, setVersion] = useState(0);
     const reload = useCallback(() => setVersion((v) => v + 1), []);
@@ -52,10 +55,37 @@ const ModerationPanel = observer(function ModerationPanel() {
         let ignore = false;
         setIsLoading(true);
         ReportsService.getQueue({ status, target_type: targetType || undefined, limit: QUEUE_LIMIT, offset: 0 })
-            .then((data) => {
-                if (!ignore) {
-                    setReports(data.payload);
+            .then(async (data) => {
+                if (ignore) {
+                    return;
                 }
+                const list = data.payload;
+                setReports(list);
+                setMarks(expandedMarks(list));
+                // A queue of QUEUE_LIMIT reports used to mean that many parallel
+                // `getMarkById` calls, one per card; the browser queued them six at a
+                // time and the panel froze. They are loaded here instead, throttled,
+                // and handed to the cards as a prop. Failures leave a single card
+                // without its mark block, exactly as the per-card load did.
+                const ids = missingMarkIds(list);
+                if (ids.length === 0) {
+                    return;
+                }
+                const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id));
+                if (ignore) {
+                    return;
+                }
+                setMarks((current) => {
+                    const byId = { ...current };
+                    loaded.forEach((res, index) => {
+                        if (res.status === "fulfilled") {
+                            byId[ids[index]] = res.value.payload.mark;
+                        } else {
+                            console.error(res.reason);
+                        }
+                    });
+                    return byId;
+                });
             })
             .catch((error) => {
                 if (ignore) {
@@ -101,7 +131,7 @@ const ModerationPanel = observer(function ModerationPanel() {
                         {isLoading && reports.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
                         {!isLoading && reports.length === 0 && <p className="empty-state">{t("moderation.empty")}</p>}
                         <div className="profile-list">
-                            {reports.map((report) => <ReportCard key={report.report_id} report={report} onDone={reload} />)}
+                            {reports.map((report) => <ReportCard key={report.report_id} report={report} mark={marks[report.target_id] ?? null} onDone={reload} />)}
                         </div>
                     </>
                 }
@@ -112,31 +142,41 @@ const ModerationPanel = observer(function ModerationPanel() {
 
 export default ModerationPanel;
 
-const ReportCard = observer(function ReportCard({ report, onDone }: { report: Report; onDone: () => void }) {
+/** Marks the queue already expanded inline -- no request needed for these. */
+function expandedMarks(reports: Report[]): Record<number, Mark> {
+    const byId: Record<number, Mark> = {};
+    for (const report of reports) {
+        if (report.target_type === "mark" && report.target) {
+            byId[report.target_id] = report.target;
+        }
+    }
+    return byId;
+}
+
+/** Ids of mark reports the queue did not expand, deduplicated. */
+function missingMarkIds(reports: Report[]): number[] {
+    const ids = new Set<number>();
+    for (const report of reports) {
+        if (report.target_type === "mark" && !report.target) {
+            ids.add(report.target_id);
+        }
+    }
+    return [...ids];
+}
+
+const ReportCard = observer(function ReportCard({ report, mark: loadedMark, onDone }: { report: Report; mark: Mark | null; onDone: () => void }) {
     const { t, lang } = useT();
     const navigate = useNavigateKeepSearch();
     const [pending, setPending] = useState<string | null>(null);
     const [merging, setMerging] = useState(false);
-    const [mark, setMark] = useState<Mark | null>(report.target ?? null);
+    // The mark is loaded by the panel (see the queue effect); the card keeps its own
+    // copy only so hiding and merging can show their result without waiting for the
+    // queue to come back, and follows the prop again whenever the panel reloads.
+    const [mark, setMark] = useState<Mark | null>(loadedMark);
 
-    // the queue may not expand the target: load the mark for mark reports
     useEffect(() => {
-        if (mark || report.target_type !== "mark") {
-            return;
-        }
-        let ignore = false;
-        MarksService.getMarkById(report.target_id)
-            .then((data) => {
-                if (!ignore) {
-                    setMark(data.payload.mark);
-                }
-            })
-            .catch((error) => console.error(error));
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [report.target_id, report.target_type]);
+        setMark(loadedMark);
+    }, [loadedMark]);
 
     const type = mark ? markTypesStore.types.find((x) => x.mark_type_id === mark.mark_type_id) : undefined;
 
@@ -166,7 +206,7 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
         }
         run("hidden", () => MarksService.setMarkHidden(mark.mark_id, hidden), "moderation.hiddenFailed", () => {
             setMark({ ...mark, hidden });
-            marksStore.fetch();
+            marksStore.sync();
         });
     };
 
@@ -210,7 +250,7 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
                         onDone={(target) => {
                             setMerging(false);
                             setMark({ ...mark, merged_into_id: target.mark_id, mark_status_id: MarkStatusType.DuplicateStatus });
-                            marksStore.fetch();
+                            marksStore.sync();
                             onDone();
                         }}
                     />

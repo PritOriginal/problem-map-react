@@ -74,7 +74,7 @@ const AddProblem = observer(function AddProblem() {
                     navigate("/queue");
                     return;
                 }
-                marksStore.fetch();
+                marksStore.sync();
                 navigate(`/problem/${res.result.payload.mark_id}`);
             })
             .catch((error) => {

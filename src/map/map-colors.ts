@@ -14,8 +14,17 @@ import { markOf } from "./mark-feature";
  * gives back, and the callers prepend it.
  */
 
-/** Hue in the red -> green sweep for a set of counts. */
+/**
+ * Hue in the red -> green sweep for a set of counts.
+ *
+ * `all` is a sum of the very counts being weighed, so it is zero exactly when there is
+ * nothing to weigh; the guard is here rather than at the call sites, which used to
+ * divide first and lean on a later branch to throw the resulting NaN away.
+ */
 function hueFor(closed: number, underReview: number, all: number): number {
+    if (all <= 0) {
+        return 0;
+    }
     return (closed + underReview / 2) / all * 120;
 }
 
@@ -37,13 +46,10 @@ export const getColorByFeatures = (features: readonly Feature[]) => {
     });
 
     const allNums = numsConfirmed + numsUnderReview + numsClosed;
-
-    const h = hueFor(numsClosed, numsUnderReview, allNums);
-    if (allNums > 0) {
-        return convert.hsv.hex(h, 100, 80);
-    } else {
+    if (allNums === 0) {
         return "d3d3d3";
     }
+    return convert.hsv.hex(hueFor(numsClosed, numsUnderReview, allNums), 100, 80);
 };
 
 /** Administrative boundary: green both when nothing is known and when nothing is open. */
@@ -53,10 +59,8 @@ export const getColorPolygon = (count: AdminBoundaryMarksCount | undefined) => {
     }
 
     const allCount = count.confirmed_count + count.under_review_count + count.closed_count;
-    if (allCount > 0) {
-        const h = hueFor(count.closed_count, count.under_review_count, allCount);
-        return convert.hsv.hex(h, 100, 80);
-    } else {
+    if (allCount === 0) {
         return "00cc00";
     }
+    return convert.hsv.hex(hueFor(count.closed_count, count.under_review_count, allCount), 100, 80);
 };

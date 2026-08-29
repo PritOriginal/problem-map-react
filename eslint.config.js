@@ -23,6 +23,10 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // The 18 suppressions this rule used to carry are down to one (inside
+      // useAsyncData, where the rule cannot read through a spread dependency
+      // array). Erroring keeps new ones from creeping back in.
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
 )

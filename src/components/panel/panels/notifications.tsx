@@ -100,21 +100,14 @@ const NotificationRow = observer(function NotificationRow({ item }: { item: Noti
         );
     }
     return (
-        <div
+        <button
+            type="button"
             className={`list-row${unread ? " list-row--unread" : ""}`}
-            role="button"
-            tabIndex={0}
             aria-label={unread ? t("notifications.markRead") : undefined}
             onClick={onOpen}
-            onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onOpen();
-                }
-            }}
         >
             {content}
-        </div>
+        </button>
     );
 });
 

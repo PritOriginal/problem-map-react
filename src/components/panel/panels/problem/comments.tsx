@@ -7,6 +7,7 @@ import user from "../../../../store/user";
 import offlineQueueStore from "../../../../store/offline-queue";
 import { MarkContext } from "./mark-context";
 import { Button } from "../../../button/button";
+import { useConfirm } from "../../../confirm/use-confirm";
 import ReportButton from "../../../report/report-button";
 import { useNow } from "../../../../utils/hooks";
 import { useAsyncData } from "../../../../utils/use-async-data";
@@ -75,6 +76,7 @@ const CommentItem = observer(function CommentItem({ comment, onChanged, canReply
     const [replying, setReplying] = useState(false);
     const [body, setBody] = useState(comment.body);
     const [pending, setPending] = useState<"save" | "delete" | null>(null);
+    const confirm = useConfirm();
 
     const editable = canEditComment(comment, now);
     const deletable = !comment.deleted && (comment.is_mine || user.isModerator);
@@ -100,8 +102,8 @@ const CommentItem = observer(function CommentItem({ comment, onChanged, canReply
             .finally(() => setPending(null));
     };
 
-    const remove = () => {
-        if (!window.confirm(t("comments.deleteQuestion"))) {
+    const remove = async () => {
+        if (!await confirm({ question: t("comments.deleteQuestion"), danger: true })) {
             return;
         }
         setPending("delete");

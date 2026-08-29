@@ -588,6 +588,15 @@ hr {
 }
 
 .list-row {
+    // Rendered as a real <button> and as an <a> as well as a plain <div>, so this rule
+    // also has to undo what the UA gives those: their own font, their inline box and, in
+    // WebKit, the native appearance. The colours below are the ones it paints with.
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+
     display: flex;
     gap: var(--space-4);
     width: 100%;
@@ -686,8 +695,7 @@ hr {
 }
 
 a.list-row:hover,
-button.list-row:hover,
-.list-row[role="button"]:hover {
+button.list-row:hover {
     background-color: var(--surface);
     cursor: pointer;
 }

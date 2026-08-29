@@ -8,6 +8,7 @@ import markTypesStore from "../../../../../store/mark-types";
 import marksStore from "../../../../../store/marks";
 import notificationsStore from "../../../../../store/notifications";
 import { Button } from "../../../../button/button";
+import { useConfirm } from "../../../../confirm/use-confirm";
 import { MarkContext } from "../mark-context";
 
 /** Owner-only actions for an unconfirmed mark: edit description/type, delete. */
@@ -15,6 +16,7 @@ export const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () 
     const mark = useContext(MarkContext);
     const navigate = useNavigateKeepSearch();
     const { t } = useT();
+    const confirm = useConfirm();
     const [editing, setEditing] = useState(false);
     const [description, setDescription] = useState(mark.description);
     const [typeId, setTypeId] = useState(mark.mark_type_id);
@@ -52,8 +54,8 @@ export const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () 
             .finally(() => setPending(null));
     };
 
-    const remove = () => {
-        if (!window.confirm(t("mark.deleteQuestion", { id: mark.mark_id }))) {
+    const remove = async () => {
+        if (!await confirm({ question: t("mark.deleteQuestion", { id: mark.mark_id }), danger: true })) {
             return;
         }
         setPending("delete");

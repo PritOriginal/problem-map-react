@@ -62,6 +62,10 @@ export const en: Partial<Dictionary> = {
     "common.meters": "m",
     "common.kilometers": "km",
 
+    // confirmation dialog
+    "confirm.ok": "Confirm",
+    "confirm.cancel": "Cancel",
+
     "unauth.title": "You are not signed in",
     "unauth.addMark": "Sign in or create an account to report a problem",
     "unauth.addCheck": "Sign in or create an account to verify a problem",

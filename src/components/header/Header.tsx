@@ -1,10 +1,10 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import "./Header.scss"
 import user from "../../store/user";
 import inboxStore from "../../store/inbox";
 import offlineQueueStore from "../../store/offline-queue";
 import { observer } from "mobx-react-lite";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import ProfileIcon from "../../assets/profile.svg?react"
 import MapIcon from "../../assets/map.svg?react"
@@ -74,62 +74,137 @@ function AutoThemeIcon() {
     );
 }
 
+/** The burger. Only ever rendered on the narrow layout. */
+function MenuIcon() {
+    return (
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+            <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+    );
+}
+
 const Header = observer(function Header() {
     const { isMobile } = useDeviceDetect();
     const toKeepSearch = useToKeepSearch();
     const { t } = useT();
+    const location = useLocation();
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    // The sections a role can reach run from two to six. That range is exactly why
+    // the narrow layout folds them into a list instead of trying to fit them in a
+    // row: a header that holds four names does not hold six.
+    const sections = [
+        { to: "/tasks", label: t("nav.tasks"), show: true },
+        { to: "/org", label: t("nav.org"), show: user.isService },
+        { to: "/moderation", label: t("nav.moderation"), show: user.isModerator },
+        { to: "/admin", label: t("nav.admin"), show: user.role === "admin" && user.id !== 0 },
+        { to: "/leaderboard", label: t("nav.leaderboard"), show: true },
+        { to: "/analytics", label: t("nav.analytics"), show: true },
+    ].filter((section) => section.show);
+
+    // Navigating closes the menu; so does growing past the breakpoint, or the menu
+    // would still be open, invisible, behind a header that no longer has a burger.
+    useEffect(() => setMenuOpen(false), [location]);
+    useEffect(() => {
+        if (!isMobile) {
+            setMenuOpen(false);
+        }
+    }, [isMobile]);
+
+    useEffect(() => {
+        if (!menuOpen) {
+            return;
+        }
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setMenuOpen(false);
+            }
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [menuOpen]);
+
+    const settings = (
+        <>
+            <ThemeSwitcher />
+            <LangSwitcher />
+        </>
+    );
 
     return (
         <header className="app-header">
-            <div className="header-container">
-                <div className="header-container__menu">
-                    <Link to={toKeepSearch("/")} aria-label={t("nav.map")} style={{ display: "flex" }}>
-                        <MapIcon style={{ fill: "var(--on-chrome)", width: "32px" }} />
-                    </Link>
-                    <NavItem to={toKeepSearch("/tasks")} label={t("nav.tasks")} />
-                    {user.isService && <NavItem to={toKeepSearch("/org")} label={t("nav.org")} />}
-                    {user.isModerator && <NavItem to={toKeepSearch("/moderation")} label={t("nav.moderation")} />}
-                    {user.role === "admin" && user.id !== 0 && <NavItem to={toKeepSearch("/admin")} label={t("nav.admin")} />}
-                    <NavItem to={toKeepSearch("/leaderboard")} label={t("nav.leaderboard")} />
-                    <NavItem to={toKeepSearch("/analytics")} label={t("nav.analytics")} />
-                </div>
-                <div className="header-container__user-info">
-                    <ThemeSwitcher />
-                    <LangSwitcher />
+            <div className="app-header__bar">
+                {isMobile &&
+                    <button
+                        type="button"
+                        className="app-header__burger"
+                        aria-expanded={menuOpen}
+                        aria-controls="app-menu"
+                        aria-label={t("nav.menu")}
+                        onClick={() => setMenuOpen(!menuOpen)}
+                    >
+                        <MenuIcon />
+                    </button>
+                }
+
+                {/* The product had no name anywhere in the interface. This is also the
+                    one place it can say which city it serves. */}
+                <Link className="app-mark" to={toKeepSearch("/")} aria-label={t("nav.map")}>
+                    <MapIcon className="app-mark__pin" />
+                    <span className="app-mark__stack">
+                        <b>{t("app.name")}</b>
+                        <em>{t("app.city")}</em>
+                    </span>
+                </Link>
+
+                {!isMobile &&
+                    <nav className="app-nav">
+                        {sections.map((section) => (
+                            <NavItem key={section.to} to={toKeepSearch(section.to)} label={section.label} />
+                        ))}
+                    </nav>
+                }
+
+                <div className="app-header__right">
+                    {!isMobile && settings}
+                    <span className="app-header__sep" aria-hidden="true" />
                     {user.id !== 0 ?
                         <>
                             <QueueBadge />
                             <NotificationsBell />
-                            <Link className="header-container__user-info__item" to={toKeepSearch("/profile")}>
-                                <p>{user.username}</p>
-                                <ProfileIcon style={{ fill: "var(--on-chrome)", stroke: "var(--on-chrome)", height: "32px" }} />
+                            <Link className="app-account" to={toKeepSearch("/profile")}>
+                                <span className="app-account__avatar"><ProfileIcon /></span>
+                                {!isMobile && <b>{user.username}</b>}
                             </Link>
                         </>
                         :
                         <>
-                            {isMobile ?
-                                <Link className="header-container__user-info__item" to={"/signin"}>
-                                    <p>{t("nav.signIn")}</p>
-                                    <ProfileIcon style={{ fill: "var(--on-chrome)", stroke: "var(--on-chrome)", height: "32px" }} />
-                                </Link>
-                                :
-                                <>
-                                    <Link className="header-container__user-info__item" to={"/signin"}>
-                                        <p>{t("nav.signIn")}</p>
-                                    </Link>
-                                    <p>|</p>
-                                    <Link to={"/signup"}>
-                                        <p>{t("nav.signUp")}</p>
-                                    </Link>
-                                    <Link className="header-container__user-info__item" to={"/signin"}>
-                                        <ProfileIcon style={{ fill: "var(--on-chrome)", stroke: "var(--on-chrome)", height: "32px" }} />
-                                    </Link>
-                                </>
-                            }
+                            {/* One quiet link and one filled button, not two links of equal
+                                weight separated by a literal "|" character -- and no third
+                                control (the profile icon) pointing at the same place. */}
+                            <Link className="app-header__signin" to={"/signin"}>{t("nav.signIn")}</Link>
+                            <Link className="app-header__cta" to={"/signup"}>
+                                {isMobile ? t("nav.createAccountShort") : t("nav.createAccount")}
+                            </Link>
                         </>
                     }
                 </div>
             </div>
+
+            {isMobile && menuOpen &&
+                <nav className="app-menu" id="app-menu">
+                    {sections.map((section) => (
+                        <NavLink
+                            key={section.to}
+                            to={toKeepSearch(section.to)}
+                            className={({ isActive }) => `app-menu__item${isActive ? " active" : ""}`}
+                        >
+                            {section.label}
+                        </NavLink>
+                    ))}
+                    <div className="app-menu__foot">{settings}</div>
+                </nav>
+            }
         </header>
     );
 });
@@ -190,7 +265,7 @@ const NotificationsBell = observer(function NotificationsBell() {
 
     return (
         <Link className="header-bell" to={toKeepSearch("/notifications")} aria-label={label} title={label}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm7-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a2.5 2.5 0 0 0-5 0v.68C6.63 5.36 5 7.92 5 11v5l-2 2v1h18v-1l-2-2z" />
             </svg>
             {count > 0 && <span className="header-bell__badge">{count > 99 ? "99+" : count}</span>}

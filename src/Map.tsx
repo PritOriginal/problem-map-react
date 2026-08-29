@@ -54,6 +54,7 @@ import { useUrlFilters } from "./map/hooks/use-url-filters";
 import { useMapZoomSize } from "./map/hooks/use-map-zoom-size";
 import { useHeatmapView } from "./map/hooks/use-heatmap-view";
 import { type FlyTo, useUserLocation } from "./map/hooks/use-user-location";
+import { useAsyncData } from "./utils/use-async-data";
 
 /**
  * The two basemap style sheets are 250 kB of JSON between them and exactly one of
@@ -66,28 +67,22 @@ import { type FlyTo, useUserLocation } from "./map/hooks/use-user-location";
  * the map does -- the Yandex SDK itself is a network fetch made after this one.
  */
 function useMapCustomization(resolvedTheme: ResolvedTheme): VectorCustomization | undefined {
-    const [customization, setCustomization] = useState<VectorCustomization>();
+    // `silent`: a basemap in the SDK's default colours is a far better outcome than a
+    // banner, so a failed style fetch is logged and left at that. The hook keeps the
+    // previous style while the next one is in flight, so switching theme does not
+    // flash an unstyled map.
+    const { data } = useAsyncData<VectorCustomization>(
+        async () => {
+            const module = resolvedTheme === "dark"
+                ? await import("./customization-dark.json")
+                : await import("./customization.json");
+            return module.default as VectorCustomization;
+        },
+        [resolvedTheme],
+        { silent: true },
+    );
 
-    useEffect(() => {
-        let ignore = false;
-        const loading = resolvedTheme === "dark"
-            ? import("./customization-dark.json")
-            : import("./customization.json");
-        loading
-            .then((module) => {
-                if (!ignore) {
-                    setCustomization(module.default as VectorCustomization);
-                }
-            })
-            // A basemap in the SDK's default colours is a far better outcome than a
-            // crash, so a failed style fetch is logged and left at that.
-            .catch((error) => console.error(error));
-        return () => {
-            ignore = true;
-        };
-    }, [resolvedTheme]);
-
-    return customization;
+    return data;
 }
 
 const Map = observer(() => {

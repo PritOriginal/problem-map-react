@@ -1,0 +1,156 @@
+// The report form.
+//
+// Its worst fault was silence: a photo is required to submit, but nothing said
+// so, and the button stayed enabled and simply did nothing when pressed. Here
+// every field states whether it is required, and the button says what is
+// missing instead of failing quietly.
+
+.mark-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    // A real <label> now, so clicking the word puts the cursor in the field and a
+    // screen reader ties the two together. It used to be <p><b>…</b></p>.
+    &__label {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-4);
+        font-size: var(--fs-micro);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-faint);
+    }
+
+    &__required,
+    &__optional {
+        font-style: normal;
+        font-size: var(--fs-micro);
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: none;
+    }
+
+    &__required {
+        color: var(--accent-ink);
+    }
+
+    &__optional {
+        font-weight: 400;
+        color: var(--ink-faint);
+    }
+
+    &__note {
+        font-size: var(--fs-caption);
+        line-height: 1.4;
+        color: var(--ink-muted);
+    }
+
+    // Says what is still missing rather than leaving the reader to guess why the
+    // button does nothing. Hi-vis, because it is a "you must notice" and not a
+    // "something broke".
+    &__hint {
+        padding: var(--space-4) var(--space-5);
+        font-size: var(--fs-caption);
+        line-height: 1.4;
+        color: var(--warn-ink);
+        background-color: var(--warn-bg);
+        border-radius: var(--radius-2);
+    }
+
+    // The one action on the screen, so a primary button. It was set as the
+    // secondary style: white with a hairline border.
+    &__submit {
+        width: 100%;
+        padding: 11px;
+        font-family: var(--font-body);
+        font-size: var(--fs-base);
+        font-weight: 600;
+        color: var(--paper);
+        background-color: var(--accent-ink);
+        border: 0;
+        border-radius: var(--radius-2);
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+            background-color: var(--accent);
+        }
+
+        &:disabled {
+            background-color: var(--disabled-bg);
+            color: var(--ink-faint);
+            cursor: not-allowed;
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+    }
+}
+
+// The category, as a list rather than a dropdown. There are five of them, they
+// carry an icon and a colour, and a list shows all five at once instead of
+// hiding them behind a click. It also removes react-select from this screen,
+// which paints its own colours inline and stayed white on the dark theme.
+.category-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        width: 100%;
+        padding: 9px var(--space-5);
+
+        text-align: left;
+        font-family: var(--font-body);
+        font-size: var(--fs-small);
+        line-height: 1.3;
+        color: var(--ink-muted);
+
+        background-color: var(--paper);
+        border: 0;
+        cursor: pointer;
+
+        & + & {
+            border-top: 1px solid var(--rule-soft);
+        }
+
+        &[aria-pressed="true"] {
+            color: var(--ink);
+            font-weight: 500;
+            background-color: var(--accent-bg);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+            position: relative;
+            z-index: 1;
+        }
+    }
+
+    // The same disc the category wears as a marker on the map.
+    &__glyph {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        width: 22px;
+        height: 22px;
+        border-radius: var(--radius-round);
+        background-color: var(--neutral-bg);
+    }
+}

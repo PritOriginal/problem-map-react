@@ -5,8 +5,8 @@
     // width: 16px;
     // height: 16px;
 
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    border-radius: 50%;
+    border: 2px solid var(--marker-ring);
+    border-radius: var(--radius-round);
 
     transform: translate(-50%, -50%);
 
@@ -28,9 +28,9 @@
     &__number-checks-box {
         position: absolute;
 
-        border-radius: 50%;
+        border-radius: var(--radius-round);
 
-        background-color: rgba(255, 255, 255, 0.3);
+        background-color: var(--marker-veil);
         padding: 2px 8px;
 
         left: calc(100% + 6px);
@@ -40,11 +40,11 @@
     }
 
     &.selected {
-        box-shadow: 0px 0px 0px 8px rgba(35, 174, 255, 0.3);
+        box-shadow: 0px 0px 0px 8px var(--selected-ring);
     }
 }
 .type-glyph {
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 16px;
   min-width: 16px;
   text-align: center;
@@ -57,6 +57,6 @@
 
 /* a task on this mark is assigned to the current user */
 .mark.assigned {
-  outline: 3px dashed #1e6fff;
+  outline: 3px dashed var(--assigned);
   outline-offset: 2px;
 }

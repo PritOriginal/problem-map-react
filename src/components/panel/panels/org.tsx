@@ -17,6 +17,7 @@ import SelectFiles from "../../SelectFiles";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { useT } from "../../../i18n";
 import "../../badges/badges.scss";
+import PanelHeader from "../panel-header";
 
 const ORG_QUEUE_LIMIT = 100;
 
@@ -101,24 +102,21 @@ const OrgPanel = observer(function OrgPanel() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{org?.name ?? t("org.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{org?.description || t("org.title")}</p>
-            </div>
+            <PanelHeader openOnMount title={org?.name ?? t("org.title")} subtitle={org?.description || t("org.title")} />
             <div className="panel__content">
                 {!isService ?
                     <UnauthorizedBlock text={t("unauth.org")} />
                     :
                     <>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                            <p style={{ fontSize: 18 }}><b>{t("org.queue")}</b> {!isLoading && `(${marks.length})`}</p>
+                            <h2 className="section-title">{t("org.queue")}<span className="section-title__count">{!isLoading && `(${marks.length})`}</span></h2>
                             <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 13, cursor: "pointer" }}>
                                 <input type="checkbox" checked={onlyOverdue} onChange={(e) => setOnlyOverdue(e.target.checked)} />
                                 {t("org.onlyOverdue")}
                             </label>
                         </div>
-                        {isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                        {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>{t("org.empty")}</p>}
+                        {isLoading && marks.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
+                        {!isLoading && marks.length === 0 && <p className="empty-state">{t("org.empty")}</p>}
                         <div className="profile-list">
                             {marks.map((mark) => <QueueCard key={mark.mark_id} mark={mark} onDone={reload} />)}
                         </div>
@@ -172,14 +170,14 @@ const QueueCard = observer(function QueueCard({ mark, onDone }: { mark: Mark; on
                 <ResolveForm mark={mark} onCancel={() => setReporting(false)} onDone={() => { setReporting(false); onDone(); }} />
                 :
                 <div className="task-card__actions">
-                    <Button style="white-2-black" isMini onClick={open}>{t("tasks.showOnMap")}</Button>
+                    <Button style="secondary" isMini onClick={open}>{t("tasks.showOnMap")}</Button>
                     {mark.mark_status_id === MarkStatusType.ConfirmedStatus &&
-                        <Button style="black-2-white" isMini disabled={pending} onClick={start}>
+                        <Button style="primary" isMini disabled={pending} onClick={start}>
                             {t(pending ? "org.starting" : "org.start")}
                         </Button>
                     }
                     {mark.mark_status_id === MarkStatusType.InWorkStatus &&
-                        <Button style="green" isMini onClick={() => setReporting(true)}>{t("org.resolve")}</Button>
+                        <Button style="positive" isMini onClick={() => setReporting(true)}>{t("org.resolve")}</Button>
                     }
                 </div>
             }
@@ -213,9 +211,7 @@ function ResolveForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => v
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <p><b>{t("org.resolveTitle", { id: mark.mark_id })}</b></p>
             <p style={{ fontSize: 13 }}>{t("common.photos")}</p>
-            <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-                <SelectFiles onSelectedFiles={setPhotos} />
-            </div>
+            <SelectFiles files={photos} onChange={setPhotos} />
             <p style={{ fontSize: 13 }}>{t("common.comment")}</p>
             <textarea
                 className="edit-multiline-text"
@@ -225,10 +221,10 @@ function ResolveForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => v
                 onChange={(e) => setComment(e.target.value)}
             ></textarea>
             <div className="task-card__actions">
-                <Button style="green" isMini disabled={pending || photos.length === 0} onClick={send}>
+                <Button style="positive" isMini disabled={pending || photos.length === 0} onClick={send}>
                     {t(pending ? "org.sending" : "org.send")}
                 </Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
             </div>
         </div>
     );

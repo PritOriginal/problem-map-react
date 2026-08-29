@@ -2,7 +2,8 @@ import { observer } from "mobx-react-lite";
 import { Mark } from "../../services/MarksService";
 import markStatusesStore from "../../store/mark-statuses";
 import organizationsStore from "../../store/organizations";
-import { COLOR_MARK_STATUSES } from "../mark/mark";
+import { INK, statusColors } from "../../styles/tokens";
+import { useTheme } from "../../theme";
 import { deadlineState, formatSla } from "../../utils/deadline";
 import { useNow } from "../../utils/hooks";
 import { useT } from "../../i18n";
@@ -13,9 +14,10 @@ import "./badges.scss";
 /** Outlined status chip colored by the mark status. */
 export const StatusBadge = observer(function StatusBadge({ statusId }: { statusId: number }) {
     const { t } = useT();
+    const { resolved } = useTheme();
     const status = markStatusesStore.statuses.find((s) => s.mark_status_id === statusId);
     return (
-        <span className="profile-list__status" style={{ borderColor: COLOR_MARK_STATUSES[statusId] ?? "#000" }}>
+        <span className="profile-list__status" style={{ borderColor: statusColors(resolved)[statusId] ?? INK }}>
             {status?.name ?? t("common.statusN", { id: statusId })}
         </span>
     );

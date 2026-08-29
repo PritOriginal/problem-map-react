@@ -1,7 +1,6 @@
-import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { LngLat } from "@yandex/ymaps3-types";
-import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
@@ -19,6 +18,7 @@ import { useNow } from "../../../utils/hooks";
 import { mapWithLimit } from "../../../utils/concurrency";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
+import PanelHeader from "../panel-header";
 
 export const TASKS_LIMIT = 100;
 /** How many `GET /marks/{id}` requests run at once while filling the task cards. */
@@ -35,13 +35,6 @@ const TABS: { key: TabKey; label: TranslationKey; statuses: number[] }[] = [
 /** `/tasks`: the user's tasks by status, each with its mark (backend integration/wave-4). */
 const TasksPanel = observer(function TasksPanel() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
 
     const userId = user.id;
     const [tab, setTab] = useState<TabKey>("current");
@@ -118,10 +111,7 @@ const TasksPanel = observer(function TasksPanel() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("tasks.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("tasks.subtitle")}</p>
-            </div>
+            <PanelHeader openOnMount title={t("tasks.title")} subtitle={t("tasks.subtitle")} />
             <div className="panel__content">
                 {userId === 0 ?
                     <UnauthorizedBlock text={t("unauth.tasks")} />
@@ -145,8 +135,8 @@ const TasksPanel = observer(function TasksPanel() {
                             ))}
                         </div>
                         <div id="tasks-tabpanel" role="tabpanel" aria-labelledby={`tasks-tab-${tab}`}>
-                            {isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                            {!isLoading && tasks.length === 0 && <p style={{ fontSize: 14 }}>{t("tasks.empty")}</p>}
+                            {isLoading && tasks.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
+                            {!isLoading && tasks.length === 0 && <p className="empty-state">{t("tasks.empty")}</p>}
                             <div className="profile-list">
                                 {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks[task.mark_id]} />)}
                             </div>
@@ -183,7 +173,7 @@ const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?:
                     {mark && <TypeIcon typeId={mark.mark_type_id} type={type} color="#000" />}
                     <p style={{ fontSize: 14 }}><b>{t("common.problemN", { id: task.mark_id })}</b> {type?.name ?? ""}</p>
                 </div>
-                <span className="profile-list__status" style={{ borderColor: overdue ? "#a40000" : isDone ? "#00a000" : "#555" }}>
+                <span className="profile-list__status" style={{ borderColor: overdue ? "var(--danger-ink)" : isDone ? "var(--success-ink)" : "var(--ink-muted)" }}>
                     {taskStatusesStore.nameOf(task.status_id)}
                 </span>
             </div>
@@ -201,9 +191,9 @@ const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?:
                 }
             </div>
             <div className="task-card__actions">
-                <Button style="white-2-black" isMini onClick={showOnMap}>{t("tasks.showOnMap")}</Button>
+                <Button style="secondary" isMini onClick={showOnMap}>{t("tasks.showOnMap")}</Button>
                 {!isDone &&
-                    <Button style="black-2-white" isMini onClick={() => navigate(`/problem/${task.mark_id}/add-check`)}>
+                    <Button style="primary" isMini onClick={() => navigate(`/problem/${task.mark_id}/add-check`)}>
                         {t("tasks.check")}
                     </Button>
                 }

@@ -3,8 +3,8 @@
     flex-direction: column;
     gap: 4px;
     padding: 8px;
-    background-color: white;
-    border: 1px solid rgb(201, 201, 201);
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
 
     &__row {
         display: flex;
@@ -16,14 +16,14 @@
 
     &__bar {
         height: 8px;
-        background-color: #e2e2e2;
-        border-radius: 4px;
+        background-color: var(--disabled-bg);
+        border-radius: var(--radius-1);
         overflow: hidden;
     }
 
     &__fill {
         height: 100%;
-        background-color: #00a000;
+        background-color: var(--success-ink);
         transition: width 0.3s ease-in-out;
     }
 }
@@ -40,8 +40,8 @@
     align-items: center;
     gap: 4px;
     padding: 8px 4px;
-    background-color: white;
-    border: 1px solid rgb(201, 201, 201);
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
     cursor: help;
     text-align: center;
 
@@ -51,7 +51,7 @@
     }
 
     &:focus-visible {
-        outline: 2px solid black;
+        outline: 2px solid var(--ink);
     }
 
     &__icon {

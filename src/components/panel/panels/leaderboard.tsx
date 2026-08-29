@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TranslationKey, useT } from "../../../i18n";
 import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
-import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import adminBoundariesStore from "../../../store/admin-boundaries";
 import UsersService, { LEADERBOARD_PERIODS, LeaderboardEntry, LeaderboardPeriod } from "../../../services/UsersService";
 import { useToKeepSearch } from "../../../utils/navigation";
+import PanelHeader from "../panel-header";
 
 export const LEADERBOARD_LIMIT = 50;
 
@@ -21,13 +21,6 @@ const PERIOD_LABELS: Record<LeaderboardPeriod, TranslationKey> = {
 const Leaderboard = observer(function Leaderboard() {
     const { t } = useT();
     const toKeepSearch = useToKeepSearch();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
 
     useEffect(() => {
         if (adminBoundariesStore.boundaries.length === 0 && !adminBoundariesStore.isLoadingBoundaries) {
@@ -75,10 +68,7 @@ const Leaderboard = observer(function Leaderboard() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("leaderboard.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("leaderboard.top", { n: LEADERBOARD_LIMIT })}</p>
-            </div>
+            <PanelHeader openOnMount title={t("leaderboard.title")} subtitle={t("leaderboard.top", { n: LEADERBOARD_LIMIT })} />
             <div className="panel__content">
                 <div className="analytics-controls">
                     <label>
@@ -95,29 +85,30 @@ const Leaderboard = observer(function Leaderboard() {
                         </select>
                     </label>
                 </div>
-                {isLoading && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                {!isLoading && entries.length === 0 && <p style={{ fontSize: 14 }}>{t("leaderboard.empty")}</p>}
-                <table className="leaderboard">
-                    <tbody>
+                {isLoading && <p className="empty-state">{t("common.loading")}</p>}
+                {!isLoading && entries.length === 0 && <p className="empty-state">{t("leaderboard.empty")}</p>}
+                {entries.length > 0 &&
+                    <ol className="leaderboard">
                         {entries.map((entry, index) => (
-                            <tr key={entry.user_id} className={entry.user_id === user.id ? "me" : ""}>
-                                <td className="leaderboard__place">{index + 1}</td>
-                                <td>
-                                    <Link to={toKeepSearch(`/users/${entry.user_id}`)} style={{ color: "inherit" }}>{entry.username}</Link>
-                                    {entry.user_id === user.id && ` ${t("common.you")}`}
+                            <li key={entry.user_id} className={`leaderboard__row${entry.user_id === user.id ? " leaderboard__row--me" : ""}`}>
+                                <span className="leaderboard__place">{index + 1}</span>
+                                <span className="leaderboard__avatar" aria-hidden="true">{entry.username.slice(0, 1)}</span>
+                                <span className="leaderboard__who">
+                                    <Link className="leaderboard__name" to={toKeepSearch(`/users/${entry.user_id}`)}>{entry.username}</Link>
+                                    {entry.user_id === user.id && <i className="you-chip">{t("common.you")}</i>}
                                     {(entry.level !== undefined || entry.badges_count !== undefined) &&
-                                        <span style={{ fontSize: 11, color: "#555", marginLeft: 6 }}>
+                                        <span className="leaderboard__meta">
                                             {entry.level !== undefined && `${t("leaderboard.level")} ${entry.level}`}
                                             {entry.level !== undefined && entry.badges_count !== undefined && " · "}
                                             {entry.badges_count !== undefined && `${entry.badges_count} ${t("leaderboard.badges")}`}
                                         </span>
                                     }
-                                </td>
-                                <td className="leaderboard__rating">{entry.rating}</td>
-                            </tr>
+                                </span>
+                                <span className="leaderboard__rating">{entry.rating}</span>
+                            </li>
                         ))}
-                    </tbody>
-                </table>
+                    </ol>
+                }
             </div>
         </>
     );

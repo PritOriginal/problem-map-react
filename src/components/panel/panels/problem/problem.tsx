@@ -1,5 +1,7 @@
 import { Outlet, useParams } from "react-router-dom";
-import { COLOR_MARK_STATUSES, TypeIcon } from "../../../mark/mark";
+import { TypeIcon } from "../../../mark/mark";
+import { statusColors } from "../../../../styles/tokens";
+import { useTheme } from "../../../../theme";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
@@ -12,10 +14,11 @@ import marksStore from "../../../../store/marks";
 import { LngLat } from "@yandex/ymaps3-types";
 import { MarkContext, MarkReloadContext, emptyMark } from "./mark-context";
 import { useT } from "../../../../i18n";
-import { CommentsCount, HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/badges";
+import { HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/badges";
 
 
 const ProblemPanel = observer(() => {
+    const { resolved } = useTheme();
     const params = useParams();
     const { t } = useT();
 
@@ -82,25 +85,32 @@ const ProblemPanel = observer(() => {
                 className="panel__header"
                 onClick={() => panelStore.toggle()}
             >
-                <div className="panel__header__status">
-                    <div style={{ border: `2px solid ${COLOR_MARK_STATUSES[markStatus.mark_status_id]}`, backgroundColor: "#fff", borderRadius: "4px", padding: "4px" }}>
-                        <p style={{ color: "#000" }}><b>{markStatus.name}</b></p>
+                {/* Rows, not columns. A right-hand column only works while the title
+                    is short enough to leave room for it, and category names come
+                    from the backend: "Информационные и визуальные дефекты" pushed
+                    the column onto its own line, where it collapsed to the width of
+                    the status chip and hung the mark number under it. */}
+                <h1 className="panel__header__title">
+                    <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="var(--on-chrome)" />
+                    <span>{markType.name}</span>
+                </h1>
+                {/* Coordinates and id together: both are machine-stamped references
+                    to the record, both monospaced, and pairing them costs no row. */}
+                <p className="panel__header__meta">
+                    <span className="panel__header__coords">
+                        <span className="visually-hidden">{t("common.coordinates")}: </span>
+                        {mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}
+                    </span>
+                    <span className="panel__header__ref">{t("mark.n", { id: mark.mark_id })}</span>
+                </p>
+                <div className="panel__header__labels">
+                    <div className="status-chip" style={{ borderColor: statusColors(resolved)[markStatus.mark_status_id] }}>
+                        {markStatus.name}
                     </div>
+                    <HiddenBadge hidden={mark.hidden} />
+                    <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
+                    <OrgLabel organizationId={mark.organization_id} />
                 </div>
-                <p style={{ fontSize: "12px" }}>{t("mark.n", { id: mark.mark_id })}</p>
-                <p style={{ fontSize: 12 }}>{t("common.coordinates")}: <b>{mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}</b></p>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="#fff" />
-                    <p style={{ fontSize: 14 }}><b>{markType.name}</b></p>
-                </div>
-                {(mark.sla_due_at || mark.organization_id || mark.hidden || mark.comments_count !== undefined) &&
-                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
-                        <HiddenBadge hidden={mark.hidden} />
-                        <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
-                        <OrgLabel organizationId={mark.organization_id} />
-                        <span style={{ color: "#ddd", fontSize: 12 }}><CommentsCount count={mark.comments_count} /></span>
-                    </div>
-                }
             </div>
             <div className="panel__content">
                 <Outlet />

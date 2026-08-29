@@ -1,19 +1,20 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { StatTile } from "../../stat-tile/stat-tile";
 import { observer } from "mobx-react-lite";
-import panelStore from "../../../store/panel";
 import notificationsStore from "../../../store/notifications";
 import adminBoundariesStore from "../../../store/admin-boundaries";
 import markStatusesStore from "../../../store/mark-statuses";
 import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesStep } from "../../../services/AnalyticsService";
 import { TranslationKey, useT } from "../../../i18n";
+import { SERIES_COLORS } from "../../../styles/tokens";
 import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, pointX, pointY, toIsoDate, yTicks } from "../../../utils/chart";
+import PanelHeader from "../panel-header";
 
 const SERIES_META: { key: keyof Omit<TimeseriesPoint, "period">; label: TranslationKey; color: string }[] = [
-    { key: "created", label: "analytics.series.created", color: "#1f77b4" },
-    { key: "confirmed", label: "analytics.series.confirmed", color: "#e50000" },
-    { key: "closed", label: "analytics.series.closed", color: "#00a000" },
-    { key: "refuted", label: "analytics.series.refuted", color: "#000" },
+    { key: "created", label: "analytics.series.created", color: SERIES_COLORS.created },
+    { key: "confirmed", label: "analytics.series.confirmed", color: SERIES_COLORS.confirmed },
+    { key: "closed", label: "analytics.series.closed", color: SERIES_COLORS.closed },
+    { key: "refuted", label: "analytics.series.refuted", color: SERIES_COLORS.refuted },
 ];
 
 const PERIOD_PRESETS: { label: TranslationKey; days: number }[] = [
@@ -31,13 +32,6 @@ function defaultRange(days: number): { from: string; to: string } {
 
 const Analytics = observer(function Analytics() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
 
     useEffect(() => {
         if (adminBoundariesStore.boundaries.length === 0 && !adminBoundariesStore.isLoadingBoundaries) {
@@ -100,10 +94,7 @@ const Analytics = observer(function Analytics() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("analytics.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("analytics.subtitle")}</p>
-            </div>
+            <PanelHeader openOnMount title={t("analytics.title")} subtitle={t("analytics.subtitle")} />
             <div className="panel__content">
                 <div className="analytics-controls">
                     <label style={{ gridColumn: "1 / -1" }}>
@@ -125,7 +116,7 @@ const Analytics = observer(function Analytics() {
                     </label>
                     <div style={{ display: "flex", gap: "4px", gridColumn: "1 / -1", flexWrap: "wrap" }}>
                         {PERIOD_PRESETS.map((preset) => (
-                            <button key={preset.days} type="button" className="white-2-black mini" onClick={() => setRange(defaultRange(preset.days))}>
+                            <button key={preset.days} type="button" className="btn-secondary mini" onClick={() => setRange(defaultRange(preset.days))}>
                                 {t(preset.label)}
                             </button>
                         ))}
@@ -140,10 +131,10 @@ const Analytics = observer(function Analytics() {
                     </label>
                 </div>
                 <hr />
-                <p style={{ fontSize: 18 }}><b>{t("analytics.kpi")}</b> {isLoading && <span style={{ fontSize: 12 }}>{t("common.loading")}</span>}</p>
-                {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p style={{ fontSize: 14 }}>{t("common.noData")}</p>}
+                <h2 className="section-title">{t("analytics.kpi")}<span className="section-title__count">{isLoading && <span style={{ fontSize: 12 }}>{t("common.loading")}</span>}</span></h2>
+                {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p className="empty-state">{t("common.noData")}</p>}
                 <hr />
-                <p style={{ fontSize: 18 }}><b>{t("analytics.dynamics")}</b></p>
+                <h2 className="section-title">{t("analytics.dynamics")}</h2>
                 <LineChart points={series} />
             </div>
         </>
@@ -188,14 +179,14 @@ export const LineChart = memo(function LineChart({ points }: { points: Timeserie
     const ticks = yTicks(yMax);
 
     if (points.length === 0) {
-        return <p style={{ fontSize: 14 }}>{t("analytics.noDataPeriod")}</p>;
+        return <p className="empty-state">{t("analytics.noDataPeriod")}</p>;
     }
 
     const labelEvery = Math.max(1, Math.ceil(points.length / 6));
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={t("analytics.chartAria")} style={{ background: "white", border: "1px solid rgb(201, 201, 201)" }}>
+            <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={t("analytics.chartAria")} style={{ background: "var(--paper)", border: "1px solid var(--rule)" }}>
                 {ticks.map((t) => {
                     const y = pointY(t, yMax, layout);
                     return (

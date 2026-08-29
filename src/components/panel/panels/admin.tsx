@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
-import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
@@ -11,6 +10,7 @@ import { Button } from "../../button/button";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import "./admin.scss";
+import PanelHeader from "../panel-header";
 
 type TabKey = "settings" | "types" | "keys";
 
@@ -23,25 +23,15 @@ const TABS: { key: TabKey; label: TranslationKey }[] = [
 /** `/admin`: settings, problem types and API keys (role admin, backend integration/wave-5). */
 const AdminPanel = observer(function AdminPanel() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
     const [tab, setTab] = useState<TabKey>("settings");
     const isAdmin = user.id !== 0 && user.role === "admin";
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("admin.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("admin.subtitle")}</p>
-            </div>
+            <PanelHeader openOnMount title={t("admin.title")} subtitle={t("admin.subtitle")} />
             <div className="panel__content">
                 {!isAdmin ?
-                    <p style={{ fontSize: 14 }}>{t("admin.unavailable")}</p>
+                    <p className="empty-state">{t("admin.unavailable")}</p>
                     :
                     <>
                         <div className="tabs" role="tablist">
@@ -94,7 +84,7 @@ const SettingsForm = function SettingsForm() {
     }, []);
 
     if (!form || !saved) {
-        return <p style={{ fontSize: 14 }}>{t("common.loading")}</p>;
+        return <p className="empty-state">{t("common.loading")}</p>;
     }
 
     const errors = validateSettings(form);
@@ -164,15 +154,18 @@ const SettingsForm = function SettingsForm() {
                 </label>
             </div>
             <div className="task-card__actions">
-                <Button style="green" disabled={pending || !dirty || Object.keys(errors).length > 0} onClick={save}>
+                <Button style="positive" disabled={pending || !dirty || Object.keys(errors).length > 0} onClick={save}>
                     {t(pending ? "common.saving" : ok ? "admin.settingsSaved" : "common.save")}
                 </Button>
-                <Button style="white-2-black" disabled={pending || !dirty} onClick={() => setForm(saved)}>{t("admin.reset")}</Button>
+                <Button style="secondary" disabled={pending || !dirty} onClick={() => setForm(saved)}>{t("admin.reset")}</Button>
             </div>
         </div>
     );
 };
 
+// The colour here is DATA, not chrome: it is stored on the mark type and sent to
+// the backend, and `<input type="color">` accepts only a literal hex. Both stay
+// literals on purpose -- neither can be a token.
 const EMPTY_TYPE: AddMarkTypeRequest = { code: "", name_ru: "", name_en: "", icon: "", color: "#e50000", sla_hours: 72 };
 
 const MarkTypesTable = function MarkTypesTable() {
@@ -215,13 +208,13 @@ const MarkTypesTable = function MarkTypesTable() {
 
     return (
         <div className="admin-form">
-            {isLoading && types.length === 0 && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
+            {isLoading && types.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
             <div className="profile-list">
                 {types.map((type) => <MarkTypeRow key={type.mark_type_id} type={type} onDone={reload} />)}
             </div>
             {adding
                 ? <MarkTypeEditor initial={EMPTY_TYPE} isNew onCancel={() => setAdding(false)} onDone={() => { setAdding(false); reload(); }} />
-                : <div><Button style="black-2-white" onClick={() => setAdding(true)}>{t("admin.types.add")}</Button></div>
+                : <div><Button style="primary" onClick={() => setAdding(true)}>{t("admin.types.add")}</Button></div>
             }
         </div>
     );
@@ -263,21 +256,21 @@ function MarkTypeRow({ type, onDone }: { type: AdminMarkType; onDone: () => void
         <div className={`task-card admin-type ${type.active ? "" : "inactive"}`}>
             <div className="task-card__row">
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                    <span className="admin-type__swatch" style={{ backgroundColor: type.color || "#ccc" }} aria-hidden="true">{type.icon}</span>
-                    <p style={{ fontSize: 14 }}><b>{type.name_ru || type.name}</b> {type.name_en && <span style={{ color: "#555" }}>/ {type.name_en}</span>}</p>
+                    <span className="admin-type__swatch" style={{ backgroundColor: type.color || "var(--swatch-empty)" }} aria-hidden="true">{type.icon}</span>
+                    <p style={{ fontSize: 14 }}><b>{type.name_ru || type.name}</b> {type.name_en && <span style={{ color: "var(--ink-muted)" }}>/ {type.name_en}</span>}</p>
                 </div>
-                <span style={{ fontSize: 12, color: "#555" }}>#{type.mark_type_id} · {type.code}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>#{type.mark_type_id} · {type.code}</span>
             </div>
-            <p style={{ fontSize: 12, color: "#555" }}>
+            <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>
                 {t("admin.types.sla")}: {type.sla_hours} · {t("admin.types.sortOrder")}: {type.sort_order} · {t("admin.types.active")}: {type.active ? "✓" : "✗"}
             </p>
             <div className="task-card__actions">
-                <Button style="white-2-black" isMini disabled={pending} onClick={() => setEditing(true)}>{t("common.edit")}</Button>
-                <Button style={type.active ? "red" : "green"} isMini disabled={pending} onClick={() => patch({ active: !type.active })}>
+                <Button style="secondary" isMini disabled={pending} onClick={() => setEditing(true)}>{t("common.edit")}</Button>
+                <Button style={type.active ? "negative" : "positive"} isMini disabled={pending} onClick={() => patch({ active: !type.active })}>
                     {type.active ? "✗" : "✓"} {t("admin.types.active")}
                 </Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order - 1 })} aria-label="↑">↑</Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order + 1 })} aria-label="↓">↓</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order - 1 })} aria-label="↑">↑</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order + 1 })} aria-label="↓">↓</Button>
             </div>
         </div>
     );
@@ -364,8 +357,8 @@ function MarkTypeEditor({ initial, isNew = false, sortOrder = 0, active = true, 
                 }
             </div>
             <div className="task-card__actions">
-                <Button style="green" isMini disabled={pending || !valid} onClick={submit}>{t(pending ? "common.saving" : "common.save")}</Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
+                <Button style="positive" isMini disabled={pending || !valid} onClick={submit}>{t(pending ? "common.saving" : "common.save")}</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
             </div>
         </div>
     );
@@ -460,8 +453,8 @@ const ApiKeysBlock = function ApiKeysBlock() {
                     <p><b>{t("admin.keys.created")}</b></p>
                     <code className="api-key">{created.key}</code>
                     <div className="task-card__actions">
-                        <Button style="black-2-white" isMini onClick={copy}>{t(copied ? "admin.keys.copied" : "admin.keys.copy")}</Button>
-                        <Button style="white-2-black" isMini onClick={() => setCreated(null)}>{t("admin.keys.done")}</Button>
+                        <Button style="primary" isMini onClick={copy}>{t(copied ? "admin.keys.copied" : "admin.keys.copy")}</Button>
+                        <Button style="secondary" isMini onClick={() => setCreated(null)}>{t("admin.keys.done")}</Button>
                     </div>
                 </div>
             }
@@ -470,21 +463,21 @@ const ApiKeysBlock = function ApiKeysBlock() {
                     <span>{t("admin.keys.name")}</span>
                     <input type="text" value={name} maxLength={64} disabled={pending !== null} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { create(); } }} />
                 </label>
-                <Button style="black-2-white" isMini disabled={pending !== null || name.trim() === ""} onClick={create}>{t(pending === "create" ? "admin.keys.creating" : "admin.keys.create")}</Button>
+                <Button style="primary" isMini disabled={pending !== null || name.trim() === ""} onClick={create}>{t(pending === "create" ? "admin.keys.creating" : "admin.keys.create")}</Button>
             </div>
-            {keys.length === 0 && <p style={{ fontSize: 14 }}>{t("admin.keys.empty")}</p>}
+            {keys.length === 0 && <p className="empty-state">{t("admin.keys.empty")}</p>}
             <div className="profile-list">
                 {keys.map((key) => (
                     <div key={key.id} className="task-card">
                         <div className="task-card__row">
                             <p style={{ fontSize: 14 }}><b>{key.name}</b> {key.prefix && <code style={{ fontSize: 12 }}>{key.prefix}…</code>}</p>
-                            <span style={{ fontSize: 12, color: "#555" }}>{key.created_at && new Date(key.created_at).toLocaleDateString(localeOf(lang))}</span>
+                            <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{key.created_at && new Date(key.created_at).toLocaleDateString(localeOf(lang))}</span>
                         </div>
-                        <p style={{ fontSize: 12, color: "#555" }}>
+                        <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>
                             {t("admin.keys.lastUsed")}: {key.last_used_at ? new Date(key.last_used_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" }) : t("admin.keys.neverUsed")}
                         </p>
                         <div className="task-card__actions">
-                            <Button style="red" isMini disabled={pending !== null} onClick={() => revoke(key)}>{t("admin.keys.revoke")}</Button>
+                            <Button style="negative" isMini disabled={pending !== null} onClick={() => revoke(key)}>{t("admin.keys.revoke")}</Button>
                         </div>
                     </div>
                 ))}

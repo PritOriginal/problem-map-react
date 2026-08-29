@@ -1,63 +1,104 @@
-%color2color {
+// Buttons are named by ROLE, not by the colour trick they perform. The previous
+// set (.white-2-black, .black-2-white) inverted fully on hover, which is the
+// loudest generic tic in the interface and made every button shout equally.
+// Here hover is a small shift in the same hue, and only one button on a screen
+// is allowed to be filled with the accent.
+
+%btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-3);
+
 	width: 100%;
 	height: 100%;
-	padding: 8px;
+	padding: var(--space-4) var(--space-6);
+
+	font: inherit;
+	font-size: var(--fs-base);
+	font-weight: 500;
+	line-height: 1.25;
+	text-align: center;
+
+	border: 1px solid transparent;
+	border-radius: var(--radius-1);
 	cursor: pointer;
-	border: 1px solid black;
-	font-size: 16px;
-	// font-family: "Century Gothic";
-	transition: all 0.3s ease-in-out;
+
+	transition:
+		background-color var(--dur-fast) var(--ease),
+		border-color var(--dur-fast) var(--ease),
+		color var(--dur-fast) var(--ease);
 
 	&.mini {
-		font-size: 12px;
+		width: auto;
 		height: auto;
+		padding: var(--space-2) var(--space-4);
+		font-size: var(--fs-caption);
 	}
 
+	// The survey mark: a pink stripe, offset by a ring of the surface behind it
+	// so it stays visible on both light cards and dark chrome.
+	&:focus-visible {
+		outline: none;
+		box-shadow: var(--focus-ring);
+	}
+
+	// No !important here. The old rule used it, which meant no state could ever
+	// override the disabled look -- including a future theme.
 	&:disabled {
-		background-color: #e2e2e2 !important;
-		color: black !important;
+		background-color: var(--disabled-bg);
+		border-color: var(--rule);
+		color: var(--ink-faint);
+		cursor: not-allowed;
 	}
 }
 
-.white-2-black {
-	@extend %color2color;
-	background-color: white;
-	color: black;
+// The one filled button on a screen: the action the screen exists for.
+.btn-primary {
+	@extend %btn;
+	background-color: var(--accent-ink);
+	color: var(--paper);
 
-	&:hover {
-		background-color: black;
-		color: white;
+	&:hover:not(:disabled) {
+		background-color: color-mix(in srgb, var(--accent-ink) 85%, black);
 	}
 }
 
-.black-2-white {
-	@extend %color2color;
-	background-color: black;
-	color: white;
+// Everything else. Quiet by default -- the accent only appears on the edge.
+.btn-secondary {
+	@extend %btn;
+	background-color: var(--paper);
+	border-color: var(--rule);
+	color: var(--ink);
 
-	&:hover {
-		background-color: white;
-		color: black;
+	&:hover:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--accent-ink);
 	}
 }
 
-.green {
-	@extend %color2color;
-	background-color: rgb(194, 253, 183);
-	color: black;
+.btn-positive {
+	@extend %btn;
+	background-color: var(--paper);
+	border-color: color-mix(in srgb, var(--success-ink) 45%, var(--paper));
+	color: var(--success-ink);
 
-	&:hover {
-		background-color: rgb(56, 230, 21);
+	&:hover:not(:disabled) {
+		background-color: var(--success-ink);
+		border-color: var(--success-ink);
+		color: var(--paper);
 	}
 }
 
-.red {
-	@extend %color2color;
-	background-color: rgb(255, 160, 160);
-	color: black;
+.btn-negative {
+	@extend %btn;
+	background-color: var(--paper);
+	border-color: var(--danger-rule);
+	color: var(--danger-ink);
 
-	&:hover {
-		background-color: rgb(211, 12, 12);
-		color: white;
+	&:hover:not(:disabled) {
+		background-color: var(--danger-ink);
+		border-color: var(--danger-ink);
+		color: var(--paper);
 	}
 }

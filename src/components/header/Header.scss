@@ -1,51 +1,271 @@
 @use "../../mixins" as *;
 
-header {
-    margin: 0 auto;
-    height: var(--header-height);
-    align-content: center;
-    background-color: #202020;
-    color: white;
+// The app header.
+//
+// Scoped to a class rather than the bare `header` element: as an element selector
+// this silently painted a section heading inside a panel with the chrome
+// background and forced it to the app header's height.
+.app-header {
+    position: relative;
+    background-color: var(--chrome);
+    color: var(--on-chrome);
 
     a {
-        color: white;
-    }
-}
-
-.header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 16px;
-    margin: 0 auto;
-    font-size: 16px;
-
-    &__menu {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
+        color: var(--on-chrome);
     }
 
-    &__user-info {
+    &__bar {
         display: flex;
-        gap: 1rem;
         align-items: center;
+        gap: var(--space-7);
+        height: var(--header-height);
+        // Full width on purpose: the header sits directly on the map, which is
+        // itself edge to edge, and a centred column inside it read as a stripe
+        // floating over the page rather than as the app's own chrome.
+        padding: 0 var(--space-7);
 
-        &__item {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
+        @include mobile {
+            gap: var(--space-5);
+            padding: 0 var(--space-4);
         }
     }
 
-    @include mobile {
-        font-size: 12px;
+    &__right {
+        display: flex;
+        align-items: center;
+        gap: var(--space-5);
+        margin-left: auto;
+        flex-shrink: 0;
+
+        @include mobile {
+            gap: var(--space-4);
+        }
+    }
+
+    // A real rule, not the literal "|" character the old header set as text: that
+    // one inherited link colour, sat on the text baseline instead of optical
+    // centre, and was read out by a screen reader.
+    &__sep {
+        width: 1px;
+        height: 20px;
+        background-color: var(--rule-chrome);
+    }
+
+    &__burger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        color: var(--on-chrome);
+        background: none;
+        border: 1px solid var(--rule-chrome);
+        border-radius: var(--radius-1);
+        cursor: pointer;
+
+        &[aria-expanded="true"] {
+            border-color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+    }
+
+    // Signing in and creating an account were two links of equal weight with a
+    // "|" between them, plus a third control -- the profile icon -- pointing at
+    // the same place as the first. One quiet link, one filled button, and no
+    // duplicate.
+    &__signin {
+        font-size: var(--fs-small);
+        color: var(--on-chrome-muted);
+        white-space: nowrap;
+
+        &:hover {
+            color: var(--on-chrome);
+        }
+    }
+
+    &__cta {
+        padding: 6px 12px;
+        border-radius: var(--radius-2);
+        background-color: var(--accent);
+        color: var(--paper);
+        font-size: var(--fs-small);
+        font-weight: 600;
+        white-space: nowrap;
+
+        &:hover {
+            background-color: var(--accent-ink);
+            color: var(--paper);
+        }
+
+        @include mobile {
+            padding: 5px 10px;
+            font-size: var(--fs-caption);
+        }
     }
 }
+
+// The product's own mark. It had none: the header showed a bare pin, so the app
+// never said what it was or whose city it covered.
+.app-mark {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-shrink: 0;
+
+    &__pin {
+        width: 26px;
+        height: 26px;
+        fill: var(--on-chrome);
+    }
+
+    &__stack {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+    }
+
+    b {
+        font-family: var(--font-display);
+        font-size: var(--fs-caption);
+        font-weight: 600;
+    }
+
+    // The city, in the face this system reserves for machine-stamped fact.
+    em {
+        font-family: var(--font-mono);
+        font-style: normal;
+        font-size: var(--fs-micro);
+        color: var(--on-chrome-faint);
+    }
+}
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-7);
+    min-width: 0;
+}
+
+// The narrow layout's section list. A role reaches between two and six sections,
+// and six names do not fit a 390px row at any size that is still a touch target;
+// the old header scrolled them sideways, which left "Аналитика" reachable only by
+// dragging blind. Overlaid rather than inserted, so opening it does not shove the
+// map down.
+.app-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 5;
+
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--space-3);
+
+    background-color: var(--chrome);
+    border-top: 1px solid var(--rule-chrome);
+    box-shadow: var(--shadow-2);
+
+    &__item {
+        padding: 11px var(--space-6);
+        font-size: var(--fs-body);
+        color: var(--on-chrome-muted);
+        // The same paint stripe the desktop nav uses, turned on its side.
+        border-left: 3px solid transparent;
+
+        &.active {
+            color: var(--on-chrome);
+            border-left-color: var(--accent);
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-5);
+        margin-top: var(--space-3);
+        padding: var(--space-5) var(--space-6);
+        border-top: 1px solid var(--rule-chrome);
+    }
+}
+
+.app-account {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--fs-small);
+
+    &__avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: var(--radius-round);
+        background-color: var(--rule-chrome);
+
+        // One icon size in the row. The old header put a 32px profile icon beside
+        // a 24px bell beside a 26px button, each sized inline in the TSX.
+        svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--on-chrome);
+            stroke: var(--on-chrome);
+        }
+    }
+}
+
+.header-nav-link {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: var(--fs-body);
+    color: var(--on-chrome-muted);
+
+    // The paint stripe under the section you are in: a survey mark on the ground
+    // plane. The header never showed your location in the app before this.
+    border-bottom: 2px solid transparent;
+    padding-bottom: 2px;
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+
+    &:hover {
+        color: var(--on-chrome);
+    }
+
+    &.active {
+        color: var(--on-chrome);
+        border-bottom-color: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 1px;
+    }
+}
+
 .header-bell {
     position: relative;
     display: flex;
     align-items: center;
+    color: var(--on-chrome-muted);
+
+    &:hover {
+        color: var(--on-chrome);
+    }
 
     &__badge {
         position: absolute;
@@ -54,43 +274,78 @@ header {
         min-width: 16px;
         height: 16px;
         padding: 0 4px;
-        border-radius: 8px;
-        background-color: #e50000;
-        color: white;
-        font-size: 10px;
+        border-radius: var(--radius-3);
+        background-color: var(--accent);
+        color: var(--paper);
+        font-size: var(--fs-micro);
         line-height: 16px;
         text-align: center;
         font-weight: bold;
     }
 }
 
+.header-theme {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    color: var(--on-chrome-muted);
+    background: none;
+    border: 1px solid var(--rule-chrome);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+
+    &:hover {
+        color: var(--on-chrome);
+        border-color: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}
+
 .header-lang {
     display: flex;
-    border: 1px solid #777;
-    border-radius: 4px;
+    border: 1px solid var(--rule-chrome);
+    border-radius: var(--radius-1);
     overflow: hidden;
 
     &__item {
         border: none;
         background: none;
-        color: #bdbdbd;
-        font-size: 12px;
-        padding: 2px 6px;
+        color: var(--on-chrome-muted);
+        font-size: var(--fs-caption);
+        padding: var(--space-1) var(--space-3);
         cursor: pointer;
+        transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+
+        &:hover:not(.active) {
+            color: var(--on-chrome);
+        }
 
         &.active {
-            background-color: white;
-            color: #202020;
-            font-weight: bold;
+            background-color: var(--accent);
+            color: var(--paper);
+            font-weight: 600;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
         }
     }
 }
 
 .offline-banner {
-    background-color: #fff3cd;
-    color: #664d03;
-    border-bottom: 1px solid #ffe69c;
-    font-size: 13px;
+    background-color: var(--warn-bg);
+    color: var(--warn-ink);
+    border-bottom: 1px solid var(--hi-vis);
+    font-size: var(--fs-small);
     text-align: center;
     padding: 4px 8px;
 }
@@ -98,11 +353,11 @@ header {
 .header-queue {
     display: flex;
     align-items: center;
-    padding: 2px 8px;
-    border-radius: 4px;
-    background-color: #ffe69c;
-    color: #664d03;
-    font-size: 13px;
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--radius-1);
+    background-color: var(--hi-vis);
+    color: var(--warn-ink);
+    font-size: var(--fs-small);
 
     p {
         color: inherit;

@@ -9,7 +9,6 @@ import { Check } from "../../../../services/ChecksService";
 import { MarkContext, MarkReloadContext } from "./mark-context";
 import { observer } from "mobx-react-lite";
 import user from "../../../../store/user";
-import Arrow from "../../../arrow/arrow";
 import markStatusesStore from "../../../../store/mark-statuses";
 import notificationsStore from "../../../../store/notifications";
 import marksStore from "../../../../store/marks";
@@ -17,7 +16,13 @@ import organizationsStore from "../../../../store/organizations";
 import { TranslationKey, localeOf, tOr, useT } from "../../../../i18n";
 import ReportButton from "../../../report/report-button";
 import CommentsBlock from "./comments";
-import { DuplicateBadge, HiddenBadge } from "../../../badges/badges";
+import { CommentsCount, DuplicateBadge, HiddenBadge } from "../../../badges/badges";
+import { STATUS_COLORS, STATUS_FALLBACK } from "../../../../styles/tokens";
+import { layerDepths, layerSpans, spanLabel } from "../../../../utils/history-column";
+import { useNow } from "../../../../utils/hooks";
+import "./history-column.scss";
+import "./mark-actions.scss";
+import "./checks.scss";
 
 const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigateKeepSearch();
@@ -40,6 +45,12 @@ const AboutProblem = observer(function AboutProblem() {
             groupHistoryItems = [];
         }
     }
+
+    // The column's geometry: how long the mark sat in each status, and how deep to
+    // draw that stratum. `useNow` keeps the last (still-running) layer honest.
+    const now = useNow();
+    const spans = layerSpans(groups.map((group) => group[0].changed_at), now);
+    const depths = layerDepths(spans);
 
     let possibilityAddCheck = true;
     if (user.id != 0 && historyItems.length > 0) {
@@ -89,10 +100,12 @@ const AboutProblem = observer(function AboutProblem() {
 
     return (
         <>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <div className="mark-actions">
                 <ShareButton />
                 {user.id !== 0 && mark.mark_id !== 0 && <FollowButton onDone={reload} />}
                 {user.id !== 0 && mark.mark_id !== 0 && user.id !== mark.user_id && <ReportButton targetType="mark" targetId={mark.mark_id} />}
+                <span className="mark-actions__spacer" />
+                <span className="mark-actions__meta"><CommentsCount count={mark.comments_count} /></span>
             </div>
             {(mark.hidden || mark.merged_into_id) &&
                 <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
@@ -105,20 +118,28 @@ const AboutProblem = observer(function AboutProblem() {
             {user.id !== 0 && user.id === mark.user_id && mark.mark_status_id === MarkStatusType.UnconfirmedStatus && <OwnerBlock onDone={reload} />}
             {mark.description !== "" &&
                 <>
-                    <p style={{ fontSize: 18 }}><b>{t("common.description")}</b></p>
+                    <h2 className="section-title">{t("common.description")}</h2>
                     <p style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{mark.description}</p>
                     <hr />
                 </>
             }
-            <p style={{ fontSize: 18 }}><b>{t("mark.history")}</b></p>
+            <h2 className="section-title">{t("mark.history")}</h2>
             <hr />
-            {groups.map((group, index) => (
-                <HistoryGroup key={index} group={group} />
-            ))}
+            <ol className="core">
+                {groups.map((group, index) => (
+                    <HistoryGroup
+                        key={index}
+                        group={group}
+                        depth={depths[index]}
+                        spanMs={spans[index]}
+                        isLast={index === groups.length - 1}
+                    />
+                ))}
+            </ol>
             {mark.mark_id !== 0 && <CommentsBlock />}
             {possibilityAddCheck &&
                 <div style={{ position: "sticky", bottom: "0" }}>
-                    <Button style="white-2-black" onClick={handleOnClickNewCheck}>
+                    <Button style="primary" onClick={handleOnClickNewCheck}>
                         {t("mark.checkButton")}
                     </Button>
                 </div>
@@ -144,7 +165,7 @@ const MODERATION_ACTIONS: Record<ModerationAction, {
     errorText: TranslationKey;
     label: TranslationKey;
     pendingLabel: TranslationKey;
-    style: "green" | "red";
+    style: "positive" | "negative";
 }> = {
     confirm: {
         call: (id) => MarksService.confirmMark(id),
@@ -152,7 +173,7 @@ const MODERATION_ACTIONS: Record<ModerationAction, {
         errorText: "mark.confirmFailed",
         label: "mark.confirm",
         pendingLabel: "mark.confirming",
-        style: "green",
+        style: "positive",
     },
     reject: {
         call: (id) => MarksService.rejectMark(id),
@@ -160,7 +181,7 @@ const MODERATION_ACTIONS: Record<ModerationAction, {
         errorText: "mark.rejectFailed",
         label: "mark.reject",
         pendingLabel: "mark.rejecting",
-        style: "red",
+        style: "negative",
     },
 };
 
@@ -193,7 +214,7 @@ function ModerationBlock({ onDone }: { onDone: () => void }) {
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>{t("mark.moderation")}</b></p>
+            <h2 className="section-title">{t("mark.moderation")}</h2>
             <div style={{ display: "flex", gap: "8px" }}>
                 {(Object.keys(MODERATION_ACTIONS) as ModerationAction[]).map((action) => (
                     <Button key={action} style={MODERATION_ACTIONS[action].style} disabled={pending !== null} onClick={() => moderate(action)}>
@@ -272,9 +293,17 @@ const FollowButton = observer(function FollowButton({ onDone }: { onDone: () => 
     };
 
     return (
-        <Button style={following ? "black-2-white" : "white-2-black"} isMini disabled={pending} onClick={toggle}>
-            {t(following ? "mark.following" : "mark.follow")}{count !== undefined && ` · ${count}`}
-        </Button>
+        <button
+            type="button"
+            className={`mark-actions__btn${following ? " is-on" : ""}`}
+            disabled={pending}
+            aria-pressed={following}
+            onClick={toggle}
+        >
+            <FollowIcon filled={following} />
+            {t(following ? "mark.following" : "mark.follow")}
+            {count !== undefined && <span className="mark-actions__count">{count}</span>}
+        </button>
     );
 });
 
@@ -342,7 +371,7 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
 
     return (
         <>
-            <p style={{ fontSize: 18 }}><b>{t("mark.mine")}</b></p>
+            <h2 className="section-title">{t("mark.mine")}</h2>
             {editing ?
                 <>
                     <p><b>{t("common.category")}</b></p>
@@ -360,16 +389,16 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
                         onChange={(e) => setDescription(e.target.value)}
                     ></textarea>
                     <div style={{ display: "flex", gap: "8px" }}>
-                        <Button style="green" disabled={pending !== null} onClick={save}>
+                        <Button style="positive" disabled={pending !== null} onClick={save}>
                             {t(pending === "save" ? "common.saving" : "common.save")}
                         </Button>
-                        <Button style="white-2-black" disabled={pending !== null} onClick={() => setEditing(false)}>{t("common.cancel")}</Button>
+                        <Button style="secondary" disabled={pending !== null} onClick={() => setEditing(false)}>{t("common.cancel")}</Button>
                     </div>
                 </>
                 :
                 <div style={{ display: "flex", gap: "8px" }}>
-                    <Button style="white-2-black" disabled={pending !== null} onClick={startEdit}>{t("common.edit")}</Button>
-                    <Button style="red" disabled={pending !== null} onClick={remove}>
+                    <Button style="secondary" disabled={pending !== null} onClick={startEdit}>{t("common.edit")}</Button>
+                    <Button style="negative" disabled={pending !== null} onClick={remove}>
                         {t(pending === "delete" ? "common.deleting" : "common.delete")}
                     </Button>
                 </div>
@@ -404,11 +433,29 @@ function ShareButton() {
     };
 
     return (
-        <div>
-            <Button style="white-2-black" isMini onClick={share}>
-                {t(copied ? "mark.linkCopied" : "mark.share")}
-            </Button>
-        </div>
+        <button type="button" className="mark-actions__btn" onClick={share}>
+            <ShareIcon />
+            {t(copied ? "mark.linkCopied" : "mark.share")}
+        </button>
+    );
+}
+
+function ShareIcon() {
+    return (
+        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor"
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8 10.5V2M8 2 5 5M8 2l3 3M3 9v4.5h10V9" />
+        </svg>
+    );
+}
+
+/** A bookmark, filled once you are following: the state is in the shape, not only the word. */
+function FollowIcon({ filled }: { filled: boolean }) {
+    return (
+        <svg viewBox="0 0 16 16" width="15" height="15" fill={filled ? "currentColor" : "none"}
+            stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 2.5h8v11l-4-3-4 3z" />
+        </svg>
     );
 }
 
@@ -433,7 +480,15 @@ function getDate(dateStr: string, locale: string): string {
     return date.toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
 }
 
-function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
+/** How many checks a collapsed block shows whole before the reader asks for the rest. */
+const COLLAPSED_CHECKS = 2;
+
+function HistoryGroup({ group, depth, spanMs, isLast }: {
+    group: MarkStatusHistoryItem[];
+    depth: number;
+    spanMs: number;
+    isLast: boolean;
+}) {
     const { t, lang } = useT();
     const [showChecks, setShowChecks] = useState(false);
     // `lang` re-renders the group when the language changes (titles/questions are read via tOr)
@@ -444,116 +499,123 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
         allChecks.push(...item.checks!)
     });
 
+    const confirmCount = allChecks.filter((check) => check.result).length;
+
     const question = getQuestion(group[group.length - 1].new_mark_status_id);
 
+    // The stratum takes the colour of the status that opened this layer.
+    const statusId = group[0].new_mark_status_id;
+    const span = spanLabel(spanMs);
+    const duration = `${span.value} ${t(`common.${span.unit}` as TranslationKey)}`;
+
     return (
-        <>
-            {group.map((item) => (
-                <HistoryItem key={item.id} item={item} />
-            ))}
+        <li className="core__layer" style={{ minHeight: `${depth}px` }}>
+            <div className="core__spine" aria-hidden="true">
+                <div
+                    className="core__stratum"
+                    style={{ height: `${depth}px`, backgroundColor: STATUS_COLORS[statusId] ?? STATUS_FALLBACK }}
+                />
+            </div>
+            <div className="core__body">
+                {group.map((item, i) => (
+                    <HistoryItem key={item.id} item={item} isFirst={i === 0} />
+                ))}
+                <p className="core__span">{t(isLast ? "mark.stillInStatus" : "mark.spentInStatus", { duration })}</p>
             {question !== "" &&
                 <>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
+                    <div className="core__card">
                         <DoubleProgressBar
                             question={question}
-                            negative={allChecks.filter(check => check.result == false).length}
-                            positive={allChecks.filter(check => check.result == true).length}
+                            negative={allChecks.length - confirmCount}
+                            positive={confirmCount}
                         />
                     </div>
                     {allChecks.length > 0 &&
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
-                            <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
-                                <p>{t("mark.checks")}</p>
-                            </div>
+                        <div className="core__card checks">
+                            <header className="checks__head">
+                                <h3>{t("mark.checks")}</h3>
+                                <span
+                                    className="checks__tally"
+                                    aria-label={t("mark.checksTally", { ok: confirmCount, no: allChecks.length - confirmCount })}
+                                >
+                                    <b className="ok">{confirmCount}</b>
+                                    <i aria-hidden="true">/</i>
+                                    <b className="no">{allChecks.length - confirmCount}</b>
+                                </span>
+                            </header>
 
-                            {!showChecks ?
-                                <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-                                    {allChecks.map((check) => (
-                                        check.photos.map((photo) => (
-                                            <ThumbPhoto key={`${check.check_id}-${photo}`} src={photo} confirmed={check.result} />
-                                        ))
-                                    ))}
-                                </div>
-                                :
-                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "#f9f9f9" }}>
-                                    {showChecks && allChecks.map((check) => (
-                                        <CheckItem key={check.check_id} check={check} />
-                                    ))}
-                                </div>
-                            }
-                            < div >
-                                <ShowButton
-                                    isShow={showChecks}
+                            {/* Collapsed shows the FIRST FEW CHECKS WHOLE rather than a strip of
+                                every photograph with the checks taken apart: in that strip a check
+                                without photos left no trace at all, though it is just as much a vote. */}
+                            <ol className="checks__list">
+                                {(showChecks ? allChecks : allChecks.slice(0, COLLAPSED_CHECKS)).map((check) => (
+                                    <CheckItem key={check.check_id} check={check} />
+                                ))}
+                            </ol>
+
+                            {allChecks.length > COLLAPSED_CHECKS &&
+                                <button
+                                    type="button"
+                                    className="checks__more"
+                                    aria-expanded={showChecks}
                                     onClick={() => setShowChecks(!showChecks)}
-                                />
-                            </div >
+                                >
+                                    {showChecks
+                                        ? t("mark.checksCollapse")
+                                        : t("mark.checksMore", { n: allChecks.length - COLLAPSED_CHECKS })}
+                                </button>
+                            }
                         </div>
                     }
                 </>
             }
-            <hr />
-        </>
+            </div>
+        </li>
     )
 }
 
-function HistoryItem({ item }: { item: MarkStatusHistoryItem }) {
+/**
+ * One status change inside a stratum. The first one names the layer; any child
+ * changes under it are set quieter, because they are steps within that status
+ * rather than new layers of their own.
+ */
+function HistoryItem({ item, isFirst }: { item: MarkStatusHistoryItem, isFirst: boolean }) {
     const { lang } = useT();
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <p>{getTitle(item.new_mark_status_id)}</p>
-                <p style={{ fontSize: 12 }}>{getDate(item.changed_at, localeOf(lang))}</p>
-            </div>
+        <div className={isFirst ? "core__head" : "core__step"}>
+            <p className={isFirst ? "core__title" : undefined}>{getTitle(item.new_mark_status_id)}</p>
+            <p className="core__time">{getDate(item.changed_at, localeOf(lang))}</p>
         </div>
     )
 }
 
-function ShowButton({ isShow, onClick }: { isShow: boolean, onClick: React.MouseEventHandler }) {
-    return (
-        <button
-            className="show-button"
-            onClick={onClick}
-        >
-            <Arrow className="arrow" isOpen={isShow} />
-        </button>
-    )
-}
+/**
+ * One check. The verdict is stated twice -- as the card's left rule and as a word
+ * -- so it survives both a glance and a reader who cannot separate the two hues.
+ */
 const CheckItem = observer(function CheckItem({ check }: { check: Check }) {
     const { t, lang } = useT();
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <p>{check.username}</p>
-                <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleString(localeOf(lang))}</p>
+        <li className={`check check--${check.result ? "confirm" : "refute"}`}>
+            <div className="check__top">
+                <b className="check__author">{check.username}</b>
+                <span className="check__verdict">{t(check.result ? "mark.confirmedBy" : "mark.refutedBy")}</span>
+                <time className="check__time" dateTime={check.created_at}>{getDate(check.created_at, localeOf(lang))}</time>
             </div>
-            {check.result
-                ?
-                <p style={{ fontSize: 12, color: "green" }}>{t("mark.confirmedBy")}</p>
-                :
-                <p style={{ fontSize: 12, color: "red" }}>{t("mark.refutedBy")}</p>
+            {check.comment !== "" && <p className="check__comment">{check.comment}</p>}
+            <div className="check__photos">
+                {check.photos.length > 0
+                    ? check.photos.map((src, index) => (
+                        <img key={index} className="check__photo" src={src} alt="" />
+                    ))
+                    : <span className="check__nophotos">{t("mark.checkNoPhotos")}</span>
+                }
+            </div>
+            {check.user_id !== user.id &&
+                <div className="check__report">
+                    <ReportButton targetType="check" targetId={check.check_id} small />
+                </div>
             }
-            {check.comment !== "" && <>
-                <p>{t("common.comment")}</p>
-                <p style={{ fontSize: 14 }}>{check.comment}</p>
-            </>}
-            <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-                {check.photos.map((src, index) => (
-                    <Photo key={index} src={src} />
-                ))}
-            </div>
-            {check.user_id !== user.id && <div><ReportButton targetType="check" targetId={check.check_id} small /></div>}
-        </div>
+        </li>
     )
 });
-
-function ThumbPhoto({ src, confirmed}: { src: string, confirmed: boolean }) {
-    return (
-        <img className={`thumb-photo ${confirmed ? "confirm" : "reject"}`} src={src} alt="" />
-    )
-}
-
-function Photo({ src }: { src: string }) {
-    return (
-        <img className="photo" src={src} alt="" />
-    )
-}   

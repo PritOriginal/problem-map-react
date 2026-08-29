@@ -1,9 +1,5 @@
 @use "../../mixins" as *;
 
-:root {
-    --panel-header-height: 0px;
-}
-
 .panel {
     position: absolute;
     left: 0;
@@ -12,11 +8,11 @@
     height: calc(100dvh - var(--header-height));
     width: var(--panel-width);
 
-    background-color: #f9f9f9;
+    background-color: var(--surface);
 
-    border-right: 2px solid rgb(201, 201, 201);
+    box-shadow: var(--shadow-2);
 
-    transition: transform .3s ease-in-out 0s;
+    transition: transform var(--dur-slow) var(--ease) 0s;
 
     @include mobile {
         &.open {
@@ -33,28 +29,158 @@
     }
 
     &__header {
+        // Stacked rows rather than two columns. A right-hand column holds only
+        // while the title leaves room for it, and category names come from the
+        // backend -- a long one pushed that column onto its own line, where it
+        // shrank to the width of the status chip and left the mark number
+        // dangling under it, aligned to nothing.
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        align-items: stretch;
+        gap: var(--space-3);
         height: fit-content;
-        background-color: rgb(36, 36, 36);
-        color: white;
+        background-color: var(--chrome);
+        color: var(--on-chrome);
 
-        padding: 16px;
+        padding: var(--space-7);
 
         @include mobile {
             cursor: pointer;
         }
 
-        &__status {
-            position: absolute;
-            right: 16px;
-            top: 16px;
-            font-size: 12px;
+        &__row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        // The shared "you" chip sits on the dark chrome here, where --accent-ink
+        // is too dark to read. The accent itself is 4.9:1 on --chrome.
+        .you-chip--on-chrome {
+            color: var(--accent);
+        }
+
+        // The figure the screen is opened for -- reports queued, complaints
+        // waiting. None of the nine headers carried it.
+        &__count {
+            margin-left: auto;
+            padding: 1px 8px;
+            font-family: var(--font-mono);
+            font-size: var(--fs-caption);
+            color: var(--paper);
+            background-color: var(--accent-ink);
+            border-radius: 999px;
+        }
+
+        &__sub {
+            font-size: var(--fs-caption);
+            line-height: 1.35;
+            color: var(--on-chrome-muted);
+        }
+
+        // Controls belonging to the whole screen. They used to sit as the first
+        // row of the content, where they scrolled away with it.
+        &__acts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-top: var(--space-2);
+        }
+
+        &__act {
+            padding: 3px 9px;
+            font-family: var(--font-body);
+            font-size: var(--fs-caption);
+            color: var(--on-chrome-muted);
+            background: none;
+            border: 1px solid var(--rule-chrome);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+
+            &:hover:not(:disabled) {
+                color: var(--on-chrome);
+                border-color: var(--accent);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+        }
+
+        // Where and which: the coordinates at the left edge, the id at the right,
+        // both monospaced because both are machine-stamped fact.
+        &__meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--space-6);
+        }
+
+        // The category is the title: a person recognises a mark by what the problem
+        // is, not by its id. Set in the TEXT face, not the display face -- these
+        // names come from the backend, so their length is not ours to control, and
+        // "Информационные и визуальные дефекты" runs to three lines in the wide
+        // display face, which on the mobile sheet also drives how far the map is
+        // pushed down. The display face stays for short fixed labels.
+        &__title {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-4);
+
+            font-family: var(--font-body);
+            font-size: var(--fs-title);
+            font-weight: 700;
+            line-height: 1.18;
+            letter-spacing: -0.01em;
+
+            // The glyph is centred on the CAP BAND, not on the line box and not on
+            // the whole word -- "Мусор" carries a descender that would drag the
+            // icon low, and the line box has leading the eye does not see. In em,
+            // so it still holds at the smaller size the mobile sheet uses; the
+            // fixed pixel value it replaces was only ever right at one size.
+            > svg,
+            > .type-glyph {
+                flex-shrink: 0;
+                margin-top: 0.2em;
+            }
 
             @include mobile {
-                font-size: 10px;
+                font-size: var(--fs-lead);
             }
+        }
+
+        // Machine-produced data: monospaced, so the digits line up and the pair
+        // reads as one coordinate rather than two numbers.
+        &__coords {
+            font-family: var(--font-mono);
+            font-size: var(--fs-caption);
+            color: var(--on-chrome-muted);
+            letter-spacing: -0.02em;
+        }
+
+        // The id: a reference you quote, not the name of the thing.
+        &__ref {
+            font-family: var(--font-mono);
+            font-size: var(--fs-caption);
+            color: var(--on-chrome-muted);
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+
+        // The status chip and the badges are one family -- labels the record
+        // carries -- so they share a row and wrap together.
+        &__labels {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-2);
+            margin-top: var(--space-1);
         }
     }
 
@@ -87,18 +213,32 @@
         height: 48px;
         width: 48px;
 
-        background-color: white;
-        border-radius: 50%;
+        background-color: var(--paper);
+        // The close glyph is an SVG path with no fill attribute of its own, so it
+        // inherits this one. Without it the path falls back to black and
+        // disappears against the dark disc.
+        fill: var(--ink);
+        color: var(--ink);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-round);
 
-        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--shadow-1);
 
         z-index: 1;
 
-        transition: all 0.2s ease-in-out;
+        transition:
+            background-color var(--dur-fast) var(--ease),
+            border-color var(--dur-fast) var(--ease),
+            fill var(--dur-fast) var(--ease);
 
         &:hover {
-            fill: white;
-            background-color: black;
+            border-color: var(--accent);
+            fill: var(--accent-ink);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
         }
     }
 
@@ -107,57 +247,6 @@
     }
 }
 
-.photo {
-    background-color: #e5e5e5;
-    max-height: 150px;
-    min-height: 150px;
-
-    &.add {
-        min-width: 100px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 64px;
-
-        cursor: pointer;
-        transition: all 0.2s ease-in-out;
-
-        &:hover {
-            color: white;
-            background-color: black;
-        }
-    }
-}
-
-.thumb-photo {
-    background-color: #e5e5e5;
-    max-height: 100px;
-    min-height: 100px;
-
-    &.confirm {
-        border-bottom: 1px solid rgb(83, 237, 124);
-    }
-
-    &.reject {
-        border-bottom: 1px solid rgb(255, 31, 31);
-    }
-}
-
-.show-button {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    padding: 4px;
-    border: none;
-    background-color: #f9f9f9;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-
-    &:hover {
-        fill: white;
-        background-color: rgb(36, 36, 36);
-    }
-}
 .profile-list {
     display: flex;
     flex-direction: column;
@@ -166,30 +255,33 @@
     &__item {
         display: flex;
         flex-direction: column;
-        gap: 4px;
-        padding: 8px;
-        background-color: white;
-        border: 1px solid rgb(201, 201, 201);
+        gap: var(--space-2);
+        padding: var(--space-4);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
         color: inherit;
         text-decoration: none;
         cursor: pointer;
 
+        transition: border-color var(--dur-fast) var(--ease);
+
         &:hover {
-            border-color: black;
+            border-color: var(--accent);
         }
     }
 
     &__status {
-        font-size: 12px;
+        font-size: var(--fs-caption);
         border: 2px solid;
-        border-radius: 4px;
+        border-radius: var(--radius-1);
         padding: 2px 4px;
-        background-color: white;
+        background-color: var(--paper);
     }
 }
 
 .profile-list__item.unread {
-    border-left: 3px solid #e50000;
+    border-left: 3px solid var(--accent);
 }
 
 .notification-dot {
@@ -197,49 +289,107 @@
     width: 8px;
     height: 8px;
     margin-right: 6px;
-    border-radius: 50%;
-    background-color: #e50000;
+    border-radius: var(--radius-round);
+    background-color: var(--alert);
     vertical-align: middle;
 }
 
+// A list, not a table: there are no column headings to give, and the three
+// values are place, who, and score -- a row, not a record. The initial disc is
+// the same one the comments use, so a person reads the same across screens.
 .leaderboard {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    background-color: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    overflow: hidden;
 
-    tr {
-        background-color: white;
-        border-bottom: 1px solid rgb(201, 201, 201);
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-4) var(--space-5);
 
-        &.me {
-            font-weight: bold;
-            background-color: #fff8dc;
+        & + & {
+            border-top: 1px solid var(--rule-soft);
+        }
+
+        // Your own row: marked on the edge with the accent, the same way the map
+        // marks a point that is yours.
+        &--me {
+            background-color: var(--accent-bg);
+            box-shadow: inset 3px 0 0 var(--accent);
         }
     }
 
-    td {
-        padding: 6px 8px;
+    &__place {
+        width: 22px;
+        text-align: right;
+        color: var(--ink-faint);
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        font-variant-numeric: tabular-nums;
     }
 
-    &__place {
-        width: 32px;
-        text-align: right;
-        color: #555;
+    &__avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        width: 26px;
+        height: 26px;
+        border-radius: var(--radius-round);
+        background-color: var(--neutral-bg);
+        color: var(--ink-muted);
+        font-size: var(--fs-caption);
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    &__who {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-small);
+    }
+
+    &__name {
+        font-weight: 500;
+        color: inherit;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__meta {
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
     }
 
     &__rating {
-        text-align: right;
+        font-family: var(--font-mono);
+        font-size: var(--fs-small);
         font-variant-numeric: tabular-nums;
+        font-weight: 700;
     }
 }
 
+// "Someone may have reported this already": a caution, not an error.
 .similar-block {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-    background-color: #fff8dc;
-    border: 2px solid #e5d600;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background-color: var(--highlight-bg);
+    border: 1px solid var(--hi-vis);
+    border-left: 3px solid var(--hi-vis);
+    border-radius: var(--radius-1);
 
     &__list {
         display: flex;
@@ -253,33 +403,40 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        padding: 6px 8px;
-        background-color: white;
-        border: 1px solid rgb(201, 201, 201);
-        font-size: 13px;
+        gap: var(--space-4);
+        padding: var(--space-3) var(--space-4);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
+        font-size: var(--fs-small);
     }
 }
 
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: var(--space-4);
 
     &__item {
         display: flex;
         flex-direction: column;
-        padding: 8px;
-        background-color: white;
-        border: 1px solid rgb(201, 201, 201);
+        gap: var(--space-1);
+        padding: var(--space-6);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
 
         b {
-            font-size: 18px;
+            font-family: var(--font-display);
+            font-size: var(--fs-title);
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.01em;
         }
 
         span {
-            font-size: 12px;
-            color: #555;
+            font-size: var(--fs-caption);
+            color: var(--ink-muted);
         }
     }
 }
@@ -288,7 +445,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    font-size: 12px;
+    font-size: var(--fs-caption);
 
     &__item {
         display: flex;
@@ -307,7 +464,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    font-size: 12px;
+    font-size: var(--fs-caption);
 
     label {
         display: flex;
@@ -317,6 +474,6 @@
 
     input, select {
         padding: 4px;
-        font-size: 13px;
+        font-size: var(--fs-small);
     }
 }

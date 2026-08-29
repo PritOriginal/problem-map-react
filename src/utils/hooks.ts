@@ -1,7 +1,11 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
+/** The single mobile breakpoint. Kept in sync with `$bp-mobile` in `src/mixins.scss`,
+ * which cannot be shared with JS because `@media` cannot read CSS custom properties. */
+export const MOBILE_BREAKPOINT = 768;
+
 export const useDeviceDetect = () => {
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     useEffect(() => {
@@ -11,7 +15,7 @@ export const useDeviceDetect = () => {
     }, []);
 
     useEffect(() => {
-        setIsMobile(windowWidth <= 768)
+        setIsMobile(windowWidth <= MOBILE_BREAKPOINT)
     }, [windowWidth])
 
     return { isMobile, windowWidth };

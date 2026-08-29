@@ -77,12 +77,10 @@ const AddCheck = observer(function AddCheck() {
                 />
                 :
                 <>
-                    <p style={{ fontSize: 18 }}><b>{t("check.title")}</b></p>
+                    <h2 className="section-title">{t("check.title")}</h2>
 
                     <p><b>{t("common.photos")}</b></p>
-                    <div style={{ display: "flex", gap: "8px", width: "100%", overflow: "scroll" }}>
-                        <SelectFiles onSelectedFiles={onSelectedFile} />
-                    </div>
+                    <SelectFiles files={photos} onChange={onSelectedFile} />
 
                     <p><b>{t("common.comment")}</b></p>
                     <textarea
@@ -94,14 +92,14 @@ const AddCheck = observer(function AddCheck() {
                     ></textarea>
                     <div style={{ display: "flex", gap: "16px" }}>
                         <Button
-                            style="red"
+                            style="negative"
                             onClick={() => addCheck(false)}
                             disabled={!checkValidate() || pending}
                         >
                             <p>{t("check.refute")}</p>
                         </Button>
                         <Button
-                            style="green"
+                            style="positive"
                             onClick={() => addCheck(true)}
                             disabled={!checkValidate() || pending}
                         >
@@ -111,7 +109,7 @@ const AddCheck = observer(function AddCheck() {
                     <div>
 
                         <Button
-                            style="white-2-black"
+                            style="secondary"
                             onClick={handleOnClickCancle}
                         >
                             <p>{t("common.cancel")}</p>

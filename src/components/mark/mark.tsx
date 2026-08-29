@@ -5,6 +5,8 @@ import "./marker.scss"
 import { memo } from "react";
 import { Mark, MarkType } from "../../services/MarksService";
 import { typeColor, typeIcon } from "../../utils/mark-types";
+import { MARKER_ICON, statusColors, STATUS_FALLBACK } from "../../styles/tokens";
+import { useTheme } from "../../theme";
 
 import BlobIcon from "../../assets/blob.svg?react"
 import RoadIcon from "../../assets/road.svg?react"
@@ -17,19 +19,6 @@ export enum MarkerSize {
   small = 'small',
   big = 'big',
   medium = 'medium'
-};
-
-export const COLOR_MARK_STATUSES = {
-  1: "#d3d3d3",
-  2: "#e50000",
-  4: "#e50000",
-  3: "#e5d600",
-  5: "#00e500",
-  6: "#000",
-  7: "#ff8c00",
-  8: "#8a8a8a",
-} as {
-  [index: number]: string
 };
 
 interface TypeMarkIcons {
@@ -141,7 +130,8 @@ interface MarkItemProps {
 }
 
 const MarkItem = memo(function ({ mark, type, size, selected, assigned = false, onClick }: MarkItemProps) {
-  const color = COLOR_MARK_STATUSES[mark.mark_status_id] ?? "#d3d3d3";
+  const { resolved } = useTheme();
+  const color = statusColors(resolved)[mark.mark_status_id] ?? STATUS_FALLBACK;
   const ring = typeColor(type);
 
   return (
@@ -157,8 +147,8 @@ const MarkItem = memo(function ({ mark, type, size, selected, assigned = false, 
       >
         {size == MarkerSize.big &&
           <>
-            <div className="circle-content" style={{ backgroundColor: ring ?? color }}>
-              <TypeIcon typeId={mark.mark_type_id} type={type} color="#fff" />
+            <div className="circle-content icon-on-fill" style={{ backgroundColor: ring ?? color }}>
+              <TypeIcon typeId={mark.mark_type_id} type={type} color={MARKER_ICON} />
             </div>
           </>
         }

@@ -10,6 +10,7 @@ import { BadgesBlock, LevelBlock, ProfileStats } from "../../profile/profile-blo
 import { useBadgeCatalogue } from "../../../utils/badges";
 import { localeOf, useT } from "../../../i18n";
 import { useToKeepSearch } from "../../../utils/navigation";
+import PanelHeader from "../panel-header";
 
 /** `/users/:id`: public profile with level, badges and statistics (backend integration/wave-5). */
 const UserProfilePanel = observer(function UserProfilePanel() {
@@ -72,22 +73,23 @@ const UserProfilePanel = observer(function UserProfilePanel() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{profile?.username ?? t("profile.public")}</b>{profile && profile.user_id === user.id && ` ${t("common.you")}`}</p>
-                <p style={{ fontSize: 12 }}>{subtitle}</p>
-            </div>
+            <PanelHeader
+                openOnMount
+                title={<>{profile?.username ?? t("profile.public")}{profile && profile.user_id === user.id && <i className="you-chip you-chip--on-chrome">{t("common.youShort")}</i>}</>}
+                subtitle={subtitle}
+            />
             <div className="panel__content">
-                {isLoading && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
-                {(notFound || !Number.isFinite(id) || id <= 0) && <p style={{ fontSize: 14 }}>{t("profile.notFound")}</p>}
+                {isLoading && <p className="empty-state">{t("common.loading")}</p>}
+                {(notFound || !Number.isFinite(id) || id <= 0) && <p className="empty-state">{t("profile.notFound")}</p>}
                 {profile &&
                     <>
                         <LevelBlock rating={profile.rating} level={profile.level} />
                         <hr />
-                        <p style={{ fontSize: 18 }}><b>{t("profile.badges")}</b> ({profile.badges.length})</p>
+                        <h2 className="section-title">{t("profile.badges")}<span className="section-title__count">({profile.badges.length})</span></h2>
                         <BadgesBlock badges={profile.badges} catalogue={catalogue} />
                         <hr />
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                            <p style={{ fontSize: 18 }}><b>{t("profile.stats")}</b></p>
+                            <h2 className="section-title">{t("profile.stats")}</h2>
                             <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
                         </div>
                         <ProfileStats stats={profile.stats} />

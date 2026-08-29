@@ -95,8 +95,8 @@ const ReportButton = observer(function ReportButton({ targetType, targetId, smal
                 />
             </label>
             <div className="report-form__actions">
-                <Button style="red" isMini disabled={pending} onClick={send}>{t(pending ? "report.sending" : "report.send")}</Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+                <Button style="negative" isMini disabled={pending} onClick={send}>{t(pending ? "report.sending" : "report.send")}</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             </div>
         </div>
     );

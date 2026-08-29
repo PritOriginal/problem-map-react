@@ -90,7 +90,7 @@ const QueueBanner = observer(function QueueBanner() {
   return (
     <div className="offline-banner queue-banner" role="status">
       <Link to={toKeepSearch("/queue")}>{t("offline.banner", { count })}</Link>
-      <button type="button" className="white-2-black mini" disabled={!online || offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.flush()}>
+      <button type="button" className="btn-secondary mini" disabled={!online || offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.flush()}>
         {t(offlineQueueStore.isFlushing ? "offline.sending" : "offline.send")}
       </button>
     </div>

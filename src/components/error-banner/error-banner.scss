@@ -5,14 +5,14 @@
     justify-content: space-between;
     gap: 8px;
     padding: 8px 12px;
-    border-radius: 6px;
-    background-color: #ffe5e5;
-    border: 1px solid #ff8a8a;
-    color: #a40000;
+    border-radius: var(--radius-2);
+    background-color: var(--danger-bg);
+    border: 1px solid var(--danger-rule);
+    color: var(--danger-ink);
 
     &__text {
         margin: 0;
-        font-size: 14px;
+        font-size: var(--fs-body);
         word-break: break-word;
     }
 
@@ -21,7 +21,7 @@
         border: none;
         background: none;
         color: inherit;
-        font-size: 18px;
+        font-size: var(--fs-lead);
         line-height: 1;
         cursor: pointer;
         padding: 0 4px;

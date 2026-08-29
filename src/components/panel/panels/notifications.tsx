@@ -72,7 +72,7 @@ const NotificationRow = observer(function NotificationRow({ item }: { item: Noti
                 <p style={{ fontSize: 12, whiteSpace: "nowrap" }}>{date}</p>
             </div>
             {item.body !== "" && <p style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>{item.body}</p>}
-            {item.mark_id !== null && <p style={{ fontSize: 12, color: "#555" }}>{t("common.problemN", { id: item.mark_id })}</p>}
+            {item.mark_id !== null && <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>{t("common.problemN", { id: item.mark_id })}</p>}
         </>
     );
 

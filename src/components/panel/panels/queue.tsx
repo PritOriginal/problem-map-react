@@ -57,13 +57,13 @@ const QueuePanel = observer(function QueuePanel() {
                                 <div key={item.id} className={`task-card ${item.last_error ? "overdue" : ""}`}>
                                     <div className="task-card__row">
                                         <p style={{ fontSize: 14 }}><b>{label(item)}</b></p>
-                                        <span style={{ fontSize: 12, color: "#555" }}>{new Date(item.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
+                                        <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{new Date(item.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
                                     </div>
                                     {item.payload.kind === "mark" && item.payload.description && <p className="task-card__desc">{item.payload.description}</p>}
                                     {item.payload.kind === "check" && item.payload.comment && <p className="task-card__desc">{item.payload.comment}</p>}
                                     {item.payload.kind === "comment" && <p className="task-card__desc">{item.payload.body}</p>}
-                                    {"photos" in item.payload && item.payload.photos.length > 0 && <p style={{ fontSize: 12, color: "#555" }}>{t("common.photos")}: {item.payload.photos.length}</p>}
-                                    {item.last_error && <p style={{ fontSize: 12, color: "#a40000" }}>{item.last_error} · {t("offline.attempts", { n: item.attempts })}</p>}
+                                    {"photos" in item.payload && item.payload.photos.length > 0 && <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>{t("common.photos")}: {item.payload.photos.length}</p>}
+                                    {item.last_error && <p style={{ fontSize: 12, color: "var(--danger-ink)" }}>{item.last_error} · {t("offline.attempts", { n: item.attempts })}</p>}
                                     <div className="task-card__actions">
                                         <Button style="white-2-black" isMini disabled={offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.remove(item.id)}>{t("offline.remove")}</Button>
                                     </div>

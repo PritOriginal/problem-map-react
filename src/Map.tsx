@@ -17,7 +17,8 @@ import customization from './customization.json'
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
-import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeIcon } from "./components/mark/mark";
+import MarkItem, { MarkerItem, MarkerSize, TypeIcon } from "./components/mark/mark";
+import { ASSIGNED, contrastOn, INK, PAPER, STATUS_COLORS, STATUS_FALLBACK } from "./styles/tokens";
 import { typeColor } from "./utils/mark-types";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
@@ -44,7 +45,7 @@ import user from "./store/user";
 import notificationsStore from "./store/notifications";
 import { useDeviceDetect } from "./utils/hooks";
 import heatmapStore from "./store/heatmap";
-import { bboxFromBounds, cellSizeForZoom, heatColor, heatLegend } from "./utils/heatmap";
+import { bboxFromBounds, cellSizeForZoom, heatColor, heatLegend, HEAT_COLORS } from "./utils/heatmap";
 import { BBox, HeatmapFeature } from "./services/MapService";
 
 /** Debounce for heatmap reloads while the map is being moved. */
@@ -418,7 +419,7 @@ const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, 
   return (
     <YMapFeature
       style={{
-        stroke: [{ color: "#ffffff", width: 0.5, opacity: 0.6 }],
+        stroke: [{ color: PAPER, width: 0.5, opacity: 0.6 }],
         fill: heatColor(count, max),
         fillOpacity: 0.55,
       }}
@@ -454,7 +455,7 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
       style={{
         stroke: [
           {
-            color: "black",
+            color: INK,
             width: 1,
             opacity: 0.5,
           }
@@ -549,7 +550,7 @@ const Filters = observer(() => {
             </div>
             <div className="filters__content__block">
               <FilterItem
-                icon={<div style={{ height: "12px", width: "12px", background: "linear-gradient(90deg, #fee5d9, #a50f15)", border: "1px solid gray" }}></div>}
+                icon={<div style={{ height: "12px", width: "12px", background: `linear-gradient(90deg, ${HEAT_COLORS[0]}, ${HEAT_COLORS[HEAT_COLORS.length - 1]})`, border: "1px solid gray" }}></div>}
                 name={t("map.heatmap")}
                 checked={heatmapStore.enabled}
                 onClick={() => heatmapStore.toggle()}
@@ -558,7 +559,7 @@ const Filters = observer(() => {
             {user.id !== 0 &&
               <div className="filters__content__block">
                 <FilterItem
-                  icon={<div style={{ height: "12px", width: "12px", borderRadius: "50%", backgroundColor: "#d3d3d3", border: "1px solid gray", outline: "2px dashed #1e6fff", outlineOffset: "1px" }}></div>}
+                  icon={<div style={{ height: "12px", width: "12px", borderRadius: "50%", backgroundColor: STATUS_FALLBACK, border: "1px solid gray", outline: `2px dashed ${ASSIGNED}`, outlineOffset: "1px" }}></div>}
                   name={t("map.myTasks")}
                   checked={tasksStore.onlyMine}
                   onClick={() => tasksStore.toggleOnlyMine()}
@@ -571,7 +572,7 @@ const Filters = observer(() => {
                 <FilterItem
                   key={status.mark_status_id}
                   icon={
-                    <div style={{ height: "12px", width: "12px", border: "1px solid gray", borderRadius: "50%", backgroundColor: COLOR_MARK_STATUSES[status.mark_status_id] }}>
+                    <div style={{ height: "12px", width: "12px", border: "1px solid gray", borderRadius: "50%", backgroundColor: STATUS_COLORS[status.mark_status_id] }}>
                     </div>
                   }
                   name={status.name}
@@ -587,7 +588,7 @@ const Filters = observer(() => {
               {markTypesStore.types.map((type) => (
                 <FilterItem
                   key={type.mark_type_id}
-                  icon={<span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", backgroundColor: typeColor(type) ?? "transparent" }}><TypeIcon typeId={type.mark_type_id} type={type} color={typeColor(type) ? "#fff" : "#000"} /></span>}
+                  icon={<span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", backgroundColor: typeColor(type) ?? "transparent" }}><TypeIcon typeId={type.mark_type_id} type={type} color={contrastOn(typeColor(type) ?? PAPER)} /></span>}
                   name={type.name}
                   checked={marksStore.filters.mark_type_ids.includes(type.mark_type_id)}
                   onClick={() => {

@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import { Mark } from "../../services/MarksService";
 import markStatusesStore from "../../store/mark-statuses";
 import organizationsStore from "../../store/organizations";
-import { COLOR_MARK_STATUSES } from "../mark/mark";
+import { INK, STATUS_COLORS } from "../../styles/tokens";
 import { deadlineState, formatSla } from "../../utils/deadline";
 import { useNow } from "../../utils/hooks";
 import { useT } from "../../i18n";
@@ -15,7 +15,7 @@ export const StatusBadge = observer(function StatusBadge({ statusId }: { statusI
     const { t } = useT();
     const status = markStatusesStore.statuses.find((s) => s.mark_status_id === statusId);
     return (
-        <span className="profile-list__status" style={{ borderColor: COLOR_MARK_STATUSES[statusId] ?? "#000" }}>
+        <span className="profile-list__status" style={{ borderColor: STATUS_COLORS[statusId] ?? INK }}>
             {status?.name ?? t("common.statusN", { id: statusId })}
         </span>
     );

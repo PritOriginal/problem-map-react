@@ -76,7 +76,7 @@ const CommentsBlock = observer(function CommentsBlock() {
             </div>
             {user.id !== 0
                 ? <CommentForm markId={mark.mark_id} onDone={reload} />
-                : <p style={{ fontSize: 13, color: "#555" }}>{t("comments.signIn")}</p>
+                : <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>{t("comments.signIn")}</p>
             }
             <hr />
         </>

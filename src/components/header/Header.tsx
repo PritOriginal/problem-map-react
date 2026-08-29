@@ -22,7 +22,7 @@ const Header = observer(function Header() {
             <div className="header-container">
                 <div className="header-container__menu">
                     <Link to={toKeepSearch("/")} aria-label={t("nav.map")} style={{ display: "flex" }}>
-                        <MapIcon style={{ fill: "white", width: "32px" }} />
+                        <MapIcon style={{ fill: "var(--on-chrome)", width: "32px" }} />
                     </Link>
                     <Link to={toKeepSearch("/tasks")}><p>{t("nav.tasks")}</p></Link>
                     {user.isService && <Link to={toKeepSearch("/org")}><p>{t("nav.org")}</p></Link>}
@@ -39,7 +39,7 @@ const Header = observer(function Header() {
                             <NotificationsBell />
                             <Link className="header-container__user-info__item" to={toKeepSearch("/profile")}>
                                 <p>{user.username}</p>
-                                <ProfileIcon style={{ fill: "white", stroke: "white", height: "32px" }} />
+                                <ProfileIcon style={{ fill: "var(--on-chrome)", stroke: "var(--on-chrome)", height: "32px" }} />
                             </Link>
                         </>
                         :
@@ -47,7 +47,7 @@ const Header = observer(function Header() {
                             {isMobile ?
                                 <Link className="header-container__user-info__item" to={"/signin"}>
                                     <p>{t("nav.signIn")}</p>
-                                    <ProfileIcon style={{ fill: "white", stroke: "white", height: "32px" }} />
+                                    <ProfileIcon style={{ fill: "var(--on-chrome)", stroke: "var(--on-chrome)", height: "32px" }} />
                                 </Link>
                                 :
                                 <>
@@ -59,7 +59,7 @@ const Header = observer(function Header() {
                                         <p>{t("nav.signUp")}</p>
                                     </Link>
                                     <Link className="header-container__user-info__item" to={"/signin"}>
-                                        <ProfileIcon style={{ fill: "white", stroke: "white", height: "32px" }} />
+                                        <ProfileIcon style={{ fill: "var(--on-chrome)", stroke: "var(--on-chrome)", height: "32px" }} />
                                     </Link>
                                 </>
                             }

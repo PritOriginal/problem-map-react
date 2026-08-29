@@ -1,5 +1,6 @@
 import { Outlet, useParams } from "react-router-dom";
-import { COLOR_MARK_STATUSES, TypeIcon } from "../../../mark/mark";
+import { TypeIcon } from "../../../mark/mark";
+import { PAPER, STATUS_COLORS } from "../../../../styles/tokens";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
@@ -83,8 +84,8 @@ const ProblemPanel = observer(() => {
                 onClick={() => panelStore.toggle()}
             >
                 <div className="panel__header__status">
-                    <div style={{ border: `2px solid ${COLOR_MARK_STATUSES[markStatus.mark_status_id]}`, backgroundColor: "#fff", borderRadius: "4px", padding: "4px" }}>
-                        <p style={{ color: "#000" }}><b>{markStatus.name}</b></p>
+                    <div style={{ border: `2px solid ${STATUS_COLORS[markStatus.mark_status_id]}`, backgroundColor: PAPER, borderRadius: "4px", padding: "4px" }}>
+                        <p style={{ color: "var(--ink)" }}><b>{markStatus.name}</b></p>
                     </div>
                 </div>
                 <p style={{ fontSize: "12px" }}>{t("mark.n", { id: mark.mark_id })}</p>
@@ -98,7 +99,7 @@ const ProblemPanel = observer(() => {
                         <HiddenBadge hidden={mark.hidden} />
                         <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
                         <OrgLabel organizationId={mark.organization_id} />
-                        <span style={{ color: "#ddd", fontSize: 12 }}><CommentsCount count={mark.comments_count} /></span>
+                        <span style={{ color: "var(--on-chrome-faint)", fontSize: 12 }}><CommentsCount count={mark.comments_count} /></span>
                     </div>
                 }
             </div>

@@ -14,14 +14,14 @@ export function LevelBlock({ rating, level }: { rating: number; level: UserLevel
         <div className="level-block">
             <div className="level-block__row">
                 <p><b>{title}</b></p>
-                <p style={{ fontSize: 12, color: "#555" }}>
+                <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>
                     {level.next_threshold === null ? t("profile.maxLevel") : `${rating} / ${level.next_threshold}`}
                 </p>
             </div>
             <div className="level-block__bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={t("profile.level")}>
                 <div className="level-block__fill" style={{ width: `${percent}%` }} />
             </div>
-            {level.next_threshold !== null && <p style={{ fontSize: 12, color: "#555" }}>{t("profile.toNext", { n: progress.remaining })}</p>}
+            {level.next_threshold !== null && <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>{t("profile.toNext", { n: progress.remaining })}</p>}
         </div>
     );
 }

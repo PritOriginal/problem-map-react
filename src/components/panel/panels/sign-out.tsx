@@ -219,8 +219,8 @@ function CheckRow({ check, to }: { check: Check, to: To }) {
                 <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleDateString(localeOf(lang))}</p>
             </div>
             {check.result
-                ? <p style={{ fontSize: 12, color: "green" }}>{t("mark.confirmedBy")}</p>
-                : <p style={{ fontSize: 12, color: "red" }}>{t("mark.refutedBy")}</p>
+                ? <p style={{ fontSize: 12, color: "var(--success-ink)" }}>{t("mark.confirmedBy")}</p>
+                : <p style={{ fontSize: 12, color: "var(--danger-ink)" }}>{t("mark.refutedBy")}</p>
             }
             {check.comment !== "" && <p style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>{check.comment}</p>}
         </Link>

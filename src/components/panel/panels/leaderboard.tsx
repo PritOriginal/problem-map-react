@@ -106,7 +106,7 @@ const Leaderboard = observer(function Leaderboard() {
                                     <Link to={toKeepSearch(`/users/${entry.user_id}`)} style={{ color: "inherit" }}>{entry.username}</Link>
                                     {entry.user_id === user.id && ` ${t("common.you")}`}
                                     {(entry.level !== undefined || entry.badges_count !== undefined) &&
-                                        <span style={{ fontSize: 11, color: "#555", marginLeft: 6 }}>
+                                        <span style={{ fontSize: 11, color: "var(--ink-muted)", marginLeft: 6 }}>
                                             {entry.level !== undefined && `${t("leaderboard.level")} ${entry.level}`}
                                             {entry.level !== undefined && entry.badges_count !== undefined && " · "}
                                             {entry.badges_count !== undefined && `${entry.badges_count} ${t("leaderboard.badges")}`}

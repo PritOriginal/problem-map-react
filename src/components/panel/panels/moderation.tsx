@@ -194,7 +194,7 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
                 <p style={{ fontSize: 14 }}>
                     <b>{t("moderation.reportN", { id: report.report_id })}</b> · {t(TARGET_LABELS[report.target_type] ?? "report.target.mark")} #{report.target_id}
                 </p>
-                <span style={{ fontSize: 12, color: "#555" }}>{new Date(report.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{new Date(report.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
             </div>
             <p style={{ fontSize: 13 }}>
                 <b>{t("report.reason")}:</b> {t(REASON_LABELS[report.reason] ?? "report.reason.other")}
@@ -203,7 +203,7 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
             </p>
             {report.comment && <p className="task-card__desc">{report.comment}</p>}
             {mark &&
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "6px", backgroundColor: "#f4f4f4" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "6px", backgroundColor: "var(--surface-sunken)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <TypeIcon typeId={mark.mark_type_id} type={type} color="#000" />
                         <p style={{ fontSize: 13 }}><b>{t("mark.n", { id: mark.mark_id })}</b> {type?.name ?? ""}</p>

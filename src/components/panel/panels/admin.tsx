@@ -173,6 +173,9 @@ const SettingsForm = function SettingsForm() {
     );
 };
 
+// The colour here is DATA, not chrome: it is stored on the mark type and sent to
+// the backend, and `<input type="color">` accepts only a literal hex. Both stay
+// literals on purpose -- neither can be a token.
 const EMPTY_TYPE: AddMarkTypeRequest = { code: "", name_ru: "", name_en: "", icon: "", color: "#e50000", sla_hours: 72 };
 
 const MarkTypesTable = function MarkTypesTable() {
@@ -263,12 +266,12 @@ function MarkTypeRow({ type, onDone }: { type: AdminMarkType; onDone: () => void
         <div className={`task-card admin-type ${type.active ? "" : "inactive"}`}>
             <div className="task-card__row">
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                    <span className="admin-type__swatch" style={{ backgroundColor: type.color || "#ccc" }} aria-hidden="true">{type.icon}</span>
-                    <p style={{ fontSize: 14 }}><b>{type.name_ru || type.name}</b> {type.name_en && <span style={{ color: "#555" }}>/ {type.name_en}</span>}</p>
+                    <span className="admin-type__swatch" style={{ backgroundColor: type.color || "var(--swatch-empty)" }} aria-hidden="true">{type.icon}</span>
+                    <p style={{ fontSize: 14 }}><b>{type.name_ru || type.name}</b> {type.name_en && <span style={{ color: "var(--ink-muted)" }}>/ {type.name_en}</span>}</p>
                 </div>
-                <span style={{ fontSize: 12, color: "#555" }}>#{type.mark_type_id} · {type.code}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>#{type.mark_type_id} · {type.code}</span>
             </div>
-            <p style={{ fontSize: 12, color: "#555" }}>
+            <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>
                 {t("admin.types.sla")}: {type.sla_hours} · {t("admin.types.sortOrder")}: {type.sort_order} · {t("admin.types.active")}: {type.active ? "✓" : "✗"}
             </p>
             <div className="task-card__actions">
@@ -478,9 +481,9 @@ const ApiKeysBlock = function ApiKeysBlock() {
                     <div key={key.id} className="task-card">
                         <div className="task-card__row">
                             <p style={{ fontSize: 14 }}><b>{key.name}</b> {key.prefix && <code style={{ fontSize: 12 }}>{key.prefix}…</code>}</p>
-                            <span style={{ fontSize: 12, color: "#555" }}>{key.created_at && new Date(key.created_at).toLocaleDateString(localeOf(lang))}</span>
+                            <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{key.created_at && new Date(key.created_at).toLocaleDateString(localeOf(lang))}</span>
                         </div>
-                        <p style={{ fontSize: 12, color: "#555" }}>
+                        <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>
                             {t("admin.keys.lastUsed")}: {key.last_used_at ? new Date(key.last_used_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" }) : t("admin.keys.neverUsed")}
                         </p>
                         <div className="task-card__actions">

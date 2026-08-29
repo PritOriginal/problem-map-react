@@ -453,7 +453,7 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
             ))}
             {question !== "" &&
                 <>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "var(--paper)" }}>
                         <DoubleProgressBar
                             question={question}
                             negative={allChecks.filter(check => check.result == false).length}
@@ -461,7 +461,7 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
                         />
                     </div>
                     {allChecks.length > 0 &&
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "var(--paper)" }}>
                             <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
                                 <p>{t("mark.checks")}</p>
                             </div>
@@ -475,7 +475,7 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
                                     ))}
                                 </div>
                                 :
-                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "#f9f9f9" }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "var(--surface)" }}>
                                     {showChecks && allChecks.map((check) => (
                                         <CheckItem key={check.check_id} check={check} />
                                     ))}
@@ -499,7 +499,7 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
 function HistoryItem({ item }: { item: MarkStatusHistoryItem }) {
     const { lang } = useT();
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "white" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "var(--paper)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <p>{getTitle(item.new_mark_status_id)}</p>
                 <p style={{ fontSize: 12 }}>{getDate(item.changed_at, localeOf(lang))}</p>
@@ -521,16 +521,16 @@ function ShowButton({ isShow, onClick }: { isShow: boolean, onClick: React.Mouse
 const CheckItem = observer(function CheckItem({ check }: { check: Check }) {
     const { t, lang } = useT();
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "white" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "var(--paper)" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <p>{check.username}</p>
                 <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleString(localeOf(lang))}</p>
             </div>
             {check.result
                 ?
-                <p style={{ fontSize: 12, color: "green" }}>{t("mark.confirmedBy")}</p>
+                <p style={{ fontSize: 12, color: "var(--success-ink)" }}>{t("mark.confirmedBy")}</p>
                 :
-                <p style={{ fontSize: 12, color: "red" }}>{t("mark.refutedBy")}</p>
+                <p style={{ fontSize: 12, color: "var(--danger-ink)" }}>{t("mark.refutedBy")}</p>
             }
             {check.comment !== "" && <>
                 <p>{t("common.comment")}</p>

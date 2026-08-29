@@ -183,7 +183,7 @@ const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?:
                     {mark && <TypeIcon typeId={mark.mark_type_id} type={type} color="#000" />}
                     <p style={{ fontSize: 14 }}><b>{t("common.problemN", { id: task.mark_id })}</b> {type?.name ?? ""}</p>
                 </div>
-                <span className="profile-list__status" style={{ borderColor: overdue ? "#a40000" : isDone ? "#00a000" : "#555" }}>
+                <span className="profile-list__status" style={{ borderColor: overdue ? "var(--danger-ink)" : isDone ? "var(--success-ink)" : "var(--ink-muted)" }}>
                     {taskStatusesStore.nameOf(task.status_id)}
                 </span>
             </div>

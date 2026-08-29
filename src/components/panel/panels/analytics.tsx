@@ -7,13 +7,14 @@ import adminBoundariesStore from "../../../store/admin-boundaries";
 import markStatusesStore from "../../../store/mark-statuses";
 import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesStep } from "../../../services/AnalyticsService";
 import { TranslationKey, useT } from "../../../i18n";
+import { SERIES_COLORS } from "../../../styles/tokens";
 import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, pointX, pointY, toIsoDate, yTicks } from "../../../utils/chart";
 
 const SERIES_META: { key: keyof Omit<TimeseriesPoint, "period">; label: TranslationKey; color: string }[] = [
-    { key: "created", label: "analytics.series.created", color: "#1f77b4" },
-    { key: "confirmed", label: "analytics.series.confirmed", color: "#e50000" },
-    { key: "closed", label: "analytics.series.closed", color: "#00a000" },
-    { key: "refuted", label: "analytics.series.refuted", color: "#000" },
+    { key: "created", label: "analytics.series.created", color: SERIES_COLORS.created },
+    { key: "confirmed", label: "analytics.series.confirmed", color: SERIES_COLORS.confirmed },
+    { key: "closed", label: "analytics.series.closed", color: SERIES_COLORS.closed },
+    { key: "refuted", label: "analytics.series.refuted", color: SERIES_COLORS.refuted },
 ];
 
 const PERIOD_PRESETS: { label: TranslationKey; days: number }[] = [
@@ -195,7 +196,7 @@ export const LineChart = memo(function LineChart({ points }: { points: Timeserie
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={t("analytics.chartAria")} style={{ background: "white", border: "1px solid rgb(201, 201, 201)" }}>
+            <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={t("analytics.chartAria")} style={{ background: "var(--paper)", border: "1px solid var(--rule)" }}>
                 {ticks.map((t) => {
                     const y = pointY(t, yMax, layout);
                     return (

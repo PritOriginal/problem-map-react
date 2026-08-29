@@ -74,12 +74,16 @@ class BaseService {
 
 /**
  * Versioned so a body cached by an older build (which stored a different payload shape,
- * e.g. bare lists) is never served to newer code; stale versions are purged on first use.
+ * e.g. bare lists) is never served to newer code; stale versions are purged once on module load.
  */
 const ETAG_PREFIX = "etag:v2:";
 const ETAG_LEGACY_PREFIX = "etag:";
 
-/** Drops entries written under an older `ETAG_PREFIX` (a handful of keys at most, so it runs per read). */
+/**
+ * Drops entries written under an older `ETAG_PREFIX`. The sweep walks the whole of
+ * localStorage (tokens and mobx-persist keys included), so it runs exactly once, when this
+ * module is first imported — the legacy prefix is a one-off migration, not per-read state.
+ */
 function purgeStaleEtagEntries(): void {
     try {
         for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -92,6 +96,9 @@ function purgeStaleEtagEntries(): void {
         // ignore
     }
 }
+// one-off migration for the session; `purgeStaleEtagEntries` already swallows a missing localStorage
+purgeStaleEtagEntries();
+
 /**
  * localStorage is ~5 MB per origin and shared with the tokens: bodies above this size (e.g. admin
  * boundaries with full geometry) are not cached, the request then simply goes without `If-None-Match`.
@@ -104,7 +111,6 @@ interface EtagEntry<T> {
 }
 
 function readEtagEntry<T>(key: string): EtagEntry<T> | null {
-    purgeStaleEtagEntries();
     try {
         const raw = localStorage.getItem(key);
         if (!raw) {

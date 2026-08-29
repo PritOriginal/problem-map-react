@@ -48,8 +48,8 @@ export default function App() {
       return;
     }
     loadedLang.current = lang;
-    markTypesStore.fetch();
-    markStatusesStore.fetch();
+    markTypesStore.fetch(true);
+    markStatusesStore.fetch(true);
     organizationsStore.fetch(true);
     if (user.id !== 0) {
       taskStatusesStore.fetch();

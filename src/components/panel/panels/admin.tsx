@@ -176,7 +176,9 @@ const MarkTypesTable = function MarkTypesTable() {
     const [version, setVersion] = useState(0);
     const reload = useCallback(() => {
         setVersion((v) => v + 1);
-        markTypesStore.fetch(); // the public dictionary (map markers / filters) follows the change
+        // the public dictionary (map markers / filters) follows the change: forced, since the
+        // store keeps what it already loaded and would otherwise skip the request
+        markTypesStore.fetch(true);
     }, []);
 
     useEffect(() => {

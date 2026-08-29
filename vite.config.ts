@@ -1,10 +1,23 @@
-import { defineConfig, loadEnv } from 'vite'
+/// <reference types="vitest/config" />
+import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import svgr from 'vite-plugin-svgr';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const plugins: PluginOption[] = [react(), svgr()]
+  // Bundle treemap on demand only (`ANALYZE=1 npm run build`): a normal build
+  // must not pay for the gzip/brotli passes the report needs.
+  if (process.env.ANALYZE) {
+    plugins.push(visualizer({
+      filename: "dist/stats.html",
+      template: "treemap",
+      gzipSize: true,
+      brotliSize: true,
+    }) as PluginOption)
+  }
   return {
     server: {
       host: env.APP_HOST,
@@ -16,13 +29,24 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
-    plugins: [react(), svgr()],
+    plugins,
     css: {
       preprocessorOptions: {
         scss: {
           api: 'modern-compiler'
         }
       }
-    }
+    },
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./src/test/setup.ts"],
+      globals: false,
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "lcov"],
+        include: ["src/**"],
+        exclude: ["src/**/*.test.*", "src/test/**", "src/i18n/ru.ts", "src/i18n/en.ts"],
+      },
+    },
   }
 })

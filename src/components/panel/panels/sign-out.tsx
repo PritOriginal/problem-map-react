@@ -5,7 +5,7 @@ import { signOut } from "../../../services/tokens";
 import { Link, To } from "react-router-dom";
 import panelStore from "../../../store/panel";
 import notificationsStore from "../../../store/notifications";
-import UsersService, { CurrentUser } from "../../../services/UsersService";
+import UsersService, { CurrentUser, UserStats } from "../../../services/UsersService";
 import MarksService, { Mark } from "../../../services/MarksService";
 import ChecksService, { Check } from "../../../services/ChecksService";
 import markStatusesStore from "../../../store/mark-statuses";
@@ -37,6 +37,7 @@ const Profile = observer(function Profile() {
     const [me, setMe] = useState<CurrentUser | null>(null);
     const [marks, setMarks] = useState<Mark[]>([]);
     const [checks, setChecks] = useState<Check[]>([]);
+    const [stats, setStats] = useState<UserStats | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const userId = user.id;
@@ -51,7 +52,8 @@ const Profile = observer(function Profile() {
             UsersService.getMe(),
             MarksService.getMarksByUserId(userId),
             ChecksService.getChecksByUserId(userId),
-        ]).then(([meRes, marksRes, checksRes]) => {
+            UsersService.getMyStats(),
+        ]).then(([meRes, marksRes, checksRes, statsRes]) => {
             if (ignore) {
                 return;
             }
@@ -75,6 +77,13 @@ const Profile = observer(function Profile() {
             } else {
                 console.error(checksRes.reason);
                 notificationsStore.showError(checksRes.reason, "Не удалось загрузить ваши проверки");
+            }
+            if (statsRes.status === "fulfilled") {
+                setStats(statsRes.value.payload);
+            } else {
+                // stats require backend integration/wave-3; keep the rest of the profile usable
+                console.error(statsRes.reason);
+                setStats(null);
             }
         });
         return () => {
@@ -109,6 +118,12 @@ const Profile = observer(function Profile() {
                             <p><b>Домашняя точка:</b> {me.home_point.coordinates[1].toFixed(6)}, {me.home_point.coordinates[0].toFixed(6)}</p>
                         }
                         <hr />
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                            <p style={{ fontSize: 18 }}><b>Статистика</b></p>
+                            <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>Рейтинг участников →</Link>
+                        </div>
+                        {stats ? <StatsBlock stats={stats} /> : !isLoading && <p style={{ fontSize: 14 }}>Статистика недоступна</p>}
+                        <hr />
                         <p style={{ fontSize: 18 }}><b>Мои метки</b> {isLoading ? "" : `(${marks.length})`}</p>
                         {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>Вы ещё не отмечали проблем</p>}
                         <div className="profile-list">
@@ -132,6 +147,27 @@ const Profile = observer(function Profile() {
         </>
     )
 });
+
+function StatsBlock({ stats }: { stats: UserStats }) {
+    const items: { value: number | string; label: string }[] = [
+        { value: stats.rating, label: "Рейтинг" },
+        { value: stats.tasks_completed, label: "Заданий выполнено" },
+        { value: stats.marks_total, label: "Меток всего" },
+        { value: `${stats.marks_confirmed} / ${stats.marks_refuted}`, label: "Подтверждено / опровергнуто" },
+        { value: stats.checks_total, label: "Проверок всего" },
+        { value: stats.checks_correct, label: "Верных проверок" },
+    ];
+    return (
+        <div className="stats-grid">
+            {items.map((item) => (
+                <div key={item.label} className="stats-grid__item">
+                    <b>{item.value}</b>
+                    <span>{item.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 const MarkRow = observer(function MarkRow({ mark, to }: { mark: Mark, to: To }) {
     const status = markStatusesStore.statuses.find((s) => s.mark_status_id === mark.mark_status_id);

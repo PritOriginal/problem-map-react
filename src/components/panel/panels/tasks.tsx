@@ -19,6 +19,7 @@ import { mapWithLimit } from "../../../utils/concurrency";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import PanelHeader from "../panel-header";
+import { AsyncState } from "../async-state";
 
 export const TASKS_LIMIT = 100;
 /** How many `GET /marks/{id}` requests run at once while filling the task cards. */
@@ -121,11 +122,11 @@ const TasksPanel = observer(function TasksPanel() {
                             ))}
                         </div>
                         <div id="tasks-tabpanel" role="tabpanel" aria-labelledby={`tasks-tab-${tab}`}>
-                            {isLoading && tasks.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
-                            {!isLoading && tasks.length === 0 && <p className="empty-state">{t("tasks.empty")}</p>}
-                            <div className="profile-list">
-                                {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks?.[task.mark_id]} />)}
-                            </div>
+                            <AsyncState keepPrevious isLoading={isLoading} isEmpty={tasks.length === 0} empty={t("tasks.empty")}>
+                                <div className="profile-list">
+                                    {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks?.[task.mark_id]} />)}
+                                </div>
+                            </AsyncState>
                         </div>
                     </>
                 }

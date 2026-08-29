@@ -1,7 +1,6 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { StatTile } from "../../stat-tile/stat-tile";
 import { observer } from "mobx-react-lite";
-import adminBoundariesStore from "../../../store/admin-boundaries";
 import markStatusesStore from "../../../store/mark-statuses";
 import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesStep } from "../../../services/AnalyticsService";
 import { TranslationKey, useT } from "../../../i18n";
@@ -9,6 +8,7 @@ import { SERIES_COLORS } from "../../../styles/tokens";
 import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, pointX, pointY, toIsoDate, yTicks } from "../../../utils/chart";
 import { useAsyncData } from "../../../utils/use-async-data";
 import PanelHeader from "../panel-header";
+import { BoundarySelect, PanelControls, SelectField } from "../panel-controls";
 
 const SERIES_META: { key: keyof Omit<TimeseriesPoint, "period">; label: TranslationKey; color: string }[] = [
     { key: "created", label: "analytics.series.created", color: SERIES_COLORS.created },
@@ -34,8 +34,6 @@ const Analytics = observer(function Analytics() {
     const { t } = useT();
 
     useEffect(() => {
-        // the store loads once and shares an in-flight request, so this reuses the map's data
-        adminBoundariesStore.fetchBoundaries();
         if (markStatusesStore.statuses.length === 0 && !markStatusesStore.isLoading) {
             markStatusesStore.fetch();
         }
@@ -68,26 +66,18 @@ const Analytics = observer(function Analytics() {
 
     const isLoading = kpiLoading || seriesLoading;
 
-    const rawBoundaries = adminBoundariesStore.boundaries;
-    const boundaries = useMemo(
-        () => [...rawBoundaries].sort((a, b) => a.admin_level - b.admin_level || a.name.localeCompare(b.name)),
-        [rawBoundaries],
-    );
+    const stepOptions: { value: TimeseriesStep; label: string }[] = useMemo(() => [
+        { value: "day", label: t("analytics.step.day") },
+        { value: "week", label: t("analytics.step.week") },
+        { value: "month", label: t("analytics.step.month") },
+    ], [t]);
 
     return (
         <>
             <PanelHeader openOnMount title={t("analytics.title")} subtitle={t("analytics.subtitle")} />
             <div className="panel__content">
-                <div className="analytics-controls">
-                    <label style={{ gridColumn: "1 / -1" }}>
-                        {t("analytics.district")}
-                        <select value={boundaryId} onChange={(e) => setBoundaryId(Number(e.target.value))}>
-                            <option value={0}>{t("analytics.wholeCity")}</option>
-                            {boundaries.map((b) => (
-                                <option key={b.id} value={b.id}>{b.name}</option>
-                            ))}
-                        </select>
-                    </label>
+                <PanelControls>
+                    <BoundarySelect span label={t("analytics.district")} value={boundaryId} onChange={setBoundaryId} />
                     <label>
                         {t("analytics.from")}
                         <input type="date" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
@@ -96,22 +86,15 @@ const Analytics = observer(function Analytics() {
                         {t("analytics.to")}
                         <input type="date" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
                     </label>
-                    <div style={{ display: "flex", gap: "4px", gridColumn: "1 / -1", flexWrap: "wrap" }}>
+                    <div className="analytics-controls__span" style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                         {PERIOD_PRESETS.map((preset) => (
                             <button key={preset.days} type="button" className="btn-secondary mini" onClick={() => setRange(defaultRange(preset.days))}>
                                 {t(preset.label)}
                             </button>
                         ))}
                     </div>
-                    <label>
-                        {t("analytics.step")}
-                        <select value={step} onChange={(e) => setStep(e.target.value as TimeseriesStep)}>
-                            <option value="day">{t("analytics.step.day")}</option>
-                            <option value="week">{t("analytics.step.week")}</option>
-                            <option value="month">{t("analytics.step.month")}</option>
-                        </select>
-                    </label>
-                </div>
+                    <SelectField label={t("analytics.step")} value={step} options={stepOptions} onChange={setStep} />
+                </PanelControls>
                 <hr />
                 <h2 className="section-title">{t("analytics.kpi")}<span className="section-title__count">{isLoading && <span style={{ fontSize: 12 }}>{t("common.loading")}</span>}</span></h2>
                 {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p className="empty-state">{t("common.noData")}</p>}

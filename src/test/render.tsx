@@ -83,7 +83,11 @@ export function resetStores(): void {
         tasksStore.clear();
         tasksStore.isLoading = false;
 
-        // admin-boundaries
+        // admin-boundaries -- `loadedBoundaries` is a private, non-observable guard
+        // against re-fetching, the same shape organizations has. Left standing it
+        // makes the store claim it has data it no longer has: the second test in a
+        // file gets an empty list and no request.
+        (adminBoundariesStore as unknown as { loadedBoundaries: boolean }).loadedBoundaries = false;
         adminBoundariesStore.boundaries = [];
         adminBoundariesStore.marksCount = [];
         adminBoundariesStore.filtersBoundaries = { admin_levels: [6, 9, 10] };

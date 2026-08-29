@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { TranslationKey, useT } from "../../../i18n";
 import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
 import user from "../../../store/user";
-import adminBoundariesStore from "../../../store/admin-boundaries";
 import UsersService, { LEADERBOARD_PERIODS, LeaderboardEntry, LeaderboardPeriod } from "../../../services/UsersService";
 import { useAsyncData } from "../../../utils/use-async-data";
 import { useToKeepSearch } from "../../../utils/navigation";
 import PanelHeader from "../panel-header";
+import { AsyncState } from "../async-state";
+import { BoundarySelect, PanelControls, SelectField } from "../panel-controls";
 
 export const LEADERBOARD_LIMIT = 50;
 
@@ -22,11 +23,6 @@ const Leaderboard = observer(function Leaderboard() {
     const { t } = useT();
     const toKeepSearch = useToKeepSearch();
 
-    useEffect(() => {
-        // the store loads once and shares an in-flight request, so this reuses the map's data
-        adminBoundariesStore.fetchBoundaries();
-    }, []);
-
     const [boundaryId, setBoundaryId] = useState(0);
     const [period, setPeriod] = useState<LeaderboardPeriod>("all");
     const { data, isLoading } = useAsyncData(
@@ -38,34 +34,20 @@ const Leaderboard = observer(function Leaderboard() {
     );
     const entries: LeaderboardEntry[] = data ?? [];
 
-    const rawBoundaries = adminBoundariesStore.boundaries;
-    const boundaries = useMemo(
-        () => [...rawBoundaries].sort((a, b) => a.admin_level - b.admin_level || a.name.localeCompare(b.name)),
-        [rawBoundaries],
+    const periodOptions = useMemo(
+        () => LEADERBOARD_PERIODS.map((p) => ({ value: p, label: t(PERIOD_LABELS[p]) })),
+        [t],
     );
 
     return (
         <>
             <PanelHeader openOnMount title={t("leaderboard.title")} subtitle={t("leaderboard.top", { n: LEADERBOARD_LIMIT })} />
             <div className="panel__content">
-                <div className="analytics-controls">
-                    <label>
-                        {t("leaderboard.district")}
-                        <select value={boundaryId} onChange={(e) => setBoundaryId(Number(e.target.value))}>
-                            <option value={0}>{t("analytics.wholeCity")}</option>
-                            {boundaries.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                        </select>
-                    </label>
-                    <label>
-                        {t("leaderboard.period")}
-                        <select value={period} onChange={(e) => setPeriod(e.target.value as LeaderboardPeriod)}>
-                            {LEADERBOARD_PERIODS.map((p) => <option key={p} value={p}>{t(PERIOD_LABELS[p])}</option>)}
-                        </select>
-                    </label>
-                </div>
-                {isLoading && <p className="empty-state">{t("common.loading")}</p>}
-                {!isLoading && entries.length === 0 && <p className="empty-state">{t("leaderboard.empty")}</p>}
-                {entries.length > 0 &&
+                <PanelControls>
+                    <BoundarySelect label={t("leaderboard.district")} value={boundaryId} onChange={setBoundaryId} />
+                    <SelectField label={t("leaderboard.period")} value={period} options={periodOptions} onChange={setPeriod} />
+                </PanelControls>
+                <AsyncState isLoading={isLoading} isEmpty={entries.length === 0} empty={t("leaderboard.empty")}>
                     <ol className="leaderboard">
                         {entries.map((entry, index) => (
                             <li key={entry.user_id} className={`leaderboard__row${entry.user_id === user.id ? " leaderboard__row--me" : ""}`}>
@@ -86,7 +68,7 @@ const Leaderboard = observer(function Leaderboard() {
                             </li>
                         ))}
                     </ol>
-                }
+                </AsyncState>
             </div>
         </>
     );

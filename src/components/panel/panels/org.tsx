@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { observer } from "mobx-react-lite";
 import { LngLat } from "@yandex/ymaps3-types";
-import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
@@ -19,6 +18,7 @@ import { useAsyncData } from "../../../utils/use-async-data";
 import { useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import PanelHeader from "../panel-header";
+import { AsyncState } from "../async-state";
 
 const ORG_QUEUE_LIMIT = 100;
 
@@ -28,7 +28,6 @@ const ORG_QUEUE_STATUSES = [MarkStatusType.ConfirmedStatus, MarkStatusType.InWor
 /** `/org`: service desk of the signed-in organization staff (`role === "service"`). */
 const OrgPanel = observer(function OrgPanel() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
 
     const [onlyOverdue, setOnlyOverdue] = useState(false);
 
@@ -39,13 +38,6 @@ const OrgPanel = observer(function OrgPanel() {
         [],
         { enabled: isService, errorMessage: t("org.loadFailed") },
     );
-
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, [org]);
 
     const orgId = org?.organization_id ?? 0;
     // `reload` is what a card calls after taking or resolving a mark; it replaces the
@@ -67,18 +59,18 @@ const OrgPanel = observer(function OrgPanel() {
                     <UnauthorizedBlock text={t("unauth.org")} />
                     :
                     <>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <div className="section-title-row">
                             <h2 className="section-title">{t("org.queue")}<span className="section-title__count">{!isLoading && `(${marks.length})`}</span></h2>
                             <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 13, cursor: "pointer" }}>
                                 <input type="checkbox" checked={onlyOverdue} onChange={(e) => setOnlyOverdue(e.target.checked)} />
                                 {t("org.onlyOverdue")}
                             </label>
                         </div>
-                        {isLoading && marks.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
-                        {!isLoading && marks.length === 0 && <p className="empty-state">{t("org.empty")}</p>}
-                        <div className="profile-list">
-                            {marks.map((mark) => <QueueCard key={mark.mark_id} mark={mark} onDone={reload} />)}
-                        </div>
+                        <AsyncState keepPrevious isLoading={isLoading} isEmpty={marks.length === 0} empty={t("org.empty")}>
+                            <div className="profile-list">
+                                {marks.map((mark) => <QueueCard key={mark.mark_id} mark={mark} onDone={reload} />)}
+                            </div>
+                        </AsyncState>
                     </>
                 }
             </div>

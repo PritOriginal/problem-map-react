@@ -44,8 +44,40 @@
 
         padding: var(--space-7);
 
+        // The sheet's grab handle, and the only thing in the header that
+        // collapses it -- a real button, so it answers Enter and Space and says
+        // whether the sheet is open. The whole header used to carry the click,
+        // which is why the action row needed a stopPropagation wrapper.
+        // Off on the desktop, where the panel does not collapse at all.
+        &__handle {
+            display: none;
+        }
+
         @include mobile {
-            cursor: pointer;
+            &__handle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                padding: var(--space-2) 0;
+                margin-top: calc(-1 * var(--space-4));
+                background: none;
+                border: none;
+                cursor: pointer;
+
+                &:focus-visible {
+                    outline: 2px solid var(--accent);
+                    outline-offset: 2px;
+                }
+            }
+
+            &__grip {
+                display: block;
+                width: 36px;
+                height: 4px;
+                border-radius: 999px;
+                background-color: var(--rule-chrome);
+            }
         }
 
         &__row {
@@ -475,5 +507,11 @@
     input, select {
         padding: 4px;
         font-size: var(--fs-small);
+    }
+
+    // A control that needs the whole row: the district filter, a button strip.
+    // Was `style={{ gridColumn: "1 / -1" }}` at every such call site.
+    &__span {
+        grid-column: 1 / -1;
     }
 }

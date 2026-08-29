@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { observer } from "mobx-react-lite";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
-import AdminService, { AddMarkTypeRequest, AdminMarkType, AdminSettings, ApiKey, CreatedApiKey, UpdateMarkTypeRequest } from "../../../services/AdminService";
-import { SETTINGS_FIELDS, getPath, normalizeSettings, setPath, validateSettings } from "../../../utils/admin-settings";
+import AdminService, { AddMarkTypeRequest, AdminMarkType, ApiKey, CreatedApiKey, UpdateMarkTypeRequest } from "../../../services/AdminService";
 import { isHexColor } from "../../../utils/mark-types";
 import { useAsyncData } from "../../../utils/use-async-data";
 import { Button } from "../../button/button";
@@ -12,6 +11,7 @@ import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import "./admin.scss";
 import PanelHeader from "../panel-header";
+import { SettingsForm } from "./admin/settings-form";
 
 type TabKey = "settings" | "types" | "keys";
 
@@ -53,108 +53,6 @@ const AdminPanel = observer(function AdminPanel() {
 });
 
 export default AdminPanel;
-
-const SettingsForm = function SettingsForm() {
-    const { t } = useT();
-    const [saved, setSaved] = useState<AdminSettings | null>(null);
-    const [form, setForm] = useState<AdminSettings | null>(null);
-    const [pending, setPending] = useState(false);
-    const [ok, setOk] = useState(false);
-
-    // The loaded settings seed two pieces of state -- the saved copy and the editable
-    // form -- so the answer is copied into them once rather than read from `data`.
-    const { data: loaded } = useAsyncData(
-        (signal) => AdminService.getSettings({ signal }).then((res) => normalizeSettings(res.payload)),
-        [],
-        { errorMessage: t("admin.settingsLoadFailed") },
-    );
-
-    useEffect(() => {
-        if (loaded) {
-            setSaved(loaded);
-            setForm(loaded);
-        }
-    }, [loaded]);
-
-    if (!form || !saved) {
-        return <p className="empty-state">{t("common.loading")}</p>;
-    }
-
-    const errors = validateSettings(form);
-    const dirty = JSON.stringify(form) !== JSON.stringify(saved);
-
-    const save = () => {
-        if (Object.keys(errors).length > 0) {
-            notificationsStore.showError(null, t("admin.invalid"));
-            return;
-        }
-        setPending(true);
-        AdminService.updateSettings(form)
-            .then((data) => {
-                notificationsStore.clear();
-                const s = normalizeSettings(data.payload ?? form);
-                setSaved(s);
-                setForm(s);
-                setOk(true);
-                window.setTimeout(() => setOk(false), 2500);
-            })
-            .catch((error) => {
-                console.error(error);
-                notificationsStore.showError(error, t("admin.settingsSaveFailed"));
-            })
-            .finally(() => setPending(false));
-    };
-
-    const numberField = (path: string) => {
-        const field = SETTINGS_FIELDS.find((f) => f.path === path)!;
-        const error = errors[path];
-        return (
-            <label key={path} className={`admin-field ${error ? "invalid" : ""}`}>
-                <span>{t(`admin.settings.${path}` as TranslationKey)}</span>
-                <input
-                    type="number"
-                    min={field.min}
-                    max={field.max}
-                    step={field.integer ? 1 : 0.01}
-                    value={String(getPath(form, path) ?? "")}
-                    onChange={(e) => setForm(setPath(form, path, e.target.value === "" ? NaN : Number(e.target.value)))}
-                />
-                <small>{t("admin.range", { min: field.min, max: field.max })}</small>
-            </label>
-        );
-    };
-
-    return (
-        <div className="admin-form">
-            <div className="admin-grid">
-                {numberField("vote_threshold")}
-                {numberField("dedup_radius_m")}
-                {numberField("max_checks_per_day")}
-            </div>
-            <p><b>{t("admin.settings.rating")}</b></p>
-            <div className="admin-grid">
-                {(["check_correct", "check_wrong", "mark_confirmed", "mark_refuted", "task_completed"] as const).map((k) => numberField(`rating.${k}`))}
-            </div>
-            <p><b>{t("admin.settings.tasker")}</b></p>
-            <div className="admin-grid">
-                {numberField("tasker.max_tasks_per_user")}
-                {numberField("tasker.target_probability")}
-                {numberField("tasker.max_radius_meters")}
-                <label className={`admin-field ${errors["tasker.task_ttl"] ? "invalid" : ""}`}>
-                    <span>{t("admin.settings.tasker.task_ttl")}</span>
-                    <input type="text" value={form.tasker.task_ttl} onChange={(e) => setForm(setPath(form, "tasker.task_ttl", e.target.value))} />
-                    <small>1h30m · 24h · 90m</small>
-                </label>
-            </div>
-            <div className="task-card__actions">
-                <Button style="positive" disabled={pending || !dirty || Object.keys(errors).length > 0} onClick={save}>
-                    {t(pending ? "common.saving" : ok ? "admin.settingsSaved" : "common.save")}
-                </Button>
-                <Button style="secondary" disabled={pending || !dirty} onClick={() => setForm(saved)}>{t("admin.reset")}</Button>
-            </div>
-        </div>
-    );
-};
 
 // The colour here is DATA, not chrome: it is stored on the mark type and sent to
 // the backend, and `<input type="color">` accepts only a literal hex. Both stay

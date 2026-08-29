@@ -5,7 +5,7 @@ import "./marker.scss"
 import { memo } from "react";
 import { Mark, MarkType } from "../../services/MarksService";
 import { typeColor, typeIcon } from "../../utils/mark-types";
-import { contrastOn, statusColors, STATUS_FALLBACK } from "../../styles/tokens";
+import { MARKER_ICON, statusColors, STATUS_FALLBACK } from "../../styles/tokens";
 import { useTheme } from "../../theme";
 
 import BlobIcon from "../../assets/blob.svg?react"
@@ -147,8 +147,8 @@ const MarkItem = memo(function ({ mark, type, size, selected, assigned = false, 
       >
         {size == MarkerSize.big &&
           <>
-            <div className="circle-content" style={{ backgroundColor: ring ?? color }}>
-              <TypeIcon typeId={mark.mark_type_id} type={type} color={contrastOn(ring ?? color)} />
+            <div className="circle-content icon-on-fill" style={{ backgroundColor: ring ?? color }}>
+              <TypeIcon typeId={mark.mark_type_id} type={type} color={MARKER_ICON} />
             </div>
           </>
         }

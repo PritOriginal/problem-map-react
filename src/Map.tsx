@@ -20,7 +20,7 @@ import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
 import MarkItem, { MarkerItem, MarkerSize, TypeIcon } from "./components/mark/mark";
-import { ASSIGNED, contrastOn, PAPER, statusColors, STATUS_FALLBACK, themeColors } from "./styles/tokens";
+import { ASSIGNED, MARKER_ICON, statusColors, STATUS_FALLBACK, themeColors } from "./styles/tokens";
 import { typeColor } from "./utils/mark-types";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
@@ -606,7 +606,7 @@ const Filters = observer(() => {
               {markTypesStore.types.map((type) => (
                 <FilterItem
                   key={type.mark_type_id}
-                  icon={<span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", backgroundColor: typeColor(type) ?? "transparent" }}><TypeIcon typeId={type.mark_type_id} type={type} color={contrastOn(typeColor(type) ?? PAPER)} /></span>}
+                  icon={<span className={typeColor(type) ? "icon-on-fill" : undefined} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", backgroundColor: typeColor(type) ?? "transparent" }}><TypeIcon typeId={type.mark_type_id} type={type} color={typeColor(type) ? MARKER_ICON : "var(--ink)"} /></span>}
                   name={type.name}
                   checked={marksStore.filters.mark_type_ids.includes(type.mark_type_id)}
                   onClick={() => {

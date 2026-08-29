@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CSS_MIRROR, CSS_MIRROR_DARK, contrastOn, INK, PAPER, STATUS_COLORS, STATUS_COLORS_DARK, statusColors, themeColors } from "./tokens";
+import { CSS_MIRROR, CSS_MIRROR_DARK, STATUS_COLORS, STATUS_COLORS_DARK, statusColors, themeColors } from "./tokens";
 
 /**
  * `src/tokens.scss` is the source of truth for colour. A few of its values are also
@@ -111,27 +111,5 @@ describe("theme resolvers", () => {
 
     it("covers the same status ids in both themes", () => {
         expect(Object.keys(STATUS_COLORS_DARK).sort()).toEqual(Object.keys(STATUS_COLORS).sort());
-    });
-});
-
-describe("contrastOn", () => {
-    it("puts light ink on dark fills and dark ink on light fills", () => {
-        expect(contrastOn("#000000")).toBe(PAPER);
-        expect(contrastOn("#e50000")).toBe(PAPER);
-        expect(contrastOn("#ffffff")).toBe(INK);
-        expect(contrastOn("#e5d600")).toBe(INK);
-    });
-
-    it("judges saturated colours by luminance, not by channel average", () => {
-        // #1f77b4 averages to a mid grey but is dark to the eye: it needs light ink.
-        expect(contrastOn("#1f77b4")).toBe(PAPER);
-        // #00e500 averages lower still, yet reads bright: it needs dark ink.
-        expect(contrastOn("#00e500")).toBe(INK);
-    });
-
-    it("accepts shorthand hex and falls back safely on junk", () => {
-        expect(contrastOn("#fff")).toBe(INK);
-        expect(contrastOn("#000")).toBe(PAPER);
-        expect(contrastOn("not-a-colour")).toBe(INK);
     });
 });

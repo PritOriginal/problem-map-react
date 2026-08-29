@@ -149,6 +149,11 @@
     // Marker ring and veil: light strokes that must read over any status colour.
     --marker-ring: rgba(255, 255, 255, 0.8);
     --marker-veil: rgba(255, 255, 255, 0.35);
+    // Category icons are always white, in both themes -- they sit on the marker's
+    // own colour, not on the interface. White alone is not enough on the lighter
+    // fills (1.8:1 on the amber "under review"), so .icon-on-fill carries a dark
+    // rim that does the separating. Both are needed; neither works on its own.
+    --marker-icon: #ffffff;
 
     // ---- Spacing --------------------------------------------------------
     --space-1: 2px;
@@ -282,6 +287,7 @@
     // both themes -- it is what separates a marker from the ground beneath it.
     --marker-ring: rgba(255, 255, 255, 0.75);
     --marker-veil: rgba(255, 255, 255, 0.25);
+    --marker-icon: #ffffff;
 
     // ---- Elevation ------------------------------------------------------
     // Shadows do almost no work on a dark ground, so they go deeper and the

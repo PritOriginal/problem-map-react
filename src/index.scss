@@ -560,3 +560,15 @@ hr {
   color: var(--ink-muted);
 }
 
+
+// A white glyph on a coloured disc: category icons on a mark, and the count on a
+// cluster. The rim is what makes one white mark work on every fill -- on the amber
+// and pale-grey statuses plain white measures under 2.1:1 and the glyph vanishes,
+// which for an icon loses the category and for a cluster loses the number.
+// Two tight shadows rather than one blur, so it stays crisp at 16px.
+.icon-on-fill > *,
+.circle-content > * {
+  filter:
+    drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}

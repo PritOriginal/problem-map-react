@@ -79,9 +79,15 @@
             line-height: 1.18;
             letter-spacing: -0.01em;
 
-            svg {
+            // The glyph is centred on the CAP BAND, not on the line box and not on
+            // the whole word -- "Мусор" carries a descender that would drag the
+            // icon low, and the line box has leading the eye does not see. In em,
+            // so it still holds at the smaller size the mobile sheet uses; the
+            // fixed pixel value it replaces was only ever right at one size.
+            > svg,
+            > .type-glyph {
                 flex-shrink: 0;
-                margin-top: 3px;
+                margin-top: 0.2em;
             }
 
             @include mobile {

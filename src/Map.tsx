@@ -104,12 +104,11 @@ const Map = observer(() => {
     /** Latest map centre, tracked without touching the store. */
     const centerRef = useRef<LngLat>(INITIAL_CENTER);
 
-    const [panelIsOpen, setPanelIsOpen] = useState(false);
-    const [showNewMarkButton, setShowNewMarkButton] = useState(false);
-    useEffect(() => {
-        setPanelIsOpen(location.pathname !== "/");
-        setShowNewMarkButton(location.pathname === "/add")
-    }, [location.pathname])
+    // Both are the route, read two ways, and the route is already state React owns:
+    // mirroring it into two useStates cost a second render on every navigation and could
+    // be caught a frame out of step with the panel it describes.
+    const panelIsOpen = location.pathname !== "/";
+    const showNewMarkButton = location.pathname === "/add";
 
     const flyTo: FlyTo = useCallback((center, minZoom) => {
         map?.setLocation({

@@ -1,25 +1,18 @@
-import { useEffect, useRef } from "react";
 import { observer } from "mobx-react-lite";
-import { Link, useParams } from "react-router-dom";
-import panelStore from "../../../store/panel";
+import { useParams } from "react-router-dom";
 import user from "../../../store/user";
 import UsersService from "../../../services/UsersService";
 import { ApiError } from "../../../services/http";
-import { BadgesBlock, LevelBlock, ProfileStats } from "../../profile/profile-blocks";
-import { useBadgeCatalogue } from "../../../utils/badges";
+import { ProfileBody } from "../../profile/profile-screen";
 import { useAsyncData } from "../../../utils/use-async-data";
 import { localeOf, useT } from "../../../i18n";
-import { useToKeepSearch } from "../../../utils/navigation";
 import PanelHeader from "../panel-header";
+import { AsyncState } from "../async-state";
 
 /** `/users/:id`: public profile with level, badges and statistics (backend integration/wave-5). */
 const UserProfilePanel = observer(function UserProfilePanel() {
     const { t, lang } = useT();
     const params = useParams();
-    const toKeepSearch = useToKeepSearch();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    const catalogue = useBadgeCatalogue();
-
     const id = Number(params.id);
     const { data, isLoading } = useAsyncData(
         (signal) => UsersService.getProfile(id, { signal })
@@ -41,13 +34,6 @@ const UserProfilePanel = observer(function UserProfilePanel() {
     const profile = isLoading ? null : data ?? null;
     const notFound = !isLoading && data === null;
 
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, [profile]);
-
     const subtitle = profile
         ? `${t("profile.rating")}: ${profile.rating}${profile.member_since ? ` · ${t("profile.memberSince")} ${new Date(profile.member_since).toLocaleDateString(localeOf(lang))}` : ""}`
         : t("profile.public");
@@ -60,22 +46,13 @@ const UserProfilePanel = observer(function UserProfilePanel() {
                 subtitle={subtitle}
             />
             <div className="panel__content">
-                {isLoading && <p className="empty-state">{t("common.loading")}</p>}
-                {(notFound || !Number.isFinite(id) || id <= 0) && <p className="empty-state">{t("profile.notFound")}</p>}
-                {profile &&
-                    <>
-                        <LevelBlock rating={profile.rating} level={profile.level} />
-                        <hr />
-                        <h2 className="section-title">{t("profile.badges")}<span className="section-title__count">({profile.badges.length})</span></h2>
-                        <BadgesBlock badges={profile.badges} catalogue={catalogue} />
-                        <hr />
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                            <h2 className="section-title">{t("profile.stats")}</h2>
-                            <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
-                        </div>
-                        <ProfileStats stats={profile.stats} />
-                    </>
-                }
+                <AsyncState
+                    isLoading={isLoading}
+                    isEmpty={notFound || !Number.isFinite(id) || id <= 0}
+                    empty={t("profile.notFound")}
+                >
+                    {profile && <ProfileBody profile={profile} stats={profile.stats} />}
+                </AsyncState>
             </div>
         </>
     );

@@ -69,3 +69,37 @@
   outline: 3px dashed var(--assigned);
   outline-offset: 2px;
 }
+
+// A mark in a list. The two rows -- what it is, then what it carries -- used to be
+// three inline flex objects repeated per screen.
+.mark-row {
+    // The row is a <button> when it only runs a callback, and a button brings a
+    // browser stylesheet with it.
+    width: 100%;
+    font: inherit;
+    text-align: left;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        min-width: 0;
+    }
+
+    &__name {
+        font-size: var(--fs-small);
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+    }
+
+    &__date {
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+        white-space: nowrap;
+    }
+}

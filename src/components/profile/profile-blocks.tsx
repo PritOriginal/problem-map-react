@@ -69,6 +69,7 @@ export function ProfileStats({ stats }: { stats: Partial<UserStats> }) {
             items.push({ key, label, value });
         }
     };
+    add("rating", t("profile.stat.rating"));
     add("tasks_completed", t("profile.stat.tasks"));
     add("marks_total", t("profile.stat.marks"));
     if (stats.marks_confirmed !== undefined || stats.marks_refuted !== undefined) {

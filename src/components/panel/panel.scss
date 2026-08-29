@@ -476,4 +476,10 @@
         padding: 4px;
         font-size: var(--fs-small);
     }
+
+    // A control that needs the whole row: the district filter, a button strip.
+    // Was `style={{ gridColumn: "1 / -1" }}` at every such call site.
+    &__span {
+        grid-column: 1 / -1;
+    }
 }

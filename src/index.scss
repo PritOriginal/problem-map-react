@@ -429,6 +429,21 @@ a {
   }
 }
 
+// A section heading with something on its right -- a link out, a filter toggle.
+// Four screens wrote this as the same inline
+// `{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"8px"}`.
+.section-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+
+  &__link {
+    font-size: var(--fs-small);
+  }
+}
+
 // Form controls were entirely unstyled browser defaults, so every panel with a
 // filter or a form fell out of the system. One rule brings all of them in.
 input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),

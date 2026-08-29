@@ -10,6 +10,7 @@ import { Notification } from "../../../services/NotificationsService";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import { useToKeepSearch } from "../../../utils/navigation";
 import PanelHeader from "../panel-header";
+import { AsyncState } from "../async-state";
 
 const NotificationsPanel = observer(function NotificationsPanel() {
     const { t } = useT();
@@ -44,15 +45,11 @@ const NotificationsPanel = observer(function NotificationsPanel() {
                 {userId === 0 ?
                     <UnauthorizedBlock text={t("unauth.notifications")} />
                     :
-                    <>
-                        {isLoading && items.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
-                        {!isLoading && items.length === 0 && <p className="empty-state">{t("notifications.empty")}</p>}
-                        {items.length > 0 &&
-                            <div className="list-rows">
-                                {items.map((n) => <NotificationRow key={n.id} item={n} />)}
-                            </div>
-                        }
-                    </>
+                    <AsyncState keepPrevious isLoading={isLoading} isEmpty={items.length === 0} empty={t("notifications.empty")}>
+                        <div className="list-rows">
+                            {items.map((n) => <NotificationRow key={n.id} item={n} />)}
+                        </div>
+                    </AsyncState>
                 }
             </div>
         </>

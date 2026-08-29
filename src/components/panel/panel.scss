@@ -230,6 +230,17 @@
     }
 
     &__close-button {
+        // A real <button>, so this rule also has to undo what the UA gives one: its own
+        // font, its inline-block box and, in WebKit, its native appearance. The
+        // background, border and colour below are the ones it paints with.
+        appearance: none;
+        -webkit-appearance: none;
+        display: block;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        text-align: inherit;
+
         position: absolute;
         right: calc(-48px - 16px);
         top: 16px;

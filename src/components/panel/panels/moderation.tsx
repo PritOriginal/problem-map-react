@@ -194,7 +194,7 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
                 <p style={{ fontSize: 14 }}>
                     <b>{t("moderation.reportN", { id: report.report_id })}</b> · {t(TARGET_LABELS[report.target_type] ?? "report.target.mark")} #{report.target_id}
                 </p>
-                <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{new Date(report.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
+                <span className="data" style={{ fontSize: 12, color: "var(--ink-muted)" }}>{new Date(report.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
             </div>
             <p style={{ fontSize: 13 }}>
                 <b>{t("report.reason")}:</b> {t(REASON_LABELS[report.reason] ?? "report.reason.other")}

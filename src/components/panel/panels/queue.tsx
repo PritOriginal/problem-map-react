@@ -57,7 +57,7 @@ const QueuePanel = observer(function QueuePanel() {
                                 <div key={item.id} className={`task-card ${item.last_error ? "overdue" : ""}`}>
                                     <div className="task-card__row">
                                         <p style={{ fontSize: 14 }}><b>{label(item)}</b></p>
-                                        <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{new Date(item.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
+                                        <span className="data" style={{ fontSize: 12, color: "var(--ink-muted)" }}>{new Date(item.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
                                     </div>
                                     {item.payload.kind === "mark" && item.payload.description && <p className="task-card__desc">{item.payload.description}</p>}
                                     {item.payload.kind === "check" && item.payload.comment && <p className="task-card__desc">{item.payload.comment}</p>}

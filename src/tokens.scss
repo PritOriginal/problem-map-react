@@ -21,9 +21,15 @@
 
 :root {
     // ---- Type families --------------------------------------------------
-    --font-body: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-    --font-display: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    // Golos Text is a Paratype face drawn for Russian civic interfaces -- the exact
+    // register this product speaks in. Unbounded is the display voice, used with
+    // restraint: mark numbers, big figures, section headings, never running text.
+    --font-body: "Golos Text", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+    // Monospace is a RULE here, not decoration: it means "machine-produced data" --
+    // coordinates, ids, timestamps, tallies. It also lines those figures up in a
+    // column, which is what makes a queue of them scannable.
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
     // ---- Type scale -----------------------------------------------------
     --fs-micro: 10px;
@@ -32,6 +38,7 @@
     --fs-body: 14px;
     --fs-base: 16px;
     --fs-lead: 18px;
+    --fs-title: 24px;
     --fs-display: 32px;
     --fs-jumbo: 64px;
 

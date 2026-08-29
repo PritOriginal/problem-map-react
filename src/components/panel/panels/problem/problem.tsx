@@ -1,6 +1,6 @@
 import { Outlet, useParams } from "react-router-dom";
 import { TypeIcon } from "../../../mark/mark";
-import { PAPER, STATUS_COLORS } from "../../../../styles/tokens";
+import { STATUS_COLORS } from "../../../../styles/tokens";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
@@ -84,15 +84,18 @@ const ProblemPanel = observer(() => {
                 onClick={() => panelStore.toggle()}
             >
                 <div className="panel__header__status">
-                    <div style={{ border: `2px solid ${STATUS_COLORS[markStatus.mark_status_id]}`, backgroundColor: PAPER, borderRadius: "4px", padding: "4px" }}>
-                        <p style={{ color: "var(--ink)" }}><b>{markStatus.name}</b></p>
+                    <div className="status-chip" style={{ borderColor: STATUS_COLORS[markStatus.mark_status_id] }}>
+                        {markStatus.name}
                     </div>
                 </div>
-                <p style={{ fontSize: "12px" }}>{t("mark.n", { id: mark.mark_id })}</p>
-                <p style={{ fontSize: 12 }}>{t("common.coordinates")}: <b>{mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}</b></p>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="#fff" />
-                    <p style={{ fontSize: 14 }}><b>{markType.name}</b></p>
+                <p className="panel__header__id">{t("mark.n", { id: mark.mark_id })}</p>
+                <p className="panel__header__coords">
+                    <span className="visually-hidden">{t("common.coordinates")}: </span>
+                    {mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}
+                </p>
+                <div className="panel__header__type">
+                    <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="var(--on-chrome)" />
+                    <p>{markType.name}</p>
                 </div>
                 {(mark.sla_due_at || mark.organization_id || mark.hidden || mark.comments_count !== undefined) &&
                     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>

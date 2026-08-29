@@ -52,6 +52,37 @@
                 font-size: var(--fs-micro);
             }
         }
+
+        // The record's identity, set in the display face. It is the first thing
+        // you look for when someone sends you a link to a problem.
+        &__id {
+            font-family: var(--font-display);
+            font-size: var(--fs-title);
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+
+            @include mobile {
+                font-size: var(--fs-lead);
+            }
+        }
+
+        // Machine-produced data: monospaced, so the digits line up and the pair
+        // reads as one coordinate rather than two numbers.
+        &__coords {
+            font-family: var(--font-mono);
+            font-size: var(--fs-caption);
+            color: var(--on-chrome-muted);
+            letter-spacing: -0.02em;
+        }
+
+        &__type {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            font-size: var(--fs-body);
+            font-weight: 500;
+        }
     }
 
     &__content {
@@ -233,11 +264,15 @@
         width: 32px;
         text-align: right;
         color: var(--ink-muted);
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
     }
 
     &__rating {
         text-align: right;
+        font-family: var(--font-mono);
         font-variant-numeric: tabular-nums;
+        font-weight: 700;
     }
 }
 
@@ -282,7 +317,11 @@
         border: 1px solid var(--rule);
 
         b {
-            font-size: var(--fs-lead);
+            font-family: var(--font-display);
+            font-size: var(--fs-title);
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.01em;
         }
 
         span {

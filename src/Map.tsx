@@ -521,7 +521,7 @@ function AddMarkButton() {
 /** Download link to `GET /marks/export` for the current filters (a real anchor is not blocked by popup blockers). */
 const ExportLink = observer(({ format, children }: { format: ExportFormat; children: ReactNode }) => (
   <a
-    className="white-2-black mini"
+    className="btn-secondary mini"
     href={MarksService.exportUrl(marksStore.filters, format)}
     download={`marks.${format}`}
     target="_blank"

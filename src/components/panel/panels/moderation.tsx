@@ -227,17 +227,17 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
                 )
                 : (
                     <div className="task-card__actions">
-                        <Button style="white-2-black" isMini onClick={open}>{t("moderation.openTarget")}</Button>
+                        <Button style="secondary" isMini onClick={open}>{t("moderation.openTarget")}</Button>
                         {report.status === "open" &&
                             <>
-                                <Button style="green" isMini disabled={pending !== null} onClick={() => setStatus("resolved")}>{t("moderation.resolve")}</Button>
-                                <Button style="white-2-black" isMini disabled={pending !== null} onClick={() => setStatus("dismissed")}>{t("moderation.dismiss")}</Button>
+                                <Button style="positive" isMini disabled={pending !== null} onClick={() => setStatus("resolved")}>{t("moderation.resolve")}</Button>
+                                <Button style="secondary" isMini disabled={pending !== null} onClick={() => setStatus("dismissed")}>{t("moderation.dismiss")}</Button>
                             </>
                         }
                         {mark &&
                             <>
-                                <Button style="black-2-white" isMini disabled={pending !== null} onClick={toggleHidden}>{t(mark.hidden ? "moderation.show" : "moderation.hide")}</Button>
-                                {!mark.merged_into_id && <Button style="white-2-black" isMini disabled={pending !== null} onClick={() => setMerging(true)}>{t("moderation.merge")}</Button>}
+                                <Button style="primary" isMini disabled={pending !== null} onClick={toggleHidden}>{t(mark.hidden ? "moderation.show" : "moderation.hide")}</Button>
+                                {!mark.merged_into_id && <Button style="secondary" isMini disabled={pending !== null} onClick={() => setMerging(true)}>{t("moderation.merge")}</Button>}
                             </>
                         }
                     </div>
@@ -307,7 +307,7 @@ export const MergeForm = observer(function MergeForm({ mark, onCancel, onDone }:
                     return (
                         <div key={s.mark_id} className="similar-block__item">
                             <p><b>{t("mark.n", { id: s.mark_id })}</b> {type?.name ?? ""}{distance && ` · ${distance}`}</p>
-                            <Button style="white-2-black" isMini disabled={pending} onClick={() => merge(s.mark_id)}>{t("moderation.mergeConfirm")}</Button>
+                            <Button style="secondary" isMini disabled={pending} onClick={() => merge(s.mark_id)}>{t("moderation.mergeConfirm")}</Button>
                         </div>
                     );
                 })}
@@ -322,10 +322,10 @@ export const MergeForm = observer(function MergeForm({ mark, onCancel, onDone }:
                     style={{ padding: "6px", fontSize: 13, width: "140px" }}
                     aria-label={t("moderation.mergeManual")}
                 />
-                <Button style="black-2-white" isMini disabled={pending || manualId === ""} onClick={() => merge(Number(manualId))}>
+                <Button style="primary" isMini disabled={pending || manualId === ""} onClick={() => merge(Number(manualId))}>
                     {t(pending ? "moderation.merging" : "moderation.mergeConfirm")}
                 </Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
             </div>
         </div>
     );

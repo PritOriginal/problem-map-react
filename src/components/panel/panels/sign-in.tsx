@@ -63,7 +63,7 @@ export default function SignIn() {
                     }}
                 />
                 <div>
-                    <Button style="white-2-black" onClick={onClick}>
+                    <Button style="secondary" onClick={onClick}>
                         <p>{t("nav.signIn")}</p>
                     </Button>
                 </div>

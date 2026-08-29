@@ -184,7 +184,7 @@ const AddProblem = observer(function AddProblem() {
                             />
                             :
                             <div>
-                                <Button style="white-2-black" disabled={pending} onClick={addMark}>
+                                <Button style="secondary" disabled={pending} onClick={addMark}>
                                     <p>{pending ? t("addMark.checking") : t("map.add")}</p>
                                 </Button>
                             </div>

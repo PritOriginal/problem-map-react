@@ -47,7 +47,7 @@ const QueuePanel = observer(function QueuePanel() {
                     :
                     <>
                         <div className="task-card__actions">
-                            <Button style="black-2-white" disabled={!online || offlineQueueStore.isFlushing || items.length === 0} onClick={() => offlineQueueStore.flush()}>
+                            <Button style="primary" disabled={!online || offlineQueueStore.isFlushing || items.length === 0} onClick={() => offlineQueueStore.flush()}>
                                 {t(offlineQueueStore.isFlushing ? "offline.sending" : "offline.send")}
                             </Button>
                         </div>
@@ -65,7 +65,7 @@ const QueuePanel = observer(function QueuePanel() {
                                     {"photos" in item.payload && item.payload.photos.length > 0 && <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>{t("common.photos")}: {item.payload.photos.length}</p>}
                                     {item.last_error && <p style={{ fontSize: 12, color: "var(--danger-ink)" }}>{item.last_error} · {t("offline.attempts", { n: item.attempts })}</p>}
                                     <div className="task-card__actions">
-                                        <Button style="white-2-black" isMini disabled={offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.remove(item.id)}>{t("offline.remove")}</Button>
+                                        <Button style="secondary" isMini disabled={offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.remove(item.id)}>{t("offline.remove")}</Button>
                                     </div>
                                 </div>
                             ))}

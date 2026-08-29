@@ -94,14 +94,14 @@ const AddCheck = observer(function AddCheck() {
                     ></textarea>
                     <div style={{ display: "flex", gap: "16px" }}>
                         <Button
-                            style="red"
+                            style="negative"
                             onClick={() => addCheck(false)}
                             disabled={!checkValidate() || pending}
                         >
                             <p>{t("check.refute")}</p>
                         </Button>
                         <Button
-                            style="green"
+                            style="positive"
                             onClick={() => addCheck(true)}
                             disabled={!checkValidate() || pending}
                         >
@@ -111,7 +111,7 @@ const AddCheck = observer(function AddCheck() {
                     <div>
 
                         <Button
-                            style="white-2-black"
+                            style="secondary"
                             onClick={handleOnClickCancle}
                         >
                             <p>{t("common.cancel")}</p>

@@ -97,7 +97,7 @@ const SignUp = observer(function SignUp() {
                     <p style={{ fontSize: "12px" }}>{t("auth.coords")}: {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}</p>
                 </div>
                 <div>
-                    <Button style="white-2-black" onClick={onClick}>
+                    <Button style="secondary" onClick={onClick}>
                         <p>{t("nav.signUp")}</p>
                     </Button>
                 </div>

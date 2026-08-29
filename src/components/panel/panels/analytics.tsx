@@ -126,7 +126,7 @@ const Analytics = observer(function Analytics() {
                     </label>
                     <div style={{ display: "flex", gap: "4px", gridColumn: "1 / -1", flexWrap: "wrap" }}>
                         {PERIOD_PRESETS.map((preset) => (
-                            <button key={preset.days} type="button" className="white-2-black mini" onClick={() => setRange(defaultRange(preset.days))}>
+                            <button key={preset.days} type="button" className="btn-secondary mini" onClick={() => setRange(defaultRange(preset.days))}>
                                 {t(preset.label)}
                             </button>
                         ))}

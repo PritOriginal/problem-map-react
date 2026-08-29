@@ -151,8 +151,8 @@ const CommentItem = observer(function CommentItem({ comment, onChanged, canReply
                         <>
                             <textarea className="edit-multiline-text" value={body} maxLength={COMMENT_MAX_LENGTH} rows={3} onChange={(e) => setBody(e.target.value)} />
                             <div className="comment__actions">
-                                <Button style="green" isMini disabled={pending !== null} onClick={save}>{t(pending === "save" ? "common.saving" : "common.save")}</Button>
-                                <Button style="white-2-black" isMini disabled={pending !== null} onClick={() => { setEditing(false); setBody(comment.body); }}>{t("common.cancel")}</Button>
+                                <Button style="positive" isMini disabled={pending !== null} onClick={save}>{t(pending === "save" ? "common.saving" : "common.save")}</Button>
+                                <Button style="secondary" isMini disabled={pending !== null} onClick={() => { setEditing(false); setBody(comment.body); }}>{t("common.cancel")}</Button>
                             </div>
                         </>
                     )
@@ -215,8 +215,8 @@ function CommentForm({ markId, parentId, onDone, onCancel }: { markId: number; p
                 onChange={(e) => setBody(e.target.value)}
             />
             <div className="comment__actions">
-                <button type="submit" className="black-2-white mini" disabled={pending || body.trim() === ""}>{t(pending ? "comments.sending" : "comments.send")}</button>
-                {onCancel && <Button style="white-2-black" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>}
+                <button type="submit" className="btn-primary mini" disabled={pending || body.trim() === ""}>{t(pending ? "comments.sending" : "comments.send")}</button>
+                {onCancel && <Button style="secondary" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>}
             </div>
         </form>
     );

@@ -164,10 +164,10 @@ const SettingsForm = function SettingsForm() {
                 </label>
             </div>
             <div className="task-card__actions">
-                <Button style="green" disabled={pending || !dirty || Object.keys(errors).length > 0} onClick={save}>
+                <Button style="positive" disabled={pending || !dirty || Object.keys(errors).length > 0} onClick={save}>
                     {t(pending ? "common.saving" : ok ? "admin.settingsSaved" : "common.save")}
                 </Button>
-                <Button style="white-2-black" disabled={pending || !dirty} onClick={() => setForm(saved)}>{t("admin.reset")}</Button>
+                <Button style="secondary" disabled={pending || !dirty} onClick={() => setForm(saved)}>{t("admin.reset")}</Button>
             </div>
         </div>
     );
@@ -224,7 +224,7 @@ const MarkTypesTable = function MarkTypesTable() {
             </div>
             {adding
                 ? <MarkTypeEditor initial={EMPTY_TYPE} isNew onCancel={() => setAdding(false)} onDone={() => { setAdding(false); reload(); }} />
-                : <div><Button style="black-2-white" onClick={() => setAdding(true)}>{t("admin.types.add")}</Button></div>
+                : <div><Button style="primary" onClick={() => setAdding(true)}>{t("admin.types.add")}</Button></div>
             }
         </div>
     );
@@ -275,12 +275,12 @@ function MarkTypeRow({ type, onDone }: { type: AdminMarkType; onDone: () => void
                 {t("admin.types.sla")}: {type.sla_hours} · {t("admin.types.sortOrder")}: {type.sort_order} · {t("admin.types.active")}: {type.active ? "✓" : "✗"}
             </p>
             <div className="task-card__actions">
-                <Button style="white-2-black" isMini disabled={pending} onClick={() => setEditing(true)}>{t("common.edit")}</Button>
-                <Button style={type.active ? "red" : "green"} isMini disabled={pending} onClick={() => patch({ active: !type.active })}>
+                <Button style="secondary" isMini disabled={pending} onClick={() => setEditing(true)}>{t("common.edit")}</Button>
+                <Button style={type.active ? "negative" : "positive"} isMini disabled={pending} onClick={() => patch({ active: !type.active })}>
                     {type.active ? "✗" : "✓"} {t("admin.types.active")}
                 </Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order - 1 })} aria-label="↑">↑</Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order + 1 })} aria-label="↓">↓</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order - 1 })} aria-label="↑">↑</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={() => patch({ sort_order: type.sort_order + 1 })} aria-label="↓">↓</Button>
             </div>
         </div>
     );
@@ -367,8 +367,8 @@ function MarkTypeEditor({ initial, isNew = false, sortOrder = 0, active = true, 
                 }
             </div>
             <div className="task-card__actions">
-                <Button style="green" isMini disabled={pending || !valid} onClick={submit}>{t(pending ? "common.saving" : "common.save")}</Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
+                <Button style="positive" isMini disabled={pending || !valid} onClick={submit}>{t(pending ? "common.saving" : "common.save")}</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
             </div>
         </div>
     );
@@ -463,8 +463,8 @@ const ApiKeysBlock = function ApiKeysBlock() {
                     <p><b>{t("admin.keys.created")}</b></p>
                     <code className="api-key">{created.key}</code>
                     <div className="task-card__actions">
-                        <Button style="black-2-white" isMini onClick={copy}>{t(copied ? "admin.keys.copied" : "admin.keys.copy")}</Button>
-                        <Button style="white-2-black" isMini onClick={() => setCreated(null)}>{t("admin.keys.done")}</Button>
+                        <Button style="primary" isMini onClick={copy}>{t(copied ? "admin.keys.copied" : "admin.keys.copy")}</Button>
+                        <Button style="secondary" isMini onClick={() => setCreated(null)}>{t("admin.keys.done")}</Button>
                     </div>
                 </div>
             }
@@ -473,7 +473,7 @@ const ApiKeysBlock = function ApiKeysBlock() {
                     <span>{t("admin.keys.name")}</span>
                     <input type="text" value={name} maxLength={64} disabled={pending !== null} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { create(); } }} />
                 </label>
-                <Button style="black-2-white" isMini disabled={pending !== null || name.trim() === ""} onClick={create}>{t(pending === "create" ? "admin.keys.creating" : "admin.keys.create")}</Button>
+                <Button style="primary" isMini disabled={pending !== null || name.trim() === ""} onClick={create}>{t(pending === "create" ? "admin.keys.creating" : "admin.keys.create")}</Button>
             </div>
             {keys.length === 0 && <p style={{ fontSize: 14 }}>{t("admin.keys.empty")}</p>}
             <div className="profile-list">
@@ -487,7 +487,7 @@ const ApiKeysBlock = function ApiKeysBlock() {
                             {t("admin.keys.lastUsed")}: {key.last_used_at ? new Date(key.last_used_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" }) : t("admin.keys.neverUsed")}
                         </p>
                         <div className="task-card__actions">
-                            <Button style="red" isMini disabled={pending !== null} onClick={() => revoke(key)}>{t("admin.keys.revoke")}</Button>
+                            <Button style="negative" isMini disabled={pending !== null} onClick={() => revoke(key)}>{t("admin.keys.revoke")}</Button>
                         </div>
                     </div>
                 ))}

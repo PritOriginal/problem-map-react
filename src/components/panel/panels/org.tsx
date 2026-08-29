@@ -172,14 +172,14 @@ const QueueCard = observer(function QueueCard({ mark, onDone }: { mark: Mark; on
                 <ResolveForm mark={mark} onCancel={() => setReporting(false)} onDone={() => { setReporting(false); onDone(); }} />
                 :
                 <div className="task-card__actions">
-                    <Button style="white-2-black" isMini onClick={open}>{t("tasks.showOnMap")}</Button>
+                    <Button style="secondary" isMini onClick={open}>{t("tasks.showOnMap")}</Button>
                     {mark.mark_status_id === MarkStatusType.ConfirmedStatus &&
-                        <Button style="black-2-white" isMini disabled={pending} onClick={start}>
+                        <Button style="primary" isMini disabled={pending} onClick={start}>
                             {t(pending ? "org.starting" : "org.start")}
                         </Button>
                     }
                     {mark.mark_status_id === MarkStatusType.InWorkStatus &&
-                        <Button style="green" isMini onClick={() => setReporting(true)}>{t("org.resolve")}</Button>
+                        <Button style="positive" isMini onClick={() => setReporting(true)}>{t("org.resolve")}</Button>
                     }
                 </div>
             }
@@ -225,10 +225,10 @@ function ResolveForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => v
                 onChange={(e) => setComment(e.target.value)}
             ></textarea>
             <div className="task-card__actions">
-                <Button style="green" isMini disabled={pending || photos.length === 0} onClick={send}>
+                <Button style="positive" isMini disabled={pending || photos.length === 0} onClick={send}>
                     {t(pending ? "org.sending" : "org.send")}
                 </Button>
-                <Button style="white-2-black" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
+                <Button style="secondary" isMini disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
             </div>
         </div>
     );

@@ -40,10 +40,10 @@ const NotificationsPanel = observer(function NotificationsPanel() {
                     :
                     <>
                         <div style={{ display: "flex", gap: "8px" }}>
-                            <Button style="white-2-black" isMini disabled={unreadCount === 0} onClick={inboxStore.markAllRead}>
+                            <Button style="secondary" isMini disabled={unreadCount === 0} onClick={inboxStore.markAllRead}>
                                 {t("notifications.readAll")}
                             </Button>
-                            <Button style="white-2-black" isMini disabled={isLoading} onClick={() => inboxStore.fetch()}>
+                            <Button style="secondary" isMini disabled={isLoading} onClick={() => inboxStore.fetch()}>
                                 {t("common.refresh")}
                             </Button>
                         </div>

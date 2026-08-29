@@ -118,7 +118,7 @@ const AboutProblem = observer(function AboutProblem() {
             {mark.mark_id !== 0 && <CommentsBlock />}
             {possibilityAddCheck &&
                 <div style={{ position: "sticky", bottom: "0" }}>
-                    <Button style="white-2-black" onClick={handleOnClickNewCheck}>
+                    <Button style="secondary" onClick={handleOnClickNewCheck}>
                         {t("mark.checkButton")}
                     </Button>
                 </div>
@@ -144,7 +144,7 @@ const MODERATION_ACTIONS: Record<ModerationAction, {
     errorText: TranslationKey;
     label: TranslationKey;
     pendingLabel: TranslationKey;
-    style: "green" | "red";
+    style: "positive" | "negative";
 }> = {
     confirm: {
         call: (id) => MarksService.confirmMark(id),
@@ -152,7 +152,7 @@ const MODERATION_ACTIONS: Record<ModerationAction, {
         errorText: "mark.confirmFailed",
         label: "mark.confirm",
         pendingLabel: "mark.confirming",
-        style: "green",
+        style: "positive",
     },
     reject: {
         call: (id) => MarksService.rejectMark(id),
@@ -160,7 +160,7 @@ const MODERATION_ACTIONS: Record<ModerationAction, {
         errorText: "mark.rejectFailed",
         label: "mark.reject",
         pendingLabel: "mark.rejecting",
-        style: "red",
+        style: "negative",
     },
 };
 
@@ -272,7 +272,7 @@ const FollowButton = observer(function FollowButton({ onDone }: { onDone: () => 
     };
 
     return (
-        <Button style={following ? "black-2-white" : "white-2-black"} isMini disabled={pending} onClick={toggle}>
+        <Button style={following ? "primary" : "secondary"} isMini disabled={pending} onClick={toggle}>
             {t(following ? "mark.following" : "mark.follow")}{count !== undefined && ` · ${count}`}
         </Button>
     );
@@ -360,16 +360,16 @@ const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () => void
                         onChange={(e) => setDescription(e.target.value)}
                     ></textarea>
                     <div style={{ display: "flex", gap: "8px" }}>
-                        <Button style="green" disabled={pending !== null} onClick={save}>
+                        <Button style="positive" disabled={pending !== null} onClick={save}>
                             {t(pending === "save" ? "common.saving" : "common.save")}
                         </Button>
-                        <Button style="white-2-black" disabled={pending !== null} onClick={() => setEditing(false)}>{t("common.cancel")}</Button>
+                        <Button style="secondary" disabled={pending !== null} onClick={() => setEditing(false)}>{t("common.cancel")}</Button>
                     </div>
                 </>
                 :
                 <div style={{ display: "flex", gap: "8px" }}>
-                    <Button style="white-2-black" disabled={pending !== null} onClick={startEdit}>{t("common.edit")}</Button>
-                    <Button style="red" disabled={pending !== null} onClick={remove}>
+                    <Button style="secondary" disabled={pending !== null} onClick={startEdit}>{t("common.edit")}</Button>
+                    <Button style="negative" disabled={pending !== null} onClick={remove}>
                         {t(pending === "delete" ? "common.deleting" : "common.delete")}
                     </Button>
                 </div>
@@ -405,7 +405,7 @@ function ShareButton() {
 
     return (
         <div>
-            <Button style="white-2-black" isMini onClick={share}>
+            <Button style="secondary" isMini onClick={share}>
                 {t(copied ? "mark.linkCopied" : "mark.share")}
             </Button>
         </div>

@@ -139,9 +139,11 @@ a {
   right: 16px;
   top: 102px;
   width: 250px;
-  background-color: var(--surface);
-  padding: 8px;
-  border: 2px solid var(--rule);
+  background-color: var(--paper);
+  padding: var(--space-6);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-1);
+  box-shadow: var(--shadow-1);
 
   z-index: 1;
 
@@ -214,18 +216,24 @@ a {
   height: 56px;
   width: 56px;
 
-  fill: var(--on-chrome);
-  stroke: var(--on-chrome);
-  color: var(--on-chrome);
+  fill: var(--ink);
+  stroke: var(--ink);
+  color: var(--ink);
 
-  background-color: var(--ink);
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
   border-radius: var(--radius-round);
 
   box-shadow: var(--shadow-1);
 
   z-index: 1;
 
-  transition: all 0.2s ease-in-out;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    fill var(--dur-fast) var(--ease),
+    stroke var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 
   @include mobile {
     width: 48px;
@@ -253,10 +261,33 @@ a {
   }
 
   &:hover {
-    background-color: var(--paper);
-    color: var(--ink);
-    stroke: var(--ink);
-    fill: var(--ink);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    stroke: var(--accent-ink);
+    fill: var(--accent-ink);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  // Placing a mark is the action the whole product exists for, so it is the one
+  // control filled with the accent. Everything else floating on the map stays quiet.
+  &.add-mark-button {
+    background-color: var(--accent-ink);
+    border-color: var(--accent-ink);
+    fill: var(--paper);
+    stroke: var(--paper);
+    color: var(--paper);
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--accent-ink) 85%, black);
+      border-color: color-mix(in srgb, var(--accent-ink) 85%, black);
+      fill: var(--paper);
+      stroke: var(--paper);
+      color: var(--paper);
+    }
   }
 }
 
@@ -273,21 +304,26 @@ a {
   transform: translateX(50%);
 
   background-color: var(--cta);
-  color: var(--on-chrome);
+  color: var(--paper);
+  font-weight: 500;
 
-  border-radius: 32px;
+  border: 1px solid var(--cta);
+  border-radius: var(--radius-round);
 
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-2);
 
   z-index: 1;
 
-  transition: all 0.2s ease-in-out;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 
   &:hover {
-    background-color: var(--paper);
-    color: var(--ink);
-    stroke: var(--ink);
-    fill: var(--ink);
+    background-color: color-mix(in srgb, var(--cta) 85%, black);
+    border-color: color-mix(in srgb, var(--cta) 85%, black);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 }
 
@@ -305,10 +341,12 @@ a {
 
   &__container {
     margin: auto;
-    padding: 16px;
+    padding: var(--space-7);
     width: 30%;
     height: fit-content;
-    background-color: var(--surface);
+    background-color: var(--paper);
+    border-radius: var(--radius-2);
+    box-shadow: var(--shadow-2);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -330,9 +368,11 @@ a {
   right: 16px;
   bottom: 160px;
   z-index: 1;
-  padding: 8px;
-  background-color: var(--surface);
-  border: 2px solid var(--rule);
+  padding: var(--space-6);
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-1);
+  box-shadow: var(--shadow-1);
   font-size: var(--fs-caption);
   display: flex;
   flex-direction: column;

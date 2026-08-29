@@ -201,9 +201,9 @@ const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?:
                 }
             </div>
             <div className="task-card__actions">
-                <Button style="white-2-black" isMini onClick={showOnMap}>{t("tasks.showOnMap")}</Button>
+                <Button style="secondary" isMini onClick={showOnMap}>{t("tasks.showOnMap")}</Button>
                 {!isDone &&
-                    <Button style="black-2-white" isMini onClick={() => navigate(`/problem/${task.mark_id}/add-check`)}>
+                    <Button style="primary" isMini onClick={() => navigate(`/problem/${task.mark_id}/add-check`)}>
                         {t("tasks.check")}
                     </Button>
                 }

@@ -165,7 +165,7 @@ const Profile = observer(function Profile() {
                         </div>
                         <hr />
                         <div>
-                            <Button style="white-2-black" onClick={onClickSignOut}>
+                            <Button style="secondary" onClick={onClickSignOut}>
                                 <p>{t("auth.signOut")}</p>
                             </Button>
                         </div>

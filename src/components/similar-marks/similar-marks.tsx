@@ -33,16 +33,16 @@ const SimilarMarksBlock = observer(function SimilarMarksBlock({ marks, onPick, o
                                 <p><b>{t("mark.n", { id: mark.mark_id })}</b> {type?.name ?? ""}{distance && ` · ${distance}`}</p>
                                 <div style={{ alignSelf: "flex-start" }}><StatusBadge statusId={mark.mark_status_id} /></div>
                             </div>
-                            <Button style="white-2-black" isMini onClick={() => onPick(mark)}>{t("similar.pick")}</Button>
+                            <Button style="secondary" isMini onClick={() => onPick(mark)}>{t("similar.pick")}</Button>
                         </div>
                     );
                 })}
             </div>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <Button style="black-2-white" disabled={pending} onClick={onForce}>
+                <Button style="primary" disabled={pending} onClick={onForce}>
                     {pending ? t("similar.forcing") : t("similar.force")}
                 </Button>
-                <Button style="white-2-black" disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
+                <Button style="secondary" disabled={pending} onClick={onCancel}>{t("common.cancel")}</Button>
             </div>
         </div>
     );

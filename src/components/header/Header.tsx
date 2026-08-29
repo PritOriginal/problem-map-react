@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import "./Header.scss"
 import user from "../../store/user";
 import inboxStore from "../../store/inbox";
@@ -12,6 +12,18 @@ import { useDeviceDetect } from "../../utils/hooks";
 import { useToKeepSearch } from "../../utils/navigation";
 import { LANGS, Lang, setLang, useT } from "../../i18n";
 
+/**
+ * A top-level section link that shows whether you are in that section.
+ * `aria-current="page"` comes from NavLink, so the state is announced, not just painted.
+ */
+function NavItem({ to, label }: { to: ReturnType<ReturnType<typeof useToKeepSearch>>; label: string }) {
+    return (
+        <NavLink to={to} className={({ isActive }) => `header-nav-link${isActive ? " active" : ""}`}>
+            {label}
+        </NavLink>
+    );
+}
+
 const Header = observer(function Header() {
     const { isMobile } = useDeviceDetect();
     const toKeepSearch = useToKeepSearch();
@@ -24,12 +36,12 @@ const Header = observer(function Header() {
                     <Link to={toKeepSearch("/")} aria-label={t("nav.map")} style={{ display: "flex" }}>
                         <MapIcon style={{ fill: "var(--on-chrome)", width: "32px" }} />
                     </Link>
-                    <Link to={toKeepSearch("/tasks")}><p>{t("nav.tasks")}</p></Link>
-                    {user.isService && <Link to={toKeepSearch("/org")}><p>{t("nav.org")}</p></Link>}
-                    {user.isModerator && <Link to={toKeepSearch("/moderation")}><p>{t("nav.moderation")}</p></Link>}
-                    {user.role === "admin" && user.id !== 0 && <Link to={toKeepSearch("/admin")}><p>{t("nav.admin")}</p></Link>}
-                    <Link to={toKeepSearch("/leaderboard")}><p>{t("nav.leaderboard")}</p></Link>
-                    <Link to={toKeepSearch("/analytics")}><p>{t("nav.analytics")}</p></Link>
+                    <NavItem to={toKeepSearch("/tasks")} label={t("nav.tasks")} />
+                    {user.isService && <NavItem to={toKeepSearch("/org")} label={t("nav.org")} />}
+                    {user.isModerator && <NavItem to={toKeepSearch("/moderation")} label={t("nav.moderation")} />}
+                    {user.role === "admin" && user.id !== 0 && <NavItem to={toKeepSearch("/admin")} label={t("nav.admin")} />}
+                    <NavItem to={toKeepSearch("/leaderboard")} label={t("nav.leaderboard")} />
+                    <NavItem to={toKeepSearch("/analytics")} label={t("nav.analytics")} />
                 </div>
                 <div className="header-container__user-info">
                     <LangSwitcher />

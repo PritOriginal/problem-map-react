@@ -1,19 +1,32 @@
+/** Pagination block returned by list endpoints (`listquery`). */
+export interface ListMeta {
+    limit: number;
+    offset: number;
+    total: number;
+}
+
 export interface IResponse {
     success: boolean;
     error?: {
         message: string;
     };
     payload?: unknown;
+    meta?: ListMeta;
 }
 
-/** Error returned by the backend API (or a transport failure), with the HTTP status. */
+/**
+ * Error returned by the backend API (or a transport failure), with the HTTP status.
+ * `payload` keeps the body payload of an error response (e.g. `similar_marks` on 409).
+ */
 export class ApiError extends Error {
     status: number;
+    payload?: unknown;
 
-    constructor(message: string, status: number) {
+    constructor(message: string, status: number, payload?: unknown) {
         super(message);
         this.name = "ApiError";
         this.status = status;
+        this.payload = payload;
         Object.setPrototypeOf(this, ApiError.prototype);
     }
 }
@@ -45,7 +58,7 @@ export async function parseResponse<T extends IResponse = IResponse>(response: R
         const message = body?.error?.message
             || response.statusText
             || `Request failed with status ${response.status}`;
-        throw new ApiError(message, response.status);
+        throw new ApiError(message, response.status, body?.payload);
     }
 
     return body as T;

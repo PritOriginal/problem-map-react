@@ -66,9 +66,13 @@ class OrganizationsService extends BaseService {
             .then((res) => ({ ...res, payload: normalizeOrganization(unwrapOne(res.payload, "organization")) }));
     }
 
-    /** Dictionary of all organizations (`GET /organizations`). */
+    /**
+     * Dictionary of all organizations (`GET /organizations`).
+     * Anonymous and read-only, so it goes through the ETag cache (`public/sw.js` already
+     * lists it as cacheable); a language change re-fetches, the key carries the language.
+     */
     public getOrganizations(): Promise<GetOrganizationsResponse> {
-        return this.request<IResponse>("/api/organizations")
+        return this.requestCached<IResponse>("/api/organizations")
             .then((res) => ({ ...res, payload: normalizeOrganizations(res.payload) }));
     }
 

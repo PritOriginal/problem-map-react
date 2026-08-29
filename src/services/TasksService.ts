@@ -61,9 +61,13 @@ class TasksService extends BaseService {
             .then((res) => ({ ...res, payload: unwrapList<Task>(res.payload, "tasks") }));
     }
 
-    /** Localized task statuses (`Accept-Language`); optional on the backend. */
+    /**
+     * Localized task statuses (`Accept-Language`); optional on the backend.
+     * Anonymous and read-only, so it goes through the ETag cache (`public/sw.js` already
+     * lists it as cacheable); the cache key carries the language.
+     */
     public getTaskStatuses(): Promise<GetTaskStatusesResponse> {
-        return this.request<IResponse>("/api/tasks/statuses")
+        return this.requestCached<IResponse>("/api/tasks/statuses")
             .then((res) => ({ ...res, payload: unwrapList<TaskStatus>(res.payload, "task_statuses") }));
     }
 }

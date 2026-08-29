@@ -18,6 +18,10 @@ import { TranslationKey, localeOf, tOr, useT } from "../../../../i18n";
 import ReportButton from "../../../report/report-button";
 import CommentsBlock from "./comments";
 import { DuplicateBadge, HiddenBadge } from "../../../badges/badges";
+import { STATUS_COLORS, STATUS_FALLBACK } from "../../../../styles/tokens";
+import { layerDepths, layerSpans, spanLabel } from "../../../../utils/history-column";
+import { useNow } from "../../../../utils/hooks";
+import "./history-column.scss";
 
 const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigateKeepSearch();
@@ -40,6 +44,12 @@ const AboutProblem = observer(function AboutProblem() {
             groupHistoryItems = [];
         }
     }
+
+    // The column's geometry: how long the mark sat in each status, and how deep to
+    // draw that stratum. `useNow` keeps the last (still-running) layer honest.
+    const now = useNow();
+    const spans = layerSpans(groups.map((group) => group[0].changed_at), now);
+    const depths = layerDepths(spans);
 
     let possibilityAddCheck = true;
     if (user.id != 0 && historyItems.length > 0) {
@@ -112,13 +122,21 @@ const AboutProblem = observer(function AboutProblem() {
             }
             <p style={{ fontSize: 18 }}><b>{t("mark.history")}</b></p>
             <hr />
-            {groups.map((group, index) => (
-                <HistoryGroup key={index} group={group} />
-            ))}
+            <ol className="core">
+                {groups.map((group, index) => (
+                    <HistoryGroup
+                        key={index}
+                        group={group}
+                        depth={depths[index]}
+                        spanMs={spans[index]}
+                        isLast={index === groups.length - 1}
+                    />
+                ))}
+            </ol>
             {mark.mark_id !== 0 && <CommentsBlock />}
             {possibilityAddCheck &&
                 <div style={{ position: "sticky", bottom: "0" }}>
-                    <Button style="secondary" onClick={handleOnClickNewCheck}>
+                    <Button style="primary" onClick={handleOnClickNewCheck}>
                         {t("mark.checkButton")}
                     </Button>
                 </div>
@@ -433,7 +451,12 @@ function getDate(dateStr: string, locale: string): string {
     return date.toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
 }
 
-function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
+function HistoryGroup({ group, depth, spanMs, isLast }: {
+    group: MarkStatusHistoryItem[];
+    depth: number;
+    spanMs: number;
+    isLast: boolean;
+}) {
     const { t, lang } = useT();
     const [showChecks, setShowChecks] = useState(false);
     // `lang` re-renders the group when the language changes (titles/questions are read via tOr)
@@ -446,14 +469,27 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
 
     const question = getQuestion(group[group.length - 1].new_mark_status_id);
 
+    // The stratum takes the colour of the status that opened this layer.
+    const statusId = group[0].new_mark_status_id;
+    const span = spanLabel(spanMs);
+    const duration = `${span.value} ${t(`common.${span.unit}` as TranslationKey)}`;
+
     return (
-        <>
-            {group.map((item) => (
-                <HistoryItem key={item.id} item={item} />
-            ))}
+        <li className="core__layer" style={{ minHeight: `${depth}px` }}>
+            <div className="core__spine" aria-hidden="true">
+                <div
+                    className="core__stratum"
+                    style={{ height: `${depth}px`, backgroundColor: STATUS_COLORS[statusId] ?? STATUS_FALLBACK }}
+                />
+            </div>
+            <div className="core__body">
+                {group.map((item, i) => (
+                    <HistoryItem key={item.id} item={item} isFirst={i === 0} />
+                ))}
+                <p className="core__span">{t(isLast ? "mark.stillInStatus" : "mark.spentInStatus", { duration })}</p>
             {question !== "" &&
                 <>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "var(--paper)" }}>
+                    <div className="core__card">
                         <DoubleProgressBar
                             question={question}
                             negative={allChecks.filter(check => check.result == false).length}
@@ -461,7 +497,7 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
                         />
                     </div>
                     {allChecks.length > 0 &&
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "var(--paper)" }}>
+                        <div className="core__card">
                             <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
                                 <p>{t("mark.checks")}</p>
                             </div>
@@ -491,19 +527,22 @@ function HistoryGroup({ group }: { group: MarkStatusHistoryItem[] }) {
                     }
                 </>
             }
-            <hr />
-        </>
+            </div>
+        </li>
     )
 }
 
-function HistoryItem({ item }: { item: MarkStatusHistoryItem }) {
+/**
+ * One status change inside a stratum. The first one names the layer; any child
+ * changes under it are set quieter, because they are steps within that status
+ * rather than new layers of their own.
+ */
+function HistoryItem({ item, isFirst }: { item: MarkStatusHistoryItem, isFirst: boolean }) {
     const { lang } = useT();
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "8px", backgroundColor: "var(--paper)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <p>{getTitle(item.new_mark_status_id)}</p>
-                <p style={{ fontSize: 12 }}>{getDate(item.changed_at, localeOf(lang))}</p>
-            </div>
+        <div className={isFirst ? "core__head" : "core__step"}>
+            <p className={isFirst ? "core__title" : undefined}>{getTitle(item.new_mark_status_id)}</p>
+            <p className="core__time">{getDate(item.changed_at, localeOf(lang))}</p>
         </div>
     )
 }

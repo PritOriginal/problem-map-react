@@ -50,7 +50,9 @@
     --on-chrome: #f4f3ef;
     --on-chrome-muted: #9a9e9b;
     --rule-chrome: #3a3e3c;
-    --on-chrome-faint: #6e7370;
+    // 5.25:1 on --chrome. The previous #6e7370 measured 3.4:1, which fails for the
+    // small text it is used on (comment counts in the panel header).
+    --on-chrome-faint: #8b8f8c;
 
     // ---- Surfaces -------------------------------------------------------
     --surface: #f1f0ec;

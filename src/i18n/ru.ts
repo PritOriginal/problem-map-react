@@ -101,6 +101,8 @@ export const ru = {
     "mark.followFailed": "Не удалось подписаться",
     "mark.unfollowFailed": "Не удалось отписаться",
     "mark.history": "История",
+    "mark.spentInStatus": "{duration} в этом статусе",
+    "mark.stillInStatus": "{duration} — статус не менялся",
     "mark.checks": "Проверки",
     "mark.checkButton": "Опровергнуть | Подтвердить",
     "mark.loadFailed": "Не удалось загрузить проблему",

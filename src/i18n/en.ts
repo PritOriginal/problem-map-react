@@ -93,6 +93,8 @@ export const en: Partial<Dictionary> = {
     "mark.followFailed": "Could not follow",
     "mark.unfollowFailed": "Could not unfollow",
     "mark.history": "History",
+    "mark.spentInStatus": "{duration} in this status",
+    "mark.stillInStatus": "{duration} — status unchanged",
     "mark.checks": "Checks",
     "mark.checkButton": "Refute | Confirm",
     "mark.loadFailed": "Could not load the problem",

@@ -1,84 +1,95 @@
-.double-progress-bar {
-    &__title {
-        padding: 0 10px;
-        font-size: var(--fs-caption);
-        text-align: center;
+// The vote on a status: a balance beam, not a progress bar.
+//
+// Nothing here is "progressing" toward a goal -- two sides are weighing a claim
+// against each other, and the reader's question is which way it tips and by how
+// much. So the bar grows outward from a centre fulcrum, and the beam crosses the
+// history column at the layer it belongs to.
+
+.vote-beam {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    &__question {
+        font-size: var(--fs-small);
+        font-weight: 500;
+        color: var(--ink-soft);
     }
 
-    &__scale {
+    &__beam {
         position: relative;
-        min-height: 1rem;
-        width: auto;
+        display: flex;
+        align-items: stretch;
+        height: 22px;
         background-color: var(--track);
-        border-radius: var(--radius-4);
-        margin: 0.5rem;
-        color: var(--on-chrome); 
+        border-radius: var(--radius-1);
+        overflow: hidden;
+    }
+
+    // The fulcrum: where the two sides are equal.
+    &__pivot {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background-color: var(--rule-hover);
+        transform: translateX(-50%);
+        z-index: 1;
+    }
+
+    &__side {
+        display: flex;
+        align-items: center;
+        width: 50%;
+        font-family: var(--font-mono);
         font-size: var(--fs-caption);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--ink-muted);
+    }
 
-        &__left__zone {
-            position: absolute;
-            left: 0;
-            height: 100%;
-            width: 20%;
+    &__fill {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        min-width: 0;
+        transition: width var(--dur-slow) var(--ease);
+    }
 
-            background: linear-gradient(90deg, var(--vote-reject-soft) 0%, transparent 100%);
-            border-top-left-radius: var(--radius-4);
-            border-bottom-left-radius: var(--radius-4);
-        }
+    &__count {
+        padding: 0 var(--space-3);
+        white-space: nowrap;
+    }
 
-        &__right__zone {
-            position: absolute;
-            right: 0;
-            height: 100%;
-            width: 20%;
+    // Refuting weighs to the left, confirming to the right: the beam tips the way
+    // the evidence does.
+    &__side--refute {
+        justify-content: flex-end;
 
-            background: linear-gradient(90deg, transparent 0%, var(--vote-confirm-soft) 100%);
-            border-top-right-radius: var(--radius-4);
-            border-bottom-right-radius: var(--radius-4);
-        }
-
-
-        &__left {
-            position: absolute;
-
-            right: 50%;
-
-            height: 100%;
-            background: linear-gradient(90deg, var(--vote-reject) 0%, var(--vote-mid) 100%);
-            border-top-left-radius: var(--radius-4);
-            border-bottom-left-radius: var(--radius-4);
-            text-align: left;
-            padding-left: 10px;
-
-            &__text {
-                color: var(--on-chrome);
-                font-weight: bold;
-            }
-        }
-
-        &__right {
-            position: absolute;
-
-            left: 50%;
-
-            height: 100%;
-            background: linear-gradient(90deg, var(--vote-mid) 0%, var(--vote-confirm) 100%);
-            border-top-right-radius: var(--radius-4);
-            border-bottom-right-radius: var(--radius-4);
-            text-align: right;
-            padding-right: 10px;
-
-            &__text {
-                color: var(--on-chrome);
-                font-weight: bold;
-            }
+        .vote-beam__fill {
+            justify-content: flex-start;
+            background-color: var(--vote-reject);
+            border-radius: var(--radius-1) 0 0 var(--radius-1);
+            color: var(--paper);
         }
     }
 
-    &__signatures {
+    &__side--confirm {
+        justify-content: flex-start;
+
+        .vote-beam__fill {
+            justify-content: flex-end;
+            background-color: var(--vote-confirm);
+            border-radius: 0 var(--radius-1) var(--radius-1) 0;
+            color: var(--ink);
+        }
+    }
+
+    &__labels {
         display: flex;
         justify-content: space-between;
         font-size: var(--fs-caption);
-        padding: 0 10px;
+        color: var(--ink-muted);
     }
 }

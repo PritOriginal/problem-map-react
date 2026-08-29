@@ -1,0 +1,118 @@
+// The mark history as a core sample.
+//
+// The old rendering was a flat stack of identical blocks: it told you WHICH
+// statuses a mark passed through, but not how long it sat in any of them --
+// the thing an operator most needs and the thing the data already contained.
+//
+// Here each status is a stratum in a continuous column, and its thickness is the
+// time spent in it. Order is real information (this is a sequence, not a list of
+// options), so the markup is an <ol>. Depth is square-rooted, so a three-week
+// layer and a two-minute layer are both legible while keeping their ordering --
+// see src/utils/history-column.ts.
+
+.core {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+
+    &__layer {
+        display: grid;
+        grid-template-columns: 12px minmax(0, 1fr);
+        gap: var(--space-6);
+        position: relative;
+    }
+
+    // The column runs unbroken behind every stratum, so consecutive layers read
+    // as one core rather than as separate cards.
+    &__spine {
+        position: relative;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--rule);
+            transform: translateX(-50%);
+        }
+    }
+
+    // The stratum itself: full width of the gutter, exactly as deep as the time spent.
+    &__stratum {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        border-radius: 2px;
+    }
+
+    // The last stratum is still accruing, so it is left open at the bottom
+    // instead of being capped like a finished layer.
+    &__layer:last-child &__stratum {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        padding-bottom: var(--space-8);
+        min-width: 0;
+    }
+
+    &__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-4);
+    }
+
+    &__title {
+        font-size: var(--fs-body);
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    &__time {
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+        color: var(--ink-muted);
+        white-space: nowrap;
+    }
+
+    // How long the mark sat here. The one number this whole redraw exists to show.
+    &__span {
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+    }
+
+    &__step {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-4);
+        font-size: var(--fs-small);
+        color: var(--ink-soft);
+    }
+
+    &__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        padding: var(--space-6);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
+    }
+}

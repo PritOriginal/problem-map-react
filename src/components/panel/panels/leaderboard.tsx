@@ -23,9 +23,8 @@ const Leaderboard = observer(function Leaderboard() {
     const toKeepSearch = useToKeepSearch();
 
     useEffect(() => {
-        if (adminBoundariesStore.boundaries.length === 0 && !adminBoundariesStore.isLoadingBoundaries) {
-            adminBoundariesStore.fetchBoundaries();
-        }
+        // the store loads once and shares an in-flight request, so this reuses the map's data
+        adminBoundariesStore.fetchBoundaries();
     }, []);
 
     const [boundaryId, setBoundaryId] = useState(0);

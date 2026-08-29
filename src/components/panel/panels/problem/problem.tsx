@@ -2,18 +2,18 @@ import { Outlet, useParams } from "react-router-dom";
 import { TypeIcon } from "../../../mark/mark";
 import { statusColors } from "../../../../styles/tokens";
 import { useTheme } from "../../../../theme";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
 import markStatusesStore from "../../../../store/mark-statuses";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../../../store/panel";
-import notificationsStore from "../../../../store/notifications";
 import selectedMark from "../../../../store/selected_mark";
 import marksStore from "../../../../store/marks";
 import { LngLat } from "@yandex/ymaps3-types";
 import { MarkContext, MarkReloadContext, emptyMark } from "./mark-context";
 import { useT } from "../../../../i18n";
+import { useAsyncData } from "../../../../utils/use-async-data";
 import { HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/badges";
 
 
@@ -24,16 +24,25 @@ const ProblemPanel = observer(() => {
 
     const panelHeaderRef = useRef<HTMLDivElement>(null);
 
-    const [mark, setMark] = useState<Mark>(emptyMark);
-    const [version, setVersion] = useState(0);
-    // The version bump re-runs the `getMarkById` effect below, so the panel's own
-    // copy of the mark is already re-read from the server. The store call is only
+    const markId = params.id;
+    const { data, reload: reloadMark } = useAsyncData(
+        (signal) => MarksService.getMarkById(Number(markId), { signal }).then((res) => {
+            const loaded = res.payload.mark;
+            selectedMark.setLoadedCoords(loaded.mark_id, loaded.geom.coordinates as LngLat);
+            return loaded;
+        }),
+        [markId],
+        { errorMessage: t("mark.loadFailed") },
+    );
+    const mark: Mark = data ?? emptyMark;
+
+    // `reloadMark` re-reads the panel's own copy of the mark. The store call is only
     // about the pins on the map behind the panel -- an incremental sync moves the
     // one changed mark there instead of re-downloading every mark in the city.
     const reload = useCallback(() => {
-        setVersion((v) => v + 1);
+        reloadMark();
         marksStore.sync();
-    }, []);
+    }, [reloadMark]);
 
     useEffect(() => {
         if (panelHeaderRef.current) {
@@ -57,29 +66,6 @@ const ProblemPanel = observer(() => {
         }
     }
 
-
-    useEffect(() => {
-        let ignore = false;
-        MarksService.getMarkById(Number(params.id))
-            .then((data) => {
-                if (!ignore) {
-                    const loaded = data.payload.mark;
-                    setMark(loaded);
-                    selectedMark.setLoadedCoords(loaded.mark_id, loaded.geom.coordinates as LngLat);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("mark.loadFailed"));
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [params.id, version])
 
     return (
         <MarkContext.Provider value={mark}>

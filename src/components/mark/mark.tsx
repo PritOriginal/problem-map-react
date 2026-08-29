@@ -3,7 +3,8 @@ import { YMapMarker } from "ymap3-components";
 
 import "./marker.scss"
 import { memo } from "react";
-import { Mark } from "../../services/MarksService";
+import { Mark, MarkType } from "../../services/MarksService";
+import { typeColor, typeIcon } from "../../utils/mark-types";
 
 import BlobIcon from "../../assets/blob.svg?react"
 import RoadIcon from "../../assets/road.svg?react"
@@ -26,6 +27,7 @@ export const COLOR_MARK_STATUSES = {
   5: "#00e500",
   6: "#000",
   7: "#ff8c00",
+  8: "#8a8a8a",
 } as {
   [index: number]: string
 };
@@ -112,19 +114,40 @@ export function Sign({ color }: { color: string }) {
   )
 }
 
-const MarkItem = memo(function ({ mark, size, selected, onClick }: { mark: Mark, size: MarkerSize, selected: boolean, onClick: (mark: Mark) => void }) {
-  const color = COLOR_MARK_STATUSES[mark.mark_status_id];
+/**
+ * Icon of a mark type: the backend `icon` (emoji) when present, else the built-in SVG by id,
+ * else the first letter of the type name.
+ */
+export function TypeIcon({ typeId, type, color }: { typeId: number; type?: MarkType; color: string }) {
+  const glyph = typeIcon(type);
+  if (glyph) {
+    return <span className="type-glyph" aria-hidden="true">{glyph}</span>;
+  }
+  const Builtin = TypeMarkIcons[typeId];
+  if (Builtin) {
+    return Builtin({ color });
+  }
+  return <span className="type-glyph" style={{ color }} aria-hidden="true">{(type?.name ?? "?").slice(0, 1).toUpperCase()}</span>;
+}
+
+const MarkItem = memo(function ({ mark, type, size, selected, onClick }: { mark: Mark, type?: MarkType, size: MarkerSize, selected: boolean, onClick: (mark: Mark) => void }) {
+  const color = COLOR_MARK_STATUSES[mark.mark_status_id] ?? "#d3d3d3";
+  const ring = typeColor(type);
 
   return (
     <YMapMarker
       coordinates={mark.geom.coordinates}
       onClick={() => { onClick(mark) }}
     >
-      <div className={`mark ${size} ${selected ? "selected" : ""}`} style={{ backgroundColor: color }}>
+      <div
+        className={`mark ${size} ${selected ? "selected" : ""} ${mark.hidden ? "hidden-mark" : ""}`}
+        style={{ backgroundColor: color, boxShadow: ring ? `0 0 0 2px ${ring}` : undefined }}
+        title={mark.hidden ? "hidden" : undefined}
+      >
         {size == MarkerSize.big &&
           <>
-            <div className="circle-content" style={{ backgroundColor: color }}>
-              {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
+            <div className="circle-content" style={{ backgroundColor: ring ?? color }}>
+              <TypeIcon typeId={mark.mark_type_id} type={type} color="#fff" />
             </div>
           </>
         }

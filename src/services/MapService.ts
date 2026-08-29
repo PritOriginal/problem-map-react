@@ -93,7 +93,7 @@ class MapService extends BaseService {
             params.append("admin_levels", req.admin_levels.join(","));
         }
 
-        return this.request<GetAdminBoundariesResponse>(`/api/map/admin-boundaries?${params}`);
+        return this.requestCached<GetAdminBoundariesResponse>(`/api/map/admin-boundaries?${params}`);
     }
 
     public getAdminBoundariesMarksCount(req: GetAdminBoundariesMarksCountRequest): Promise<GetAdminBoundariesMarksCountResponse> {

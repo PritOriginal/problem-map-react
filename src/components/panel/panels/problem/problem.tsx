@@ -1,5 +1,5 @@
 import { Outlet, useParams } from "react-router-dom";
-import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../../mark/mark";
+import { COLOR_MARK_STATUSES, TypeIcon } from "../../../mark/mark";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
@@ -12,7 +12,7 @@ import marksStore from "../../../../store/marks";
 import { LngLat } from "@yandex/ymaps3-types";
 import { MarkContext, MarkReloadContext, emptyMark } from "./mark-context";
 import { useT } from "../../../../i18n";
-import { OrgLabel, SlaBadge } from "../../../badges/badges";
+import { CommentsCount, HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/badges";
 
 
 const ProblemPanel = observer(() => {
@@ -90,13 +90,15 @@ const ProblemPanel = observer(() => {
                 <p style={{ fontSize: "12px" }}>{t("mark.n", { id: mark.mark_id })}</p>
                 <p style={{ fontSize: 12 }}>{t("common.coordinates")}: <b>{mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}</b></p>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {TypeMarkIcons[mark.mark_type_id]({ color: "#fff" })}
+                    <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="#fff" />
                     <p style={{ fontSize: 14 }}><b>{markType.name}</b></p>
                 </div>
-                {(mark.sla_due_at || mark.organization_id) &&
+                {(mark.sla_due_at || mark.organization_id || mark.hidden || mark.comments_count !== undefined) &&
                     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
+                        <HiddenBadge hidden={mark.hidden} />
                         <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
                         <OrgLabel organizationId={mark.organization_id} />
+                        <span style={{ color: "#ddd", fontSize: 12 }}><CommentsCount count={mark.comments_count} /></span>
                     </div>
                 }
             </div>

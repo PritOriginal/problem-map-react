@@ -1,4 +1,4 @@
-import BaseService, { IResponse } from "./BaseService"
+import BaseService, { IResponse, withIdempotencyKey } from "./BaseService"
 
 export interface Check {
     check_id: number;
@@ -64,7 +64,7 @@ class ChecksService extends BaseService {
         return this.request<GetChecksByUserIdResponse>(`/api/checks/user/${userId}`)
     }
 
-    public addCheck(req: AddCheckRequest, photos: File[]): Promise<AddCheckResponse> {
+    public addCheck(req: AddCheckRequest, photos: Blob[], idempotencyKey?: string): Promise<AddCheckResponse> {
         const form = new FormData();
         form.append("mark_id", req.mark_id.toString())
         form.append("result", req.result ? "true" : "false")
@@ -73,10 +73,10 @@ class ChecksService extends BaseService {
             form.append("photos", photo)
         });
 
-        return this.requestWithAuth<AddCheckResponse>("/api/checks", {
+        return this.requestWithAuth<AddCheckResponse>("/api/checks", withIdempotencyKey({
             method: "POST",
             body: form
-        })
+        }, idempotencyKey))
     }
 }
 

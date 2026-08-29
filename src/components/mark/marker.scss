@@ -43,3 +43,14 @@
         box-shadow: 0px 0px 0px 8px rgba(35, 174, 255, 0.3);
     }
 }
+.type-glyph {
+  font-size: 14px;
+  line-height: 16px;
+  min-width: 16px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.mark.hidden-mark {
+  opacity: 0.45;
+}

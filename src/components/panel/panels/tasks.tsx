@@ -12,7 +12,7 @@ import MarksService, { Mark } from "../../../services/MarksService";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import { Button } from "../../button/button";
 import { MarkBadges } from "../../badges/badges";
-import { TypeMarkIcons } from "../../mark/mark";
+import { TypeIcon } from "../../mark/mark";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { deadlineState, formatDateTime, formatDeadline } from "../../../utils/deadline";
 import { useNow } from "../../../utils/hooks";
@@ -167,7 +167,6 @@ const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?:
     const overdue = task.status_id === TaskStatusType.Overdue || (!isDone && deadline?.overdue === true);
 
     const type = mark ? markTypesStore.types.find((x) => x.mark_type_id === mark.mark_type_id) : undefined;
-    const Icon = mark ? TypeMarkIcons[mark.mark_type_id] : undefined;
 
     const showOnMap = () => {
         if (mark) {
@@ -181,7 +180,7 @@ const TaskCard = observer(function TaskCard({ task, mark }: { task: Task; mark?:
         <div className={`task-card ${overdue ? "overdue" : ""}`}>
             <div className="task-card__row">
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                    {Icon && Icon({ color: "#000" })}
+                    {mark && <TypeIcon typeId={mark.mark_type_id} type={type} color="#000" />}
                     <p style={{ fontSize: 14 }}><b>{t("common.problemN", { id: task.mark_id })}</b> {type?.name ?? ""}</p>
                 </div>
                 <span className="profile-list__status" style={{ borderColor: overdue ? "#a40000" : isDone ? "#00a000" : "#555" }}>

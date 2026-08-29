@@ -1,7 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { t } from "../i18n";
-import MarksService, { GetMarksRequest, Mark, MarkStatusType } from '../services/MarksService';
+import MarksService, { GetMarksRequest, Mark, MarkChanges, MarkStatusType } from '../services/MarksService';
 import notificationsStore from './notifications';
+import { applyMarkChanges } from '../utils/mark-changes';
+
+/** localStorage key of the `server_time` of the last full load / incremental sync. */
+export const MARKS_SINCE_KEY = "marks_since";
 
 /** Filters applied when the URL carries none. */
 export const DEFAULT_FILTERS: Readonly<GetMarksRequest> = {
@@ -33,12 +37,14 @@ class MarksStore {
     fetch = async () => {
         this.isLoading = true;
         this.error = null;
+        const startedAt = new Date().toISOString();
         try {
             const response = await MarksService.getMarks(this.filters);
             runInAction(() => {
                 this.marks = response.payload.marks;
                 this.isLoading = false;
             });
+            writeSince(startedAt);
         } catch (error) {
             console.error(error);
             runInAction(() => {
@@ -46,6 +52,30 @@ class MarksStore {
                 this.isLoading = false;
             });
         }
+    }
+
+    /**
+     * Incremental refresh (`GET /marks/changes?since=`, backend integration/wave-5): merges changed
+     * marks, drops deleted and hidden ones. Falls back to a full reload when there is no `since`
+     * yet or the endpoint is unavailable.
+     */
+    sync = async () => {
+        const since = readSince();
+        if (!since) {
+            return this.fetch();
+        }
+        try {
+            const response = await MarksService.getMarkChanges(since);
+            this.applyChanges(response.payload);
+        } catch (error) {
+            console.error(error);
+            return this.fetch();
+        }
+    }
+
+    applyChanges = (changes: MarkChanges) => {
+        this.marks = applyMarkChanges(this.marks, changes, this.filters);
+        writeSince(changes.server_time);
     }
 
     /** Replaces both filter lists without fetching (used to apply filters from the URL). */
@@ -72,6 +102,22 @@ class MarksStore {
             this.filters.mark_status_ids.push(markStatusId);
         }
         this.fetch();
+    }
+}
+
+function readSince(): string | null {
+    try {
+        return localStorage.getItem(MARKS_SINCE_KEY);
+    } catch {
+        return null;
+    }
+}
+
+function writeSince(value: string): void {
+    try {
+        localStorage.setItem(MARKS_SINCE_KEY, value);
+    } catch {
+        // ignore
     }
 }
 

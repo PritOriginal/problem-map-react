@@ -10,6 +10,30 @@ class BaseService {
         return fetch(input, withLang(init)).then((response) => parseResponse<T>(response));
     }
 
+    /**
+     * GET with `If-None-Match` for read-only dictionaries (backend integration/wave-5 sends `ETag`).
+     * The last body and its ETag are kept in localStorage per URL + language; a 304 (or an empty
+     * body from a cache layer) yields the stored body, a 200 replaces it.
+     */
+    protected async requestCached<T extends IResponse = IResponse>(input: string, init: RequestInit = {}): Promise<T> {
+        const key = `${ETAG_PREFIX}${getLang()}:${input}`;
+        const stored = readEtagEntry<T>(key);
+        const headers = new Headers(withLang(init).headers);
+        if (stored) {
+            headers.set("If-None-Match", stored.etag);
+        }
+        const response = await fetch(input, { ...init, headers });
+        if (response.status === 304 && stored) {
+            return stored.body;
+        }
+        const body = await parseResponse<T>(response);
+        const etag = response.headers.get("ETag");
+        if (etag) {
+            writeEtagEntry(key, { etag, body });
+        }
+        return body;
+    }
+
     /** Same as `request`, but authenticated (see `fetchWithAuth`). */
     protected requestWithAuth<T extends IResponse = IResponse>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
         return this.fetchWithAuth(input, init).then((response) => parseResponse<T>(response));
@@ -45,6 +69,61 @@ class BaseService {
         headers.set("Authorization", `Bearer ${token}`);
         return { ...withLangInit, headers };
     }
+}
+
+const ETAG_PREFIX = "etag:";
+
+interface EtagEntry<T> {
+    etag: string;
+    body: T;
+}
+
+function readEtagEntry<T>(key: string): EtagEntry<T> | null {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) {
+            return null;
+        }
+        const parsed = JSON.parse(raw) as Partial<EtagEntry<T>>;
+        return typeof parsed.etag === "string" && parsed.body !== undefined ? (parsed as EtagEntry<T>) : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeEtagEntry<T>(key: string, entry: EtagEntry<T>): void {
+    try {
+        localStorage.setItem(key, JSON.stringify(entry));
+    } catch {
+        // storage full / unavailable: the next request simply goes without If-None-Match
+    }
+}
+
+/** Drops every cached ETag body (e.g. on sign-out). */
+export function clearEtagCache(): void {
+    try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(ETAG_PREFIX)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch {
+        // ignore
+    }
+}
+
+/**
+ * Adds `Idempotency-Key` (backend integration/wave-5) so a retried `POST` — e.g. from the
+ * offline queue — is not applied twice.
+ */
+export function withIdempotencyKey(init: RequestInit = {}, key: string | undefined): RequestInit {
+    if (!key) {
+        return init;
+    }
+    const headers = new Headers(init.headers);
+    headers.set("Idempotency-Key", key);
+    return { ...init, headers };
 }
 
 /** Adds `Accept-Language` (current UI language) so dictionaries come back localized. */

@@ -4,6 +4,7 @@ import user from "../store/user";
 import { getRoleFromToken } from "../utils/role";
 import { t } from "../i18n";
 import { clearApiCache } from "../pwa";
+import { clearEtagCache } from "./BaseService";
 
 export const ACCESS_TOKEN_KEY = "access_token";
 export const REFRESH_TOKEN_KEY = "refresh_token";
@@ -41,6 +42,7 @@ export function signOut(): void {
     clearTokens();
     user.resetUser();
     clearApiCache();
+    clearEtagCache();
 }
 
 /**

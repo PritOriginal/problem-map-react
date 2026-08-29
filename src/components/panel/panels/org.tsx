@@ -12,7 +12,7 @@ import MarksService, { Mark, MarkStatusType } from "../../../services/MarksServi
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import { Button } from "../../button/button";
 import { MarkBadges } from "../../badges/badges";
-import { TypeMarkIcons } from "../../mark/mark";
+import { TypeIcon } from "../../mark/mark";
 import SelectFiles from "../../SelectFiles";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { useT } from "../../../i18n";
@@ -136,7 +136,6 @@ const QueueCard = observer(function QueueCard({ mark, onDone }: { mark: Mark; on
     const [reporting, setReporting] = useState(false);
 
     const type = markTypesStore.types.find((x) => x.mark_type_id === mark.mark_type_id);
-    const Icon = TypeMarkIcons[mark.mark_type_id];
 
     const open = () => {
         selectedMark.setId(mark.mark_id);
@@ -163,7 +162,7 @@ const QueueCard = observer(function QueueCard({ mark, onDone }: { mark: Mark; on
         <div className={`task-card ${mark.is_overdue ? "overdue" : ""}`}>
             <div className="task-card__row">
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                    {Icon && Icon({ color: "#000" })}
+                    <TypeIcon typeId={mark.mark_type_id} type={type} color="#000" />
                     <p style={{ fontSize: 14 }}><b>{t("mark.n", { id: mark.mark_id })}</b> {type?.name ?? ""}</p>
                 </div>
             </div>

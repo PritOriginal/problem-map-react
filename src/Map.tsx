@@ -15,7 +15,8 @@ import customization from './customization.json'
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LngLat, LngLatBounds, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance, YMapCenterLocation, YMapLocationRequest, ZoomRange } from "@yandex/ymaps3-types";
-import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeMarkIcons } from "./components/mark/mark";
+import MarkItem, { COLOR_MARK_STATUSES, MarkerItem, MarkerSize, TypeIcon } from "./components/mark/mark";
+import { typeColor } from "./utils/mark-types";
 import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
@@ -263,9 +264,22 @@ const Map = observer(() => {
   ), []);
 
   const selectedId = selectedMark.id;
-  const marker = useCallback((feature: Feature) => (
-    <MarkItem mark={feature.properties!.mark as Mark} size={size} selected={(feature.properties!.mark as Mark).mark_id === selectedId} onClick={onClickOnMark} />
-  ), [size, selectedId, onClickOnMark]);
+  const types = markTypesStore.types;
+  const marker = useCallback((feature: Feature) => {
+    const mark = feature.properties!.mark as Mark;
+    return (
+      <MarkItem mark={mark} type={types.find((x) => x.mark_type_id === mark.mark_type_id)} size={size} selected={mark.mark_id === selectedId} onClick={onClickOnMark} />
+    );
+  }, [size, selectedId, onClickOnMark, types]);
+
+  // back online: incremental refresh instead of a full reload (wave-5 `GET /marks/changes`)
+  useEffect(() => {
+    const onOnline = () => {
+      marksStore.sync();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   const points = useMemo(() => {
     const p: Feature[] = [];
@@ -525,7 +539,7 @@ const Filters = observer(() => {
               {markTypesStore.types.map((type) => (
                 <FilterItem
                   key={type.mark_type_id}
-                  icon={TypeMarkIcons[type.mark_type_id]({ color: "#00" })}
+                  icon={<span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", backgroundColor: typeColor(type) ?? "transparent" }}><TypeIcon typeId={type.mark_type_id} type={type} color={typeColor(type) ? "#fff" : "#000"} /></span>}
                   name={type.name}
                   checked={marksStore.filters.mark_type_ids.includes(type.mark_type_id)}
                   onClick={() => {

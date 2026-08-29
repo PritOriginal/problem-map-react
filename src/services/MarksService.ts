@@ -1,5 +1,5 @@
 import { LngLat } from "@yandex/ymaps3-types";
-import BaseService, { IResponse } from "./BaseService"
+import BaseService, { IResponse, withIdempotencyKey } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
 import { Check } from "./ChecksService";
 
@@ -24,6 +24,12 @@ export interface Mark {
     sla_due_at?: string | null;
     /** True when `sla_due_at` has passed and the mark is still not resolved. */
     is_overdue?: boolean;
+    /** Hidden by a moderator (backend integration/wave-5); still visible to moderators. */
+    hidden?: boolean;
+    /** Id of the original when the mark was merged as a duplicate (status 8); null otherwise. */
+    merged_into_id?: number | null;
+    /** Number of (non-deleted) comments. */
+    comments_count?: number;
 }
 
 /** A mark near the point being reported, with the distance to it in meters. */
@@ -56,6 +62,11 @@ export interface MarkType {
     name: string;
     /** Language-independent code (backend integration/wave-4). */
     code?: string;
+    /** Emoji / icon code for the marker (backend integration/wave-5); empty when the backend has none. */
+    icon?: string;
+    /** CSS color of the marker (`#rrggbb`); empty when the backend has none. */
+    color?: string;
+    sort_order?: number;
 }
 
 export interface MarkStatus {
@@ -75,6 +86,8 @@ export enum MarkStatusType {
 	RefutedStatus,
 	/** Taken by an organization (backend integration/wave-4). */
 	InWorkStatus,
+	/** Merged into another mark (backend integration/wave-5). */
+	DuplicateStatus,
 }
 
 /** Export formats of `GET /marks/export`. */
@@ -99,11 +112,16 @@ function dictId(item: Record<string, unknown>, legacyKey: string): number {
 }
 
 export function normalizeMarkTypes(payload: unknown): MarkType[] {
-    return dictList(payload, "mark_types").map((item) => ({
-        mark_type_id: dictId(item, "mark_type_id"),
-        name: String(item.name ?? ""),
-        code: typeof item.code === "string" ? item.code : undefined,
-    }));
+    return dictList(payload, "mark_types")
+        .map((item) => ({
+            mark_type_id: dictId(item, "mark_type_id"),
+            name: String(item.name ?? ""),
+            code: typeof item.code === "string" ? item.code : undefined,
+            icon: typeof item.icon === "string" && item.icon !== "" ? item.icon : undefined,
+            color: typeof item.color === "string" && item.color !== "" ? item.color : undefined,
+            sort_order: typeof item.sort_order === "number" ? item.sort_order : undefined,
+        }))
+        .sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) || a.mark_type_id - b.mark_type_id);
 }
 
 export function normalizeMarkStatuses(payload: unknown): MarkStatus[] {
@@ -197,6 +215,31 @@ export interface MarkStatusHistoryItem {
     checks?: Check[]; 
 }
 
+/** `GET /marks/changes?since=` (backend integration/wave-5). */
+export interface MarkChanges {
+    marks: Mark[];
+    deleted_ids: number[];
+    hidden_ids: number[];
+    /** Server clock at the time of the response; pass it as `since` next time. */
+    server_time: string;
+}
+
+export interface GetMarkChangesResponse extends IResponse {
+    payload: MarkChanges;
+}
+
+/** Normalizes a changes payload: missing lists become empty. */
+export function normalizeMarkChanges(payload: unknown): MarkChanges {
+    const p = isRecord(payload) ? payload : {};
+    const ids = (v: unknown) => (Array.isArray(v) ? v.map(Number).filter(Number.isFinite) : []);
+    return {
+        marks: Array.isArray(p.marks) ? (p.marks as Mark[]) : [],
+        deleted_ids: ids(p.deleted_ids),
+        hidden_ids: ids(p.hidden_ids),
+        server_time: typeof p.server_time === "string" ? p.server_time : new Date().toISOString(),
+    };
+}
+
 export interface GetMarkStatusHistoryByMarkIdResponse extends IResponse {
     payload: GetMarkStatusHistoryByMarkIdResponsePayload
 }
@@ -235,7 +278,7 @@ class MarksService extends BaseService {
      * Creates a mark. Without `force` the backend may reject with 409 when similar marks
      * exist nearby (`ApiError.payload.similar_marks`); pass `force = true` to create anyway.
      */
-    public addMark(req: AddMarkRequest, photos: File[], force: boolean = false): Promise<AddMarkResponse> {
+    public addMark(req: AddMarkRequest, photos: Blob[], force: boolean = false, idempotencyKey?: string): Promise<AddMarkResponse> {
         const form = new FormData();
         form.append("longitude", req.point.longitude.toString());
         form.append("latitude", req.point.latitude.toString());
@@ -245,10 +288,35 @@ class MarksService extends BaseService {
             form.append("photos", photo)
         });
 
-        return this.requestWithAuth<AddMarkResponse>(`/api/marks${force ? "?force=true" : ""}`, {
+        return this.requestWithAuth<AddMarkResponse>(`/api/marks${force ? "?force=true" : ""}`, withIdempotencyKey({
             method: "POST",
             body: form
+        }, idempotencyKey))
+    }
+
+    /** Marks changed since `since` (ISO date-time), plus deleted / hidden ids (`GET /marks/changes`). */
+    public getMarkChanges(since: string): Promise<GetMarkChangesResponse> {
+        return this.request<IResponse>(`/api/marks/changes?since=${encodeURIComponent(since)}`)
+            .then((res) => ({ ...res, payload: normalizeMarkChanges(res.payload) }));
+    }
+
+    /** Moderator/admin: hides or shows the mark (`PATCH /marks/{id}/hidden`). */
+    public setMarkHidden(id: number, hidden: boolean): Promise<IResponse> {
+        return this.requestWithAuth(`/api/marks/${id}/hidden`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json;charset=utf-8" },
+            body: JSON.stringify({ hidden }),
         })
+    }
+
+    /** Moderator/admin: merges the mark into `targetId` as a duplicate; resolves with the target mark. */
+    public mergeMark(id: number, targetId: number): Promise<GetMarkByIdResponse & { payload: Mark }> {
+        return this.requestWithAuth<IResponse>(`/api/marks/${id}/merge-into/${targetId}`, { method: "POST" })
+            .then((res) => {
+                const payload = res.payload as Mark | { mark: Mark } | undefined;
+                const mark = payload && "mark" in payload ? payload.mark : (payload as Mark);
+                return { ...res, payload: mark } as GetMarkByIdResponse & { payload: Mark };
+            })
     }
 
     /** Owner only (unconfirmed mark): updates description and/or type. */
@@ -284,12 +352,12 @@ class MarksService extends BaseService {
     }
 
     public getMarkTypes(): Promise<GetMarkTypesResponse> {
-        return this.request<IResponse>("/api/marks/types")
+        return this.requestCached<IResponse>("/api/marks/types")
             .then((res) => ({ ...res, payload: normalizeMarkTypes(res.payload) }));
     }
 
     public getMarkStatuses(): Promise<GetMarkStatusesResponse> {
-        return this.request<IResponse>("/api/marks/statuses")
+        return this.requestCached<IResponse>("/api/marks/statuses")
             .then((res) => ({ ...res, payload: normalizeMarkStatuses(res.payload) }));
     }
 

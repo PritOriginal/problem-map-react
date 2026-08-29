@@ -15,7 +15,7 @@ Frontend (React 18 + Vite 5 + TypeScript, MobX, Yandex Maps v3) for the "problem
 - `src/utils/` — pure helpers, each with a colocated `*.test.ts`.
 - `src/offline/` — IndexedDB queue of mutations with `Idempotency-Key`.
 - `src/i18n/` — custom dictionaries `ru.ts` (reference) / `en.ts`; `parity.test.ts` enforces identical key sets and placeholders.
-- `src/lib/ymaps.ts`, `src/pwa.ts` + `public/sw.js`.
+- `src/pwa.ts` + `public/sw.js`.
 
 ## Conventions
 - Strict TS (`noUnusedLocals`, `noUnusedParameters`); 4-space indent, double quotes, semicolons.

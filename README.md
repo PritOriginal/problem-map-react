@@ -72,3 +72,14 @@ npm run build  # tsc + vite build
 - Карточка своей неподтверждённой метки: `PATCH /marks/{id}` (описание/тип), `DELETE /marks/{id}`; кнопка «Следить/Слежу» (`POST/DELETE /marks/{id}/follow`, поля `followers_count`, `is_following` в `Mark`).
 - Тепловая карта: переключатель в фильтрах, `GET /map/heatmap?bbox&cell_m&mark_type_ids&mark_status_ids` (`cell_m`: zoom ≤12 → 1000, 13–14 → 500, ≥15 → 250).
 - Дашборд `/analytics`: `GET /analytics/kpi`, `GET /analytics/timeseries?step=day|week|month` (фильтр по району из `admin-boundaries` и периоду).
+
+## Требует бэкенд integration/wave-4
+
+Функции ниже написаны по контрактам ветки бэкенда `integration/wave-4` (все ответы в конверте `{success, payload, error, meta?}`); без неё панели показывают ошибку загрузки, остальной интерфейс работает:
+
+- Задания `/tasks`: `GET /tasks/user/{id}?statuses=1,2,3&limit&offset` → `[{task_id, name, user_id, mark_id, status_id, due_at|null, …}]` (статусы: 1 Выдано, 2 Выполнено, 3 Просрочено; `GET /tasks/statuses` — необязательный словарь). Вкладки Текущие/Выполненные/Просроченные, карточка с меткой (тип, описание, «Показать на карте»), обратный отсчёт до `due_at` с подсветкой просрочки, кнопка «Проверить» → `/problem/:id/add-check` (`POST /checks`).
+- Кабинет службы `/org` (только `role === "service"` в JWT-claim `role`, ссылка в шапке): `GET /organizations/me`, очередь `GET /organizations/{id}/marks?status_ids=2,7&overdue=true&limit&offset`, «Взять в работу» `POST /marks/{id}/start` (Подтверждённая → В работе, id 7), «Отчитаться» `POST /marks/{id}/resolve` (multipart `comment`, `photos[]`; В работе → На проверке). Для модератора/админа в карточке метки — селект «Назначить организацию» (`GET /organizations`, `PATCH /marks/{id}/assign {organization_id}`).
+- В `Mark` ожидаются поля `organization_id|null`, `sla_due_at|null`, `is_overdue`: в карточке метки и списках показываются статус «В работе» (оранжевый), SLA-бейдж (осталось/просрочено) и организация.
+- i18n ru/en: словари `src/i18n/{ru,en}.ts`, хук `useT()`, переключатель в шапке (persist в `localStorage.lang`); все запросы уходят с `Accept-Language: ru|en`, справочники (`GET /marks/types`, `/marks/statuses`, `/tasks/statuses`, `/organizations`) перезапрашиваются при смене языка. Справочники принимаются и в новом формате `{id, code, name}`, и в старом `{mark_type_id, name}`.
+- Экспорт: кнопки GeoJSON/CSV в фильтрах карты открывают `GET /marks/export?format=geojson|csv&mark_type_ids&mark_status_ids` (текущие фильтры) в новой вкладке.
+- PWA-минимум: `public/manifest.webmanifest` (SVG-иконка `public/icon.svg`), `public/sw.js` (app-shell — cache-first; GET `/api/*` справочники и список меток — network-first с fallback на кэш, отдельный кэш на язык), регистрация в `src/pwa.ts` только в production-сборке; баннер «Нет сети» по `navigator.onLine`.

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import Header from './components/header/Header';
 import Map from "./Map";
 import { getAccessToken, isAccessTokenValid, refreshTokens } from './services/tokens';
@@ -7,18 +7,13 @@ import user from './store/user';
 import { getRoleFromToken } from './utils/role';
 import { useT } from './i18n';
 import { useOnline } from './utils/hooks';
-import markTypesStore from './store/mark-types';
-import markStatusesStore from './store/mark-statuses';
-import organizationsStore from './store/organizations';
-import taskStatusesStore from './store/task-statuses';
 import offlineQueueStore from './store/offline-queue';
 import { observer } from 'mobx-react-lite';
 import { Link } from 'react-router-dom';
 import { useToKeepSearch } from './utils/navigation';
+import { useDictionaryReload } from './utils/use-dictionary-reload';
 
 export default function App() {
-  const { lang } = useT();
-
   useEffect(() => {
     const token = getAccessToken();
     if (isAccessTokenValid(token)) {
@@ -42,19 +37,7 @@ export default function App() {
 
   // dictionaries are localized by `Accept-Language`: reload them when the language changes
   // (the initial load happens in Map on mount)
-  const loadedLang = useRef(lang);
-  useEffect(() => {
-    if (loadedLang.current === lang) {
-      return;
-    }
-    loadedLang.current = lang;
-    markTypesStore.fetch(true);
-    markStatusesStore.fetch(true);
-    organizationsStore.fetch(true);
-    if (user.id !== 0) {
-      taskStatusesStore.fetch();
-    }
-  }, [lang]);
+  useDictionaryReload();
 
   return (
     <>

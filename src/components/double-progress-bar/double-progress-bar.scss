@@ -22,7 +22,7 @@
         align-items: stretch;
         height: 22px;
         background-color: var(--track);
-        border-radius: var(--radius-1);
+        border-radius: 999px;
         overflow: hidden;
     }
 
@@ -38,36 +38,24 @@
         z-index: 1;
     }
 
+    // Each half carries the whole ramp and is clipped back to the part the votes
+    // have reached, so the colour under any given point never moves. Clipping
+    // rather than covering is what lets the revealed segment keep rounded ends:
+    // the outer end follows the track's pill, the end at the fulcrum takes a
+    // small radius so the two sides read as separate weights meeting.
     &__side {
-        display: flex;
-        align-items: stretch;
         width: 50%;
+        transition: clip-path var(--dur-slow) var(--ease);
     }
 
-    &__fill {
-        height: 100%;
-        min-width: 0;
-        transition: width var(--dur-slow) var(--ease);
-    }
-
-    // Refuting weighs to the left, confirming to the right: the beam tips the way
-    // the evidence does. Each fill is anchored at the fulcrum and grows outward.
+    // Refuting weighs to the left, confirming to the right: saturated at the far
+    // edge, amber at the fulcrum, where a vote count is still inconclusive.
     &__side--refute {
-        justify-content: flex-end;
-
-        .vote-beam__fill {
-            background-color: var(--vote-reject);
-            border-radius: var(--radius-1) 0 0 var(--radius-1);
-        }
+        background: linear-gradient(90deg, var(--vote-reject), var(--vote-mid));
     }
 
     &__side--confirm {
-        justify-content: flex-start;
-
-        .vote-beam__fill {
-            background-color: var(--vote-confirm);
-            border-radius: 0 var(--radius-1) var(--radius-1) 0;
-        }
+        background: linear-gradient(90deg, var(--vote-mid), var(--vote-confirm));
     }
 
     &__labels {

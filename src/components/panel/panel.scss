@@ -207,35 +207,6 @@
     }
 }
 
-.thumb-photo {
-    background-color: var(--placeholder);
-    max-height: 100px;
-    min-height: 100px;
-
-    &.confirm {
-        border-bottom: 1px solid var(--vote-confirm);
-    }
-
-    &.reject {
-        border-bottom: 1px solid var(--vote-reject);
-    }
-}
-
-.show-button {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    padding: 4px;
-    border: none;
-    background-color: var(--surface);
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-
-    &:hover {
-        fill: var(--on-chrome);
-        background-color: var(--chrome-2);
-    }
-}
 .profile-list {
     display: flex;
     flex-direction: column;

@@ -80,7 +80,7 @@ const Header = observer(function Header() {
     const { t } = useT();
 
     return (
-        <header>
+        <header className="app-header">
             <div className="header-container">
                 <div className="header-container__menu">
                     <Link to={toKeepSearch("/")} aria-label={t("nav.map")} style={{ display: "flex" }}>

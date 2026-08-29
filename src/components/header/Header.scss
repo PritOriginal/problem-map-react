@@ -1,6 +1,9 @@
 @use "../../mixins" as *;
 
-header {
+// Scoped to the app's own header rather than every <header> on the page: as a
+// bare element selector this silently painted a section heading inside a panel
+// with the chrome background and forced it to the app header's height.
+.app-header {
     margin: 0 auto;
     height: var(--header-height);
     align-content: center;

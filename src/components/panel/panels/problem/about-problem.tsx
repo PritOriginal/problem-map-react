@@ -9,7 +9,6 @@ import { Check } from "../../../../services/ChecksService";
 import { MarkContext, MarkReloadContext } from "./mark-context";
 import { observer } from "mobx-react-lite";
 import user from "../../../../store/user";
-import Arrow from "../../../arrow/arrow";
 import markStatusesStore from "../../../../store/mark-statuses";
 import notificationsStore from "../../../../store/notifications";
 import marksStore from "../../../../store/marks";
@@ -23,6 +22,7 @@ import { layerDepths, layerSpans, spanLabel } from "../../../../utils/history-co
 import { useNow } from "../../../../utils/hooks";
 import "./history-column.scss";
 import "./mark-actions.scss";
+import "./checks.scss";
 
 const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigateKeepSearch();
@@ -480,6 +480,9 @@ function getDate(dateStr: string, locale: string): string {
     return date.toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
 }
 
+/** How many checks a collapsed block shows whole before the reader asks for the rest. */
+const COLLAPSED_CHECKS = 2;
+
 function HistoryGroup({ group, depth, spanMs, isLast }: {
     group: MarkStatusHistoryItem[];
     depth: number;
@@ -495,6 +498,8 @@ function HistoryGroup({ group, depth, spanMs, isLast }: {
     group.forEach(item => {
         allChecks.push(...item.checks!)
     });
+
+    const confirmCount = allChecks.filter((check) => check.result).length;
 
     const question = getQuestion(group[group.length - 1].new_mark_status_id);
 
@@ -521,37 +526,45 @@ function HistoryGroup({ group, depth, spanMs, isLast }: {
                     <div className="core__card">
                         <DoubleProgressBar
                             question={question}
-                            negative={allChecks.filter(check => check.result == false).length}
-                            positive={allChecks.filter(check => check.result == true).length}
+                            negative={allChecks.length - confirmCount}
+                            positive={confirmCount}
                         />
                     </div>
                     {allChecks.length > 0 &&
-                        <div className="core__card">
-                            <div style={{ display: "flex", gap: "16px", cursor: "pointer", justifyContent: "space-between" }} onClick={() => setShowChecks(!showChecks)}>
-                                <p>{t("mark.checks")}</p>
-                            </div>
+                        <div className="core__card checks">
+                            <header className="checks__head">
+                                <h3>{t("mark.checks")}</h3>
+                                <span
+                                    className="checks__tally"
+                                    aria-label={t("mark.checksTally", { ok: confirmCount, no: allChecks.length - confirmCount })}
+                                >
+                                    <b className="ok">{confirmCount}</b>
+                                    <i aria-hidden="true">/</i>
+                                    <b className="no">{allChecks.length - confirmCount}</b>
+                                </span>
+                            </header>
 
-                            {!showChecks ?
-                                <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-                                    {allChecks.map((check) => (
-                                        check.photos.map((photo) => (
-                                            <ThumbPhoto key={`${check.check_id}-${photo}`} src={photo} confirmed={check.result} />
-                                        ))
-                                    ))}
-                                </div>
-                                :
-                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "var(--surface)" }}>
-                                    {showChecks && allChecks.map((check) => (
-                                        <CheckItem key={check.check_id} check={check} />
-                                    ))}
-                                </div>
-                            }
-                            < div >
-                                <ShowButton
-                                    isShow={showChecks}
+                            {/* Collapsed shows the FIRST FEW CHECKS WHOLE rather than a strip of
+                                every photograph with the checks taken apart: in that strip a check
+                                without photos left no trace at all, though it is just as much a vote. */}
+                            <ol className="checks__list">
+                                {(showChecks ? allChecks : allChecks.slice(0, COLLAPSED_CHECKS)).map((check) => (
+                                    <CheckItem key={check.check_id} check={check} />
+                                ))}
+                            </ol>
+
+                            {allChecks.length > COLLAPSED_CHECKS &&
+                                <button
+                                    type="button"
+                                    className="checks__more"
+                                    aria-expanded={showChecks}
                                     onClick={() => setShowChecks(!showChecks)}
-                                />
-                            </div >
+                                >
+                                    {showChecks
+                                        ? t("mark.checksCollapse")
+                                        : t("mark.checksMore", { n: allChecks.length - COLLAPSED_CHECKS })}
+                                </button>
+                            }
                         </div>
                     }
                 </>
@@ -576,52 +589,33 @@ function HistoryItem({ item, isFirst }: { item: MarkStatusHistoryItem, isFirst: 
     )
 }
 
-function ShowButton({ isShow, onClick }: { isShow: boolean, onClick: React.MouseEventHandler }) {
-    return (
-        <button
-            className="show-button"
-            onClick={onClick}
-        >
-            <Arrow className="arrow" isOpen={isShow} />
-        </button>
-    )
-}
+/**
+ * One check. The verdict is stated twice -- as the card's left rule and as a word
+ * -- so it survives both a glance and a reader who cannot separate the two hues.
+ */
 const CheckItem = observer(function CheckItem({ check }: { check: Check }) {
     const { t, lang } = useT();
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px", backgroundColor: "var(--paper)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <p>{check.username}</p>
-                <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleString(localeOf(lang))}</p>
+        <li className={`check check--${check.result ? "confirm" : "refute"}`}>
+            <div className="check__top">
+                <b className="check__author">{check.username}</b>
+                <span className="check__verdict">{t(check.result ? "mark.confirmedBy" : "mark.refutedBy")}</span>
+                <time className="check__time" dateTime={check.created_at}>{getDate(check.created_at, localeOf(lang))}</time>
             </div>
-            {check.result
-                ?
-                <p style={{ fontSize: 12, color: "var(--success-ink)" }}>{t("mark.confirmedBy")}</p>
-                :
-                <p style={{ fontSize: 12, color: "var(--danger-ink)" }}>{t("mark.refutedBy")}</p>
+            {check.comment !== "" && <p className="check__comment">{check.comment}</p>}
+            <div className="check__photos">
+                {check.photos.length > 0
+                    ? check.photos.map((src, index) => (
+                        <img key={index} className="check__photo" src={src} alt="" />
+                    ))
+                    : <span className="check__nophotos">{t("mark.checkNoPhotos")}</span>
+                }
+            </div>
+            {check.user_id !== user.id &&
+                <div className="check__report">
+                    <ReportButton targetType="check" targetId={check.check_id} small />
+                </div>
             }
-            {check.comment !== "" && <>
-                <p>{t("common.comment")}</p>
-                <p style={{ fontSize: 14 }}>{check.comment}</p>
-            </>}
-            <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-                {check.photos.map((src, index) => (
-                    <Photo key={index} src={src} />
-                ))}
-            </div>
-            {check.user_id !== user.id && <div><ReportButton targetType="check" targetId={check.check_id} small /></div>}
-        </div>
+        </li>
     )
 });
-
-function ThumbPhoto({ src, confirmed}: { src: string, confirmed: boolean }) {
-    return (
-        <img className={`thumb-photo ${confirmed ? "confirm" : "reject"}`} src={src} alt="" />
-    )
-}
-
-function Photo({ src }: { src: string }) {
-    return (
-        <img className="photo" src={src} alt="" />
-    )
-}   

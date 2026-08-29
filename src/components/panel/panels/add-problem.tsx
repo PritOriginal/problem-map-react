@@ -16,6 +16,8 @@ import markTypesStore from "../../../store/mark-types";
 import panelStore from "../../../store/panel";
 import notificationsStore from "../../../store/notifications";
 import { useDeviceDetect } from "../../../utils/hooks";
+import offlineQueueStore from "../../../store/offline-queue";
+import { toQueuedPhotos } from "../../../offline/queue";
 
 const AddProblem = observer(function AddProblem() {
     const { isMobile } = useDeviceDetect();
@@ -66,13 +68,21 @@ const AddProblem = observer(function AddProblem() {
     /** Sends the mark; a 409 with `similar_marks` shows the similar block instead of an error. */
     const submit = (req: AddMarkRequest, force: boolean) => {
         setPending(true);
-        MarksService.addMark(req, photos, force)
-            .then((data) => {
+        offlineQueueStore.sendOrEnqueue(
+            { kind: "mark", longitude: req.point.longitude, latitude: req.point.latitude, mark_type_id: req.mark_type_id, description: req.description, force, photos: toQueuedPhotos(photos) },
+            (key) => MarksService.addMark(req, photos, force, key),
+        )
+            .then((res) => {
                 notificationsStore.clear();
                 setSimilar([]);
-                marksStore.fetch();
                 panelStore.setOpen(false);
-                navigate(`/problem/${data.payload.mark_id}`);
+                if (res.queued) {
+                    notificationsStore.showError(null, t("offline.markQueued"));
+                    navigate("/queue");
+                    return;
+                }
+                marksStore.fetch();
+                navigate(`/problem/${res.result.payload.mark_id}`);
             })
             .catch((error) => {
                 const conflict = similarMarksFromError(error);
@@ -93,6 +103,10 @@ const AddProblem = observer(function AddProblem() {
             return;
         }
         setPending(true);
+        if (!navigator.onLine) {
+            submit(req, false); // no similarity check offline: the backend re-checks when the queue is sent
+            return;
+        }
         MarksService.getSimilarMarks({ point: req.point, mark_type_id: req.mark_type_id })
             .then((data) => {
                 const found = parseSimilarMarks(data.payload);

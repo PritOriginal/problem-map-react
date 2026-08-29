@@ -3,7 +3,7 @@
  * - GET /api/*: network-first with a cache fallback, so dictionaries (types, statuses,
  *   organizations) and the last loaded marks are available offline.
  * Non-GET requests are never intercepted. */
-const VERSION = "wave4-1";
+const VERSION = "wave5-1";
 const SHELL_CACHE = `shell-${VERSION}`;
 const API_CACHE = `api-${VERSION}`;
 const SHELL_URLS = ["/", "/manifest.webmanifest", "/icon.svg", "/vite.svg"];
@@ -16,6 +16,7 @@ const CACHEABLE_API = [
     /^\/api\/organizations$/,
     /^\/api\/marks(\?.*)?$/,
     /^\/api\/map\/admin-boundaries/,
+    /^\/api\/badges$/,
 ];
 
 self.addEventListener("install", (event) => {
@@ -43,6 +44,9 @@ function isCacheableApi(url) {
  * Network first; a successful response is cached (keyed by URL + Accept-Language).
  * Authenticated requests are never cached or served from the cache: their responses
  * may carry per-user data (e.g. `is_following`) that must not outlive the session.
+ * ETag / If-None-Match (wave-5): the page sends `If-None-Match` itself and keeps the body in
+ * localStorage; a 304 from the network is passed through untouched (the page resolves it), and
+ * cached 200 responses keep their `ETag` header so the browser HTTP cache can revalidate too.
  */
 async function networkFirst(request) {
     if (request.headers.has("Authorization")) {
@@ -54,6 +58,12 @@ async function networkFirst(request) {
         const response = await fetch(request);
         if (response.ok) {
             cache.put(key, response.clone());
+        } else if (response.status === 304 && !request.headers.has("If-None-Match")) {
+            // a 304 the page did not ask for (browser cache revalidation inside the SW): serve our copy
+            const cached = await cache.match(key);
+            if (cached) {
+                return cached;
+            }
         }
         return response;
     } catch (error) {

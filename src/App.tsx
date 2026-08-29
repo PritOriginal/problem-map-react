@@ -11,6 +11,10 @@ import markTypesStore from './store/mark-types';
 import markStatusesStore from './store/mark-statuses';
 import organizationsStore from './store/organizations';
 import taskStatusesStore from './store/task-statuses';
+import offlineQueueStore from './store/offline-queue';
+import { observer } from 'mobx-react-lite';
+import { Link } from 'react-router-dom';
+import { useToKeepSearch } from './utils/navigation';
 
 export default function App() {
   const { lang } = useT();
@@ -29,6 +33,12 @@ export default function App() {
       refreshTokens().catch(console.error);
     }
   }, [])
+
+  // offline queue: load persisted items and flush them when the browser comes back online
+  useEffect(() => {
+    offlineQueueStore.start();
+    return () => offlineQueueStore.stop();
+  }, []);
 
   // dictionaries are localized by `Accept-Language`: reload them when the language changes
   // (the initial load happens in Map on mount)
@@ -50,6 +60,7 @@ export default function App() {
     <>
       <Header />
       <OfflineBanner />
+      <QueueBanner />
       <section className='main'>
         <PanelRoute />
         <Map />
@@ -66,3 +77,22 @@ function OfflineBanner() {
   }
   return <div className="offline-banner" role="status">{t("common.offline")}</div>;
 }
+
+/** "Sending postponed: N queued" with a manual send button (offline queue, wave-5). */
+const QueueBanner = observer(function QueueBanner() {
+  const { t } = useT();
+  const online = useOnline();
+  const toKeepSearch = useToKeepSearch();
+  const count = offlineQueueStore.count;
+  if (count === 0) {
+    return null;
+  }
+  return (
+    <div className="offline-banner queue-banner" role="status">
+      <Link to={toKeepSearch("/queue")}>{t("offline.banner", { count })}</Link>
+      <button type="button" className="white-2-black mini" disabled={!online || offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.flush()}>
+        {t(offlineQueueStore.isFlushing ? "offline.sending" : "offline.send")}
+      </button>
+    </div>
+  );
+});

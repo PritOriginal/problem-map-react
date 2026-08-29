@@ -11,6 +11,8 @@ import UnauthorizedBlock from "../../../unauthorized-block/unauthorized-block";
 import marksStore from "../../../../store/marks";
 import adminBoundariesStore from "../../../../store/admin-boundaries";
 import notificationsStore from "../../../../store/notifications";
+import offlineQueueStore from "../../../../store/offline-queue";
+import { toQueuedPhotos } from "../../../../offline/queue";
 
 const AddCheck = observer(function AddCheck() {
     const navigate = useNavigateKeepSearch();
@@ -20,6 +22,7 @@ const AddCheck = observer(function AddCheck() {
 
     const [comment, setComment] = useState("")
     const [photos, setPhotos] = useState<File[]>([]);
+    const [pending, setPending] = useState(false);
 
     const onSelectedFile = (files: File[]) => {
         setPhotos(files);
@@ -37,17 +40,26 @@ const AddCheck = observer(function AddCheck() {
                 comment: comment
             }
 
-            ChecksService.addCheck(req, photos)
-                .then(() => {
+            setPending(true);
+            offlineQueueStore.sendOrEnqueue(
+                { kind: "check", mark_id: req.mark_id, result: req.result, comment: req.comment, photos: toQueuedPhotos(photos) },
+                (key) => ChecksService.addCheck(req, photos, key),
+            )
+                .then((res) => {
                     notificationsStore.clear();
-                    marksStore.fetch();
-                    adminBoundariesStore.fetchMarksCount()
+                    if (res.queued) {
+                        notificationsStore.showError(null, t("offline.checkQueued"));
+                    } else {
+                        marksStore.fetch();
+                        adminBoundariesStore.fetchMarksCount()
+                    }
                     navigate(`/problem/${mark.mark_id}`)
                 })
                 .catch((error) => {
                     console.error(error);
                     notificationsStore.showError(error, t("check.failed"));
                 })
+                .finally(() => setPending(false))
         }
     }
 
@@ -82,14 +94,14 @@ const AddCheck = observer(function AddCheck() {
                         <Button
                             style="red"
                             onClick={() => addCheck(false)}
-                            disabled={!checkValidate()}
+                            disabled={!checkValidate() || pending}
                         >
                             <p>{t("check.refute")}</p>
                         </Button>
                         <Button
                             style="green"
                             onClick={() => addCheck(true)}
-                            disabled={!checkValidate()}
+                            disabled={!checkValidate() || pending}
                         >
                             <p>{t("check.confirm")}</p>
                         </Button>

@@ -19,6 +19,10 @@ import Leaderboard from "./panels/leaderboard";
 import Analytics from "./panels/analytics";
 import TasksPanel from "./panels/tasks";
 import OrgPanel from "./panels/org";
+import ModerationPanel from "./panels/moderation";
+import AdminPanel from "./panels/admin";
+import UserProfilePanel from "./panels/user-profile";
+import QueuePanel from "./panels/queue";
 import { useT } from "../../i18n";
 import { useEffect } from "react";
 import selectedMark from "../../store/selected_mark";
@@ -46,6 +50,10 @@ export default function PanelRoute() {
                 <Route path='/analytics' element={<Analytics />} />
                 <Route path='/tasks' element={<TasksPanel />} />
                 <Route path='/org' element={<OrgPanel />} />
+                <Route path='/moderation' element={<ModerationPanel />} />
+                <Route path='/admin' element={<AdminPanel />} />
+                <Route path='/users/:id' element={<UserProfilePanel />} />
+                <Route path='/queue' element={<QueuePanel />} />
             </Route>
         </Routes>
     );
@@ -59,10 +67,11 @@ const Panel = observer(() => {
     const navigate = useNavigateKeepSearch();
     const params = useParams();
 
+    const isProblemRoute = location.pathname.startsWith("/problem/");
     useEffect(() => {
-        const markIdParam = params.id;
+        const markIdParam = isProblemRoute ? params.id : undefined;
         selectedMark.setId(markIdParam ? Number(markIdParam) : 0);
-    }, [params.id])
+    }, [params.id, isProblemRoute])
 
     useEffect(() => {
         if (location.pathname == "/add") {

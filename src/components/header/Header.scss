@@ -94,3 +94,17 @@ header {
     text-align: center;
     padding: 4px 8px;
 }
+
+.header-queue {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: #ffe69c;
+    color: #664d03;
+    font-size: 13px;
+
+    p {
+        color: inherit;
+    }
+}

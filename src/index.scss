@@ -364,3 +364,21 @@ a {
     bottom: calc(160px + var(--panel-header-height));
   }
 }
+
+.queue-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  background-color: #fff3cd;
+  color: #664d03;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  button {
+    width: auto;
+  }
+}

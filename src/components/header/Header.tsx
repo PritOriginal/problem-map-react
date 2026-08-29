@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import "./Header.scss"
 import user from "../../store/user";
 import inboxStore from "../../store/inbox";
+import offlineQueueStore from "../../store/offline-queue";
 import { observer } from "mobx-react-lite";
 import { useEffect } from "react";
 
@@ -25,6 +26,8 @@ const Header = observer(function Header() {
                     </Link>
                     <Link to={toKeepSearch("/tasks")}><p>{t("nav.tasks")}</p></Link>
                     {user.isService && <Link to={toKeepSearch("/org")}><p>{t("nav.org")}</p></Link>}
+                    {user.isModerator && <Link to={toKeepSearch("/moderation")}><p>{t("nav.moderation")}</p></Link>}
+                    {user.role === "admin" && user.id !== 0 && <Link to={toKeepSearch("/admin")}><p>{t("nav.admin")}</p></Link>}
                     <Link to={toKeepSearch("/leaderboard")}><p>{t("nav.leaderboard")}</p></Link>
                     <Link to={toKeepSearch("/analytics")}><p>{t("nav.analytics")}</p></Link>
                 </div>
@@ -32,6 +35,7 @@ const Header = observer(function Header() {
                     <LangSwitcher />
                     {user.id !== 0 ?
                         <>
+                            <QueueBadge />
                             <NotificationsBell />
                             <Link className="header-container__user-info__item" to={toKeepSearch("/profile")}>
                                 <p>{user.username}</p>
@@ -86,6 +90,21 @@ function LangSwitcher() {
         </div>
     );
 }
+
+/** "Queued (N)" link to `/queue`; hidden when the offline queue is empty. */
+const QueueBadge = observer(function QueueBadge() {
+    const toKeepSearch = useToKeepSearch();
+    const { t } = useT();
+    const count = offlineQueueStore.count;
+    if (count === 0) {
+        return null;
+    }
+    return (
+        <Link className="header-queue" to={toKeepSearch("/queue")} title={t("offline.title")}>
+            <p>{t("nav.queue", { count })}</p>
+        </Link>
+    );
+});
 
 /** Bell with the unread badge; polls the counter every minute while mounted (i.e. while signed in). */
 const NotificationsBell = observer(function NotificationsBell() {

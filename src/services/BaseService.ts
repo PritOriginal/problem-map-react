@@ -72,6 +72,11 @@ class BaseService {
 }
 
 const ETAG_PREFIX = "etag:";
+/**
+ * localStorage is ~5 MB per origin and shared with the tokens: bodies above this size (e.g. admin
+ * boundaries with full geometry) are not cached, the request then simply goes without `If-None-Match`.
+ */
+const ETAG_MAX_ENTRY_CHARS = 512_000;
 
 interface EtagEntry<T> {
     etag: string;
@@ -93,7 +98,12 @@ function readEtagEntry<T>(key: string): EtagEntry<T> | null {
 
 function writeEtagEntry<T>(key: string, entry: EtagEntry<T>): void {
     try {
-        localStorage.setItem(key, JSON.stringify(entry));
+        const raw = JSON.stringify(entry);
+        if (raw.length > ETAG_MAX_ENTRY_CHARS) {
+            localStorage.removeItem(key);
+            return;
+        }
+        localStorage.setItem(key, raw);
     } catch {
         // storage full / unavailable: the next request simply goes without If-None-Match
     }

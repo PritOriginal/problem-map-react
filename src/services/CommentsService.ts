@@ -19,6 +19,9 @@ export interface Comment {
 /** How long (ms) after creation the author may still edit a comment. */
 export const COMMENT_EDIT_WINDOW_MS = 15 * 60_000;
 
+/** Maximum comment length accepted by the backend. */
+export const COMMENT_MAX_LENGTH = 2000;
+
 export interface GetCommentsResponse extends IResponse {
     payload: Comment[];
     meta?: ListMeta;

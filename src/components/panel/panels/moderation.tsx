@@ -171,6 +171,9 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
             return;
         }
         const hidden = !mark.hidden;
+        if (hidden && !window.confirm(t("moderation.hideQuestion", { id: mark.mark_id }))) {
+            return;
+        }
         run("hidden", () => MarksService.setMarkHidden(mark.mark_id, hidden), "moderation.hiddenFailed", () => {
             setMark({ ...mark, hidden });
             marksStore.fetch();

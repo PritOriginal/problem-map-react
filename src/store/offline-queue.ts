@@ -153,6 +153,9 @@ export class OfflineQueueStore {
         let sent = 0;
         try {
             for (const item of pending) {
+                if (item.user_id !== user.id) {
+                    break; // signed out / switched user mid-flush: the rest belongs to someone else
+                }
                 try {
                     await this.sender.send(item);
                     await this.remove(item.id);

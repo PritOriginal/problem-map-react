@@ -32,7 +32,7 @@ export function SlaBadge({ slaDueAt, isOverdue }: { slaDueAt: string | null | un
     const overdue = isOverdue || state.overdue;
     const className = overdue ? "overdue" : state.soon ? "soon" : "";
     return (
-        <span className={`sla-badge ${className}`} title={new Date(slaDueAt!).toLocaleString()}>
+        <span className={`sla-badge ${className}`} title={new Date(slaDueAt!).toLocaleString()} aria-label={`SLA: ${new Date(slaDueAt!).toLocaleString()}`}>
             {formatSla(slaDueAt, now, lang)}
         </span>
     );
@@ -46,7 +46,7 @@ export const OrgLabel = observer(function OrgLabel({ organizationId }: { organiz
     }
     const name = organizationsStore.nameOf(organizationId);
     return (
-        <span className="org-label" title={t("mark.organization")}>
+        <span className="org-label" title={t("mark.organization")} aria-label={`${t("mark.organization")}: ${name ?? organizationId}`}>
             {name ?? `${t("mark.organization")} #${organizationId}`}
         </span>
     );
@@ -58,7 +58,7 @@ export function HiddenBadge({ hidden }: { hidden: boolean | undefined }) {
     if (!hidden) {
         return null;
     }
-    return <span className="hidden-badge" title={t("mark.hiddenHint")}>{t("mark.hidden")}</span>;
+    return <span className="hidden-badge" title={t("mark.hiddenHint")} aria-label={t("mark.hiddenHint")}>{t("mark.hidden")}</span>;
 }
 
 /** "Duplicate of #N" chip linking to the original (status 8, `merged_into_id`). */
@@ -81,7 +81,7 @@ export function CommentsCount({ count }: { count: number | undefined }) {
     if (count === undefined) {
         return null;
     }
-    return <span className="comments-count" title={t("mark.comments")}>{t("mark.commentsCount", { count })}</span>;
+    return <span className="comments-count" aria-label={`${t("mark.comments")}: ${count}`}>{t("mark.commentsCount", { count })}</span>;
 }
 
 type BadgeMark = Pick<Mark, "mark_status_id" | "sla_due_at" | "is_overdue" | "organization_id" | "hidden" | "merged_into_id" | "comments_count">;

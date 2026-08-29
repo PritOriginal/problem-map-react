@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useContext, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
-import CommentsService, { Comment } from "../../../../services/CommentsService";
+import CommentsService, { COMMENT_MAX_LENGTH, Comment } from "../../../../services/CommentsService";
 import { canEditComment, threadComments } from "../../../../utils/comments";
 import notificationsStore from "../../../../store/notifications";
 import user from "../../../../store/user";
@@ -100,7 +100,7 @@ const CommentItem = observer(function CommentItem({ comment, onChanged, canReply
 
     const save = () => {
         const text = body.trim();
-        if (text === "" || text === comment.body) {
+        if (text === "" || text === comment.body || text.length > COMMENT_MAX_LENGTH) {
             setEditing(false);
             return;
         }
@@ -149,7 +149,7 @@ const CommentItem = observer(function CommentItem({ comment, onChanged, canReply
                 : editing
                     ? (
                         <>
-                            <textarea className="edit-multiline-text" value={body} maxLength={2000} rows={3} onChange={(e) => setBody(e.target.value)} />
+                            <textarea className="edit-multiline-text" value={body} maxLength={COMMENT_MAX_LENGTH} rows={3} onChange={(e) => setBody(e.target.value)} />
                             <div className="comment__actions">
                                 <Button style="green" isMini disabled={pending !== null} onClick={save}>{t(pending === "save" ? "common.saving" : "common.save")}</Button>
                                 <Button style="white-2-black" isMini disabled={pending !== null} onClick={() => { setEditing(false); setBody(comment.body); }}>{t("common.cancel")}</Button>
@@ -180,7 +180,7 @@ function CommentForm({ markId, parentId, onDone, onCancel }: { markId: number; p
     const submit = (e: FormEvent) => {
         e.preventDefault();
         const text = body.trim();
-        if (text === "" || markId === 0) {
+        if (text === "" || text.length > COMMENT_MAX_LENGTH || markId === 0) {
             return;
         }
         setPending(true);
@@ -209,7 +209,7 @@ function CommentForm({ markId, parentId, onDone, onCancel }: { markId: number; p
                 className="edit-multiline-text"
                 value={body}
                 placeholder={t(parentId ? "comments.replyPlaceholder" : "comments.placeholder")}
-                maxLength={2000}
+                maxLength={COMMENT_MAX_LENGTH}
                 rows={parentId ? 2 : 3}
                 disabled={pending}
                 onChange={(e) => setBody(e.target.value)}

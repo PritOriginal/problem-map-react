@@ -5,6 +5,7 @@ import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import UsersService, { UserProfile } from "../../../services/UsersService";
+import { ApiError } from "../../../services/http";
 import { BadgesBlock, LevelBlock, ProfileStats } from "../../profile/profile-blocks";
 import { useBadgeCatalogue } from "../../../utils/badges";
 import { localeOf, useT } from "../../../i18n";
@@ -18,6 +19,7 @@ const UserProfilePanel = observer(function UserProfilePanel() {
     const panelHeaderRef = useRef<HTMLDivElement>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [notFound, setNotFound] = useState(false);
     const catalogue = useBadgeCatalogue();
 
     useEffect(() => {
@@ -35,6 +37,7 @@ const UserProfilePanel = observer(function UserProfilePanel() {
         let ignore = false;
         setIsLoading(true);
         setProfile(null);
+        setNotFound(false);
         UsersService.getProfile(id)
             .then((data) => {
                 if (!ignore) {
@@ -43,6 +46,10 @@ const UserProfilePanel = observer(function UserProfilePanel() {
             })
             .catch((error) => {
                 if (ignore) {
+                    return;
+                }
+                if (error instanceof ApiError && error.status === 404) {
+                    setNotFound(true);
                     return;
                 }
                 console.error(error);
@@ -71,6 +78,7 @@ const UserProfilePanel = observer(function UserProfilePanel() {
             </div>
             <div className="panel__content">
                 {isLoading && <p style={{ fontSize: 14 }}>{t("common.loading")}</p>}
+                {(notFound || !Number.isFinite(id) || id <= 0) && <p style={{ fontSize: 14 }}>{t("profile.notFound")}</p>}
                 {profile &&
                     <>
                         <LevelBlock rating={profile.rating} level={profile.level} />

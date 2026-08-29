@@ -22,7 +22,9 @@ import convert from 'color-convert';
 import { useLocation, useSearchParams } from "react-router-dom";
 import { filtersEqual, parseFilters, serializeFilters } from "./utils/filters";
 import { useNavigateKeepSearch } from "./utils/navigation";
-import { Mark, MarkStatusType } from "./services/MarksService";
+import MarksService, { ExportFormat, Mark, MarkStatusType } from "./services/MarksService";
+import { useT } from "./i18n";
+import { Button } from "./components/button/button";
 import selectedPoint from "./store/selected_point";
 import selectedMark from "./store/selected_mark";
 import { observer } from "mobx-react-lite";
@@ -101,6 +103,7 @@ const getColorPolygon = (count: AdminBoundaryMarksCount) => {
 
 const Map = observer(() => {
   const { isMobile } = useDeviceDetect();
+  const { t } = useT();
 
   const location = useLocation();
   const navigate = useNavigateKeepSearch();
@@ -222,7 +225,7 @@ const Map = observer(() => {
     if (!navigator.geolocation) {
       console.error('Geolocation is not supported by this browser.');
       if (center) {
-        notificationsStore.showError(null, "Геолокация не поддерживается браузером");
+        notificationsStore.showError(null, t("map.geoUnsupported"));
       }
       return;
     }
@@ -240,11 +243,12 @@ const Map = observer(() => {
       (error) => {
         console.error('Error getting user location:', error);
         if (center) {
-          notificationsStore.showError(null, "Не удалось определить местоположение");
+          notificationsStore.showError(null, t("map.geoFailed"));
         }
       },
       { enableHighAccuracy: center, timeout: 10_000 },
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyTo]);
 
   const cluster = useCallback((coordinates: LngLat, features: Feature[]) => (
@@ -375,12 +379,13 @@ const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, 
 });
 
 const HeatmapLegend = observer(() => {
+  const { t } = useT();
   const { maxCount, isLoading, features } = heatmapStore;
   const steps = heatLegend(maxCount);
   return (
-    <div className="heatmap-legend" aria-label="Легенда тепловой карты">
-      <p className="heatmap-legend__title">Проблем в ячейке{isLoading && " · загрузка…"}</p>
-      {features.length === 0 && !isLoading && <p className="heatmap-legend__empty">Нет данных в этой области</p>}
+    <div className="heatmap-legend" aria-label={t("map.heatLegendAria")}>
+      <p className="heatmap-legend__title">{t("map.heatLegendTitle")}{isLoading && ` · ${t("common.loading")}`}</p>
+      {features.length === 0 && !isLoading && <p className="heatmap-legend__empty">{t("map.heatLegendEmpty")}</p>}
       {steps.map((step) => (
         <div key={step.label} className="heatmap-legend__row">
           <i style={{ backgroundColor: step.color }} aria-hidden="true" />
@@ -429,16 +434,18 @@ function buttonProps(label: string, onClick: () => void) {
 }
 
 function OpenPanelButton() {
+  const { t } = useT();
   return (
-    <div className="center-button" {...buttonProps("Отметить проблему", () => panelStore.setOpen(true))}>
-      Отметить
+    <div className="center-button" {...buttonProps(t("map.addMark"), () => panelStore.setOpen(true))}>
+      {t("map.add")}
     </div>
   )
 }
 
 function LocateButton({ onClick }: { onClick: () => void }) {
+  const { t } = useT();
   return (
-    <div className="circle-button locate-button" title="Я здесь" {...buttonProps("Показать моё местоположение", onClick)}>
+    <div className="circle-button locate-button" title={t("map.locate")} {...buttonProps(t("map.locateAria"), onClick)}>
       <div className="circle-button__content">
         <LocateIcon />
       </div>
@@ -448,9 +455,10 @@ function LocateButton({ onClick }: { onClick: () => void }) {
 
 function AddMarkButton() {
   const navigate = useNavigateKeepSearch();
+  const { t } = useT();
 
   return (
-    <div className="circle-button add-mark-button" title="Отметить проблему" {...buttonProps("Отметить проблему", () => navigate("/add"))}>
+    <div className="circle-button add-mark-button" title={t("map.addMark")} {...buttonProps(t("map.addMark"), () => navigate("/add"))}>
       <div className="circle-button__content">
         <AddIcon />
       </div>
@@ -458,11 +466,17 @@ function AddMarkButton() {
   );
 }
 
+/** Opens `GET /marks/export` for the current filters; the browser handles the download. */
+function exportMarks(format: ExportFormat) {
+  window.open(MarksService.exportUrl(marksStore.filters, format), "_blank", "noopener");
+}
+
 const Filters = observer(() => {
+  const { t } = useT();
   const [showFilters, setShowFilters] = useState(false);
   return (
     <>
-      <div className="circle-button filters-button" title="Фильтры" {...buttonProps("Фильтры проблем", () => setShowFilters(!showFilters))}>
+      <div className="circle-button filters-button" title={t("map.filters")} {...buttonProps(t("map.filtersTitle"), () => setShowFilters(!showFilters))}>
         <div className="circle-button__content">
           <FilterIcon style={{ transform: "translate(0, 2px)" }} />
         </div>
@@ -472,20 +486,21 @@ const Filters = observer(() => {
         <div className="filters">
           <div className="filters__content">
             <div className="filters__content__title">
-              <p>Фильтры проблем</p>
+              <p>{t("map.filtersTitle")}</p>
             </div>
             <div className="filters__content__block">
               <FilterItem
                 icon={<div style={{ height: "12px", width: "12px", background: "linear-gradient(90deg, #fee5d9, #a50f15)", border: "1px solid gray" }}></div>}
-                name="Тепловая карта"
+                name={t("map.heatmap")}
                 checked={heatmapStore.enabled}
                 onClick={() => heatmapStore.toggle()}
               />
             </div>
             <div className="filters__content__block">
-              <p><b>Статусы</b></p>
+              <p><b>{t("map.statuses")}</b></p>
               {markStatusesStore.statuses.map((status) => (
                 <FilterItem
+                  key={status.mark_status_id}
                   icon={
                     <div style={{ height: "12px", width: "12px", border: "1px solid gray", borderRadius: "50%", backgroundColor: COLOR_MARK_STATUSES[status.mark_status_id] }}>
                     </div>
@@ -499,9 +514,10 @@ const Filters = observer(() => {
               ))}
             </div>
             <div className="filters__content__block">
-              <p><b>Категории</b></p>
+              <p><b>{t("map.categories")}</b></p>
               {markTypesStore.types.map((type) => (
                 <FilterItem
+                  key={type.mark_type_id}
                   icon={TypeMarkIcons[type.mark_type_id]({ color: "#00" })}
                   name={type.name}
                   checked={marksStore.filters.mark_type_ids.includes(type.mark_type_id)}
@@ -511,6 +527,11 @@ const Filters = observer(() => {
                   }}
                 />
               ))}
+            </div>
+            <div className="filters__content__block export-row" title={t("map.exportHint")}>
+              <p><b>{t("map.export")}</b></p>
+              <Button style="white-2-black" isMini onClick={() => exportMarks("geojson")}>{t("map.exportGeojson")}</Button>
+              <Button style="white-2-black" isMini onClick={() => exportMarks("csv")}>{t("map.exportCsv")}</Button>
             </div>
           </div>
         </div>

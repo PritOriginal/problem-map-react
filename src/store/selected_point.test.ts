@@ -1,3 +1,4 @@
+import { reaction } from "mobx";
 import { describe, expect, it } from "vitest";
 
 import selectedPoint, { CIRCLE_STEPS, circleGeometry, HOME_ZONE_RADIUS_KM } from "./selected_point";
@@ -50,5 +51,21 @@ describe("selectedPoint.circleGeom", () => {
         selectedPoint.setCoords(CENTER);
         expect(selectedPoint.circleGeom).toEqual(circleGeometry(CENTER, HOME_ZONE_RADIUS_KM));
         selectedPoint.setCoords([1, 2]);
+    });
+
+    it("is not invalidated when the same position is written again", () => {
+        selectedPoint.setCoords(CENTER);
+        const coords = selectedPoint.coords;
+        let rebuilds = 0;
+        const dispose = reaction(() => selectedPoint.circleGeom, () => { rebuilds++; });
+
+        // a fresh array of the same numbers, as the map sends on every frame of a pan
+        selectedPoint.setCoords([...CENTER]);
+        expect(selectedPoint.coords).toBe(coords);
+        expect(rebuilds).toBe(0);
+
+        selectedPoint.setCoords([1, 2]);
+        expect(rebuilds).toBe(1);
+        dispose();
     });
 });

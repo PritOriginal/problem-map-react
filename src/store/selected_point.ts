@@ -34,7 +34,15 @@ class SelectedPoint {
         return circleGeometry(this.coords, HOME_ZONE_RADIUS_KM);
     }
 
+    /**
+     * Moves the point. An identical pair is ignored: the map reports a centre on every
+     * frame of a pan, and a fresh array of the same two numbers would invalidate
+     * `circleGeom` — a 64-vertex turf polygon — for nothing.
+     */
     setCoords = (coords: LngLat) => {
+        if (this.coords[0] === coords[0] && this.coords[1] === coords[1]) {
+            return;
+        }
         this.coords = coords;
     }
 

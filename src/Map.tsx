@@ -77,6 +77,16 @@ export const ZOOMS = {
   big: 16
 };
 
+/**
+ * Map centres arrive with full float precision and jitter in the last bits while the
+ * map settles. Five decimals is ~1 m — finer than the point can be placed by hand —
+ * and it lets `setCoords` recognise an unchanged position instead of invalidating the
+ * zone polygon on every frame. Cheaper than a throttle, and with no lag.
+ */
+const COORD_PRECISION = 1e5;
+const roundCoords = (coords: LngLat): LngLat =>
+  [Math.round(coords[0] * COORD_PRECISION) / COORD_PRECISION, Math.round(coords[1] * COORD_PRECISION) / COORD_PRECISION];
+
 const getColorByFeatues = (features: Feature[]) => {
   let numsConfirmed = 0;
   let numsUnderReview = 0;
@@ -130,6 +140,8 @@ const Map = observer(() => {
 
   const [map, setMap] = useState<YMapInstance | null>(null);
   const zoomRef = useRef<number>((LOCATION as { zoom: number }).zoom);
+  /** Latest map centre, tracked without touching the store. */
+  const centerRef = useRef<LngLat>((LOCATION as YMapCenterLocation).center);
 
   const [panelIsOpen, setPanelIsOpen] = useState(false);
   const [showNewMarkButton, setShowNewMarkButton] = useState(false);
@@ -192,8 +204,22 @@ const Map = observer(() => {
       setSize(MarkerSize.big);
     }
     zoomRef.current = o.location.zoom;
-    selectedPoint.setCoords(o.location.center);
+    centerRef.current = o.location.center;
+    // The point follows the map centre only while it is on screen (/add, /signup).
+    // Off screen the centre is only remembered, so that showing the point still puts
+    // it where the map is looking -- see the effect below.
+    if (selectedPoint.visibility) {
+      selectedPoint.setCoords(roundCoords(o.location.center));
+    }
   }, [scheduleHeatmap]);
+
+  // the point appears at the current centre, however far the map moved while it was hidden
+  const pointVisible = selectedPoint.visibility;
+  useEffect(() => {
+    if (pointVisible) {
+      selectedPoint.setCoords(roundCoords(centerRef.current));
+    }
+  }, [pointVisible]);
 
   const flyTo = useCallback((center: LngLat, minZoom: number) => {
     map?.setLocation({

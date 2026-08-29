@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { LngLat } from "@yandex/ymaps3-types";
 import panelStore from "../../../store/panel";
@@ -7,7 +7,7 @@ import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
 import marksStore from "../../../store/marks";
 import selectedMark from "../../../store/selected_mark";
-import OrganizationsService, { Organization } from "../../../services/OrganizationsService";
+import OrganizationsService from "../../../services/OrganizationsService";
 import MarksService, { Mark, MarkStatusType } from "../../../services/MarksService";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import { Button } from "../../button/button";
@@ -15,6 +15,7 @@ import { MarkBadges } from "../../badges/badges";
 import { TypeIcon } from "../../mark/mark";
 import SelectFiles from "../../SelectFiles";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
+import { useAsyncData } from "../../../utils/use-async-data";
 import { useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import PanelHeader from "../panel-header";
@@ -29,12 +30,15 @@ const OrgPanel = observer(function OrgPanel() {
     const { t } = useT();
     const panelHeaderRef = useRef<HTMLDivElement>(null);
 
-    const [org, setOrg] = useState<Organization | null>(null);
-    const [marks, setMarks] = useState<Mark[]>([]);
     const [onlyOverdue, setOnlyOverdue] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [version, setVersion] = useState(0);
-    const reload = useCallback(() => setVersion((v) => v + 1), []);
+
+    const isService = user.isService;
+
+    const { data: org = null } = useAsyncData(
+        (signal) => OrganizationsService.getMe({ signal }).then((res) => res.payload),
+        [],
+        { enabled: isService, errorMessage: t("org.loadFailed") },
+    );
 
     useEffect(() => {
         if (panelHeaderRef.current) {
@@ -43,62 +47,17 @@ const OrgPanel = observer(function OrgPanel() {
         }
     }, [org]);
 
-    const isService = user.isService;
-
-    useEffect(() => {
-        if (!isService) {
-            return;
-        }
-        let ignore = false;
-        OrganizationsService.getMe()
-            .then((data) => {
-                if (!ignore) {
-                    setOrg(data.payload);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("org.loadFailed"));
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isService]);
-
     const orgId = org?.organization_id ?? 0;
-    useEffect(() => {
-        if (orgId === 0) {
-            return;
-        }
-        let ignore = false;
-        setIsLoading(true);
-        OrganizationsService.getMarks(orgId, { status_ids: ORG_QUEUE_STATUSES, overdue: onlyOverdue, limit: ORG_QUEUE_LIMIT, offset: 0 })
-            .then((data) => {
-                if (!ignore) {
-                    setMarks(data.payload ?? []);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("org.queueFailed"));
-            })
-            .finally(() => {
-                if (!ignore) {
-                    setIsLoading(false);
-                }
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [orgId, onlyOverdue, version]);
+    // `reload` is what a card calls after taking or resolving a mark; it replaces the
+    // version counter this panel used to bump for the same purpose.
+    const { data, isLoading, reload } = useAsyncData(
+        (signal) => OrganizationsService
+            .getMarks(orgId, { status_ids: ORG_QUEUE_STATUSES, overdue: onlyOverdue, limit: ORG_QUEUE_LIMIT, offset: 0 }, { signal })
+            .then((res) => res.payload ?? []),
+        [orgId, onlyOverdue],
+        { enabled: orgId !== 0, errorMessage: t("org.queueFailed") },
+    );
+    const marks: Mark[] = data ?? [];
 
     return (
         <>

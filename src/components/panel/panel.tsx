@@ -41,7 +41,7 @@ const load = {
     tasks: () => import("./panels/tasks"),
     org: () => import("./panels/org"),
     moderation: () => import("./panels/moderation/moderation"),
-    admin: () => import("./panels/admin"),
+    admin: () => import("./panels/admin/admin"),
     userProfile: () => import("./panels/user-profile"),
     queue: () => import("./panels/queue"),
 };

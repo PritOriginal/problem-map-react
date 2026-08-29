@@ -40,6 +40,18 @@
         max-width: 343px;
     }
 
+    // Grown from the round button's own corner, so the two read as one object
+    // rather than as a popover that happens to appear nearby. Short and plain:
+    // this is a control panel, not a reveal.
+    transform-origin: top right;
+    animation: filters-open 0.18s var(--ease) both;
+
+    // 0.14s -- kept in step with FILTERS_CLOSE_MS in `src/Map.tsx`, which is what
+    // actually unmounts the panel.
+    &--closing {
+        animation: filters-close 0.14s var(--ease) both;
+    }
+
     &__bar {
         display: flex;
         align-items: center;
@@ -398,5 +410,28 @@
             border-width: 0 2px 2px 0;
             transform: rotate(45deg);
         }
+    }
+}
+
+@keyframes filters-open {
+    from {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+}
+
+@keyframes filters-close {
+    to {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+}
+
+// The close path does not depend on `animationend` here -- `Filters` reads the
+// same preference and unmounts straight away -- so the animation can simply go.
+@media (prefers-reduced-motion: reduce) {
+    .filters,
+    .filters--closing {
+        animation: none;
     }
 }

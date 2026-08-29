@@ -51,6 +51,9 @@ import heatmapStore from "./store/heatmap";
 import { bboxFromBounds, cellSizeForZoom, heatColor, heatLegend, HEAT_COLORS } from "./utils/heatmap";
 import { BBox, HeatmapFeature } from "./services/MapService";
 
+/** Length of the filter panel's closing animation. Kept in step with `filters.scss`. */
+const FILTERS_CLOSE_MS = 140;
+
 /** Debounce for heatmap reloads while the map is being moved. */
 const HEATMAP_DEBOUNCE_MS = 400;
 
@@ -567,6 +570,29 @@ const Filters = observer(() => {
   const { resolved } = useTheme();
   const statuses = statusColors(resolved);
   const [showFilters, setShowFilters] = useState(false);
+  // The panel stays mounted through its closing animation so it does not vanish
+  // before it has finished shrinking, and so it never overlaps the round button.
+  //
+  // Unmounting is driven by a timer rather than by `animationend`: that event is
+  // not guaranteed to arrive -- it does not fire at all under reduced motion, and
+  // a headless Chrome dropped it even at full duration -- and the failure mode
+  // would be a panel that never closes again. A timer always fires.
+  const [closing, setClosing] = useState(false);
+  const closeTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
+  const close = () => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setShowFilters(false);
+      return;
+    }
+    setClosing(true);
+    closeTimer.current = window.setTimeout(() => {
+      setClosing(false);
+      setShowFilters(false);
+    }, FILTERS_CLOSE_MS);
+  };
 
   const statusIds = marksStore.filters.mark_status_ids;
   const typeIds = marksStore.filters.mark_type_ids;
@@ -588,7 +614,7 @@ const Filters = observer(() => {
       }
 
       {showFilters &&
-        <div className="filters">
+        <div className={closing ? "filters filters--closing" : "filters"}>
           <div className="filters__bar">
             {/* The round button does not sit beside the panel, it becomes it: the
                 panel opens at the button's own position and the glyph moves into
@@ -598,7 +624,7 @@ const Filters = observer(() => {
               className="filters__toggle"
               aria-expanded={true}
               aria-label={t("map.filtersTitle")}
-              onClick={() => setShowFilters(false)}
+              onClick={close}
             >
               <FilterIcon />
             </button>

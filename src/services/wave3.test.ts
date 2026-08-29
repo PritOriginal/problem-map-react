@@ -39,7 +39,7 @@ describe("wave-3 services", () => {
         const { url, init } = lastCall(fetchMock);
         expect(url).toBe("/api/notifications?limit=10&offset=0&unread=true");
         expect(new Headers(init.headers).get("Authorization")).toMatch(/^Bearer /);
-        expect(res.meta.total).toBe(1);
+        expect(res.meta?.total).toBe(1);
         expect(res.payload[0].mark_id).toBe(5);
     });
 
@@ -57,7 +57,7 @@ describe("wave-3 services", () => {
 
     it("UsersService stats and leaderboard", async () => {
         fetchMock.mockResolvedValue(jsonResponse({ success: true, payload: { rating: 10, marks_total: 1, marks_confirmed: 1, marks_refuted: 0, checks_total: 2, checks_correct: 2, tasks_completed: 0 } }));
-        expect((await UsersService.getMyStats()).payload.rating).toBe(10);
+        expect((await UsersService.getMyStats()).payload?.rating).toBe(10);
         expect(lastCall(fetchMock).url).toBe("/api/users/me/stats");
         await UsersService.getUserStats(4);
         expect(lastCall(fetchMock).url).toBe("/api/users/4/stats");

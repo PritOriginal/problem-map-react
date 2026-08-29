@@ -66,7 +66,7 @@ describe("wave-4 services", () => {
 
     it("OrganizationsService me / list / queue", async () => {
         fetchMock.mockImplementation(async () => jsonResponse({ success: true, payload: { organization_id: 5, name: "ЖКХ", description: "d" } }));
-        expect((await OrganizationsService.getMe()).payload.organization_id).toBe(5);
+        expect((await OrganizationsService.getMe()).payload?.organization_id).toBe(5);
         expect(lastCall(fetchMock).url).toBe("/api/organizations/me");
 
         fetchMock.mockImplementation(async () => jsonResponse({ success: true, payload: [{ organization_id: 5, name: "ЖКХ" }] }));

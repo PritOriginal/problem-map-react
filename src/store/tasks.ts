@@ -53,7 +53,7 @@ class TasksStore {
             const response = await TasksService.getUserTasks(userId, { statuses: [TaskStatusType.Assigned], limit: ASSIGNED_LIMIT, offset: 0 });
             runInAction(() => {
                 // the user may have signed out while the request was in flight
-                this.tasks = user.id === userId ? (response.payload ?? []) : [];
+                this.tasks = user.id === userId && Array.isArray(response.payload) ? response.payload : [];
             });
         } catch (error) {
             console.error(error);

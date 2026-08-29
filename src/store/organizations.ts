@@ -20,7 +20,7 @@ class OrganizationsStore {
         try {
             const response = await OrganizationsService.getOrganizations();
             runInAction(() => {
-                this.items = response.payload ?? [];
+                this.items = Array.isArray(response.payload) ? response.payload : [];
                 this.loaded = true;
                 this.isLoading = false;
             });

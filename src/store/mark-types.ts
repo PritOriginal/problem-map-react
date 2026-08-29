@@ -18,7 +18,7 @@ class MarkTypesStore {
         try {
             const response = await MarksService.getMarkTypes();
             runInAction(() => {
-                this.types = response.payload;
+                this.types = Array.isArray(response.payload) ? response.payload : [];
                 this.isLoading = false;
             });
         } catch (error) {

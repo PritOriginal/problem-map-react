@@ -189,7 +189,7 @@ describe("wave-5 services", () => {
         expect(JSON.parse(String(lastCall(fetchMock).init.body))).toEqual({ active: true, sort_order: 4 });
 
         fetchMock.mockImplementation(async () => jsonResponse({ success: true, payload: { id: 1, name: "ci", key: "pm_secret", created_at: "" } }));
-        expect((await AdminService.createApiKey("ci")).payload.key).toBe("pm_secret");
+        expect((await AdminService.createApiKey("ci")).payload?.key).toBe("pm_secret");
         expect(lastCall(fetchMock)).toMatchObject({ url: "/api/api-keys", init: { method: "POST" } });
         fetchMock.mockImplementation(async () => jsonResponse({ success: true, payload: [{ id: 1, name: "ci", created_at: "" }] }));
         expect((await AdminService.getApiKeys()).payload).toHaveLength(1);

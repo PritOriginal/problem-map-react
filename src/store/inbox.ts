@@ -48,7 +48,7 @@ class InboxStore {
                 return; // signed out while the request was in flight (state was reset by stopPolling)
             }
             runInAction(() => {
-                this.items = response.payload ?? [];
+                this.items = Array.isArray(response.payload) ? response.payload : [];
                 this.isLoading = false;
             });
             // the list is paginated: the badge is authoritative from the counter endpoint

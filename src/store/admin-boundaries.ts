@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import { t } from "../i18n";
 import MapService, { AdminBoundary, AdminBoundaryMarksCount, GetAdminBoundariesMarksCountRequest, GetAdminBoundariesRequest } from "../services/MapService";
 import notificationsStore from "./notifications";
+import { unwrapList } from "../services/http";
 import marksStore from "./marks";
 
 class AdminBoundariesStore {
@@ -32,7 +33,7 @@ class AdminBoundariesStore {
         try {
             const response = await MapService.getAdminBoundaries(this.filtersBoundaries);
             runInAction(() => {
-                this.boundaries = response.payload.admin_boundaries;
+                this.boundaries = unwrapList<AdminBoundary>(response.payload, "admin_boundaries");
                 this.isLoadingBoundaries = false;
             });
         } catch (error) {
@@ -53,7 +54,7 @@ class AdminBoundariesStore {
                 mark_type_ids: marksStore.filters.mark_type_ids,
             });
             runInAction(() => {
-                this.marksCount = response.payload.admin_boundaries;
+                this.marksCount = unwrapList<AdminBoundaryMarksCount>(response.payload, "admin_boundaries");
                 this.isLoadingMarksCount = false;
             });
         } catch (error) {

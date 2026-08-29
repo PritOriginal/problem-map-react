@@ -18,7 +18,7 @@ class MarkStatusesStore {
         try {
             const response = await MarksService.getMarkStatuses();
             runInAction(() => {
-                this.statuses = response.payload;
+                this.statuses = Array.isArray(response.payload) ? response.payload : [];
                 this.isLoading = false;
             });
         } catch (error) {

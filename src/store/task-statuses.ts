@@ -14,7 +14,7 @@ class TaskStatusesStore {
         try {
             const response = await TasksService.getTaskStatuses();
             runInAction(() => {
-                this.statuses = response.payload ?? [];
+                this.statuses = Array.isArray(response.payload) ? response.payload : [];
             });
         } catch (error) {
             console.error(error);

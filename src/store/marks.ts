@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { t } from "../i18n";
 import MarksService, { GetMarksRequest, Mark, MarkChanges, MarkStatusType } from '../services/MarksService';
 import notificationsStore from './notifications';
+import { unwrapList } from '../services/http';
 import { applyMarkChanges } from '../utils/mark-changes';
 
 /** localStorage key of the `server_time` of the last full load / incremental sync. */
@@ -41,7 +42,7 @@ class MarksStore {
         try {
             const response = await MarksService.getMarks(this.filters);
             runInAction(() => {
-                this.marks = response.payload.marks;
+                this.marks = unwrapList<Mark>(response.payload, "marks");
                 this.isLoading = false;
             });
             writeSince(startedAt);

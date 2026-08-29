@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../button/button";
 import user from "../../../store/user";
 import { signOut } from "../../../services/tokens";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, To } from "react-router-dom";
 import panelStore from "../../../store/panel";
 import notificationsStore from "../../../store/notifications";
 import UsersService, { CurrentUser } from "../../../services/UsersService";
@@ -13,8 +13,8 @@ import markTypesStore from "../../../store/mark-types";
 import { COLOR_MARK_STATUSES, TypeMarkIcons } from "../../mark/mark";
 import { observer } from "mobx-react-lite";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
-import { Role } from "../../../utils/role";
-import { useToKeepSearch } from "../../../utils/navigation";
+import { Role, parseRole } from "../../../utils/role";
+import { useNavigateKeepSearch, useToKeepSearch } from "../../../utils/navigation";
 
 const ROLE_NAMES: Record<Role, string> = {
     user: "Пользователь",
@@ -31,7 +31,8 @@ const Profile = observer(function Profile() {
         }
     }, []);
 
-    const navigate = useNavigate();
+    const navigate = useNavigateKeepSearch();
+    const toKeepSearch = useToKeepSearch();
 
     const [me, setMe] = useState<CurrentUser | null>(null);
     const [marks, setMarks] = useState<Mark[]>([]);
@@ -58,7 +59,7 @@ const Profile = observer(function Profile() {
             if (meRes.status === "fulfilled") {
                 const profile = meRes.value.payload.user;
                 setMe(profile);
-                user.setUser(profile.username, profile.user_id, profile.role);
+                user.setUser(profile.username, profile.user_id, parseRole(profile.role));
             } else {
                 console.error(meRes.reason);
                 notificationsStore.showError(meRes.reason, "Не удалось загрузить профиль");
@@ -104,20 +105,20 @@ const Profile = observer(function Profile() {
                         <p><b>Логин:</b> {me?.login ?? "—"}</p>
                         <p><b>Рейтинг:</b> {me?.rating ?? "—"}</p>
                         <p><b>Роль:</b> {ROLE_NAMES[me?.role ?? user.role]}</p>
-                        {me?.home_point && me.home_point.coordinates.length >= 2 &&
+                        {me?.home_point &&
                             <p><b>Домашняя точка:</b> {me.home_point.coordinates[1].toFixed(6)}, {me.home_point.coordinates[0].toFixed(6)}</p>
                         }
                         <hr />
                         <p style={{ fontSize: 18 }}><b>Мои метки</b> {isLoading ? "" : `(${marks.length})`}</p>
                         {!isLoading && marks.length === 0 && <p style={{ fontSize: 14 }}>Вы ещё не отмечали проблем</p>}
                         <div className="profile-list">
-                            {marks.map((mark) => <MarkRow key={mark.mark_id} mark={mark} />)}
+                            {marks.map((mark) => <MarkRow key={mark.mark_id} mark={mark} to={toKeepSearch(`/problem/${mark.mark_id}`)} />)}
                         </div>
                         <hr />
                         <p style={{ fontSize: 18 }}><b>Мои проверки</b> {isLoading ? "" : `(${checks.length})`}</p>
                         {!isLoading && checks.length === 0 && <p style={{ fontSize: 14 }}>Вы ещё не делали проверок</p>}
                         <div className="profile-list">
-                            {checks.map((check) => <CheckRow key={check.check_id} check={check} />)}
+                            {checks.map((check) => <CheckRow key={check.check_id} check={check} to={toKeepSearch(`/problem/${check.mark_id}`)} />)}
                         </div>
                         <hr />
                         <div>
@@ -132,13 +133,12 @@ const Profile = observer(function Profile() {
     )
 });
 
-const MarkRow = observer(function MarkRow({ mark }: { mark: Mark }) {
-    const toKeepSearch = useToKeepSearch();
+const MarkRow = observer(function MarkRow({ mark, to }: { mark: Mark, to: To }) {
     const status = markStatusesStore.statuses.find((s) => s.mark_status_id === mark.mark_status_id);
     const type = markTypesStore.types.find((t) => t.mark_type_id === mark.mark_type_id);
     const Icon = TypeMarkIcons[mark.mark_type_id];
     return (
-        <Link className="profile-list__item" to={toKeepSearch(`/problem/${mark.mark_id}`)}>
+        <Link className="profile-list__item" to={to}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 {Icon && Icon({ color: "#000" })}
                 <p style={{ fontSize: 14 }}><b>№{mark.mark_id}</b> {type?.name ?? ""}</p>
@@ -156,10 +156,9 @@ const MarkRow = observer(function MarkRow({ mark }: { mark: Mark }) {
     );
 });
 
-function CheckRow({ check }: { check: Check }) {
-    const toKeepSearch = useToKeepSearch();
+function CheckRow({ check, to }: { check: Check, to: To }) {
     return (
-        <Link className="profile-list__item" to={toKeepSearch(`/problem/${check.mark_id}`)}>
+        <Link className="profile-list__item" to={to}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
                 <p style={{ fontSize: 14 }}><b>Проблема №{check.mark_id}</b></p>
                 <p style={{ fontSize: 12 }}>{new Date(check.created_at).toLocaleDateString()}</p>

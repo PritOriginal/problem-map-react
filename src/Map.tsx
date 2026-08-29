@@ -20,7 +20,6 @@ import { Feature } from "@yandex/ymaps3-clusterer";
 
 import convert from 'color-convert';
 import { useLocation, useSearchParams } from "react-router-dom";
-import { reaction } from "mobx";
 import { filtersEqual, parseFilters, serializeFilters } from "./utils/filters";
 import { useNavigateKeepSearch } from "./utils/navigation";
 import { Mark, MarkStatusType } from "./services/MarksService";
@@ -99,18 +98,9 @@ const Map = observer(() => {
 
   const location = useLocation();
   const navigate = useNavigateKeepSearch();
-  const [, setSearchParams] = useSearchParams();
-  // the reaction below lives for the whole component lifetime, but setSearchParams (and the `prev`
-  // it passes to a functional updater) is rebuilt on every location change — always call the latest one
-  const setSearchParamsRef = useRef(setSearchParams);
-  setSearchParamsRef.current = setSearchParams;
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const mapRef = useRef<YMapInstance | null>(null);
-  const [mapReady, setMapReady] = useState(false);
-  const setMapRef = useCallback((instance: YMapInstance | null) => {
-    mapRef.current = instance;
-    setMapReady(instance !== null);
-  }, []);
+  const [map, setMap] = useState<YMapInstance | null>(null);
   const zoomRef = useRef<number>((LOCATION as { zoom: number }).zoom);
 
   const [panelIsOpen, setPanelIsOpen] = useState(false);
@@ -151,28 +141,25 @@ const Map = observer(() => {
   }, []);
 
   const flyTo = useCallback((center: LngLat, minZoom: number) => {
-    mapRef.current?.setLocation({
+    map?.setLocation({
       center,
       zoom: Math.max(zoomRef.current, minZoom),
       duration: 400,
     });
-  }, []);
+  }, [map]);
 
-  // filters <-> URL (?types=&statuses=)
+  // filters <-> URL (?types=&statuses=): URL wins on mount, afterwards the store is written back to the URL
   useEffect(() => {
-    const fromUrl = parseFilters(window.location.search, DEFAULT_FILTERS);
+    const fromUrl = parseFilters(searchParams, DEFAULT_FILTERS);
     if (!filtersEqual(fromUrl, marksStore.filters)) {
       marksStore.setFilters(fromUrl);
     }
-    const dispose = reaction(
-      () => serializeFilters(marksStore.filters, DEFAULT_FILTERS).toString(),
-      () => {
-        setSearchParamsRef.current((prev) => serializeFilters(marksStore.filters, DEFAULT_FILTERS, prev), { replace: true });
-      },
-      { fireImmediately: true },
-    );
-    return dispose;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const filtersQuery = serializeFilters(marksStore.filters, DEFAULT_FILTERS).toString();
+  useEffect(() => {
+    setSearchParams((prev) => serializeFilters(marksStore.filters, DEFAULT_FILTERS, prev), { replace: true });
+  }, [filtersQuery, setSearchParams]);
 
   useEffect(() => {
     adminBoundariesStore.fetchBoundaries();
@@ -188,11 +175,11 @@ const Map = observer(() => {
   // deep link: /problem/:id opened directly -> center the map on the mark
   const pendingCenter = selectedMark.pendingCenter;
   useEffect(() => {
-    if (pendingCenter && mapReady) {
+    if (pendingCenter && map) {
       flyTo(pendingCenter, ZOOMS.big);
       selectedMark.consumeCenter();
     }
-  }, [pendingCenter, mapReady, flyTo]);
+  }, [pendingCenter, map, flyTo]);
 
   const getUserLocation = useCallback((center: boolean) => {
     if (!navigator.geolocation) {
@@ -265,7 +252,7 @@ const Map = observer(() => {
       <div className={`map ${panelIsOpen && "panel-open"}`}>
         <YMapComponentsProvider apiKey={YMAPS_API_KEY}>
           <YMap
-            ref={setMapRef}
+            ref={setMap}
             location={LOCATION}
             restrictMapArea={RESTRICT_AREA}
             zoomRange={ZOOM_RANGE}
@@ -387,7 +374,7 @@ const Filters = observer(() => {
   const [showFilters, setShowFilters] = useState(false);
   return (
     <>
-      <div className="circle-button filters-button" onClick={() => setShowFilters(!showFilters)}>
+      <div className="circle-button filters-button" title="Фильтры" {...buttonProps("Фильтры проблем", () => setShowFilters(!showFilters))}>
         <div className="circle-button__content">
           <FilterIcon style={{ transform: "translate(0, 2px)" }} />
         </div>

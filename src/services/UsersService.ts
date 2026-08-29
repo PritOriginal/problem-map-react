@@ -1,10 +1,6 @@
+import { PointGeometry } from "@yandex/ymaps3-types";
 import BaseService, { IResponse } from "./BaseService";
 import { Role } from "../utils/role";
-
-export interface PointJSON {
-    type?: string;
-    coordinates: number[];
-}
 
 /** Full profile of the authenticated user (`GET /users/me`). */
 export interface CurrentUser {
@@ -13,7 +9,7 @@ export interface CurrentUser {
     login: string;
     rating: number;
     role: Role;
-    home_point?: PointJSON | null;
+    home_point?: PointGeometry | null;
 }
 
 export interface GetMeResponse extends IResponse {

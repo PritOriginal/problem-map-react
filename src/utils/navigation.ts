@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { NavigateOptions, To, useLocation, useNavigate } from "react-router-dom";
 
 /** Builds a `To` for the given path that keeps the current query string (map filters). */
@@ -7,15 +7,15 @@ export function useToKeepSearch(): (pathname: string) => To {
     return useCallback((pathname: string) => ({ pathname, search }), [search]);
 }
 
-/** `useNavigate` variant that keeps the current query string (map filters) when navigating by path. */
-export function useNavigateKeepSearch(): (to: string | number, options?: NavigateOptions) => void {
+/**
+ * `useNavigate` variant that keeps the current query string (map filters).
+ * The returned function has a stable identity: the search string is read through a ref.
+ */
+export function useNavigateKeepSearch(): (pathname: string, options?: NavigateOptions) => void {
     const navigate = useNavigate();
-    const toKeepSearch = useToKeepSearch();
-    return useCallback((to: string | number, options?: NavigateOptions) => {
-        if (typeof to === "number") {
-            navigate(to);
-        } else {
-            navigate(toKeepSearch(to), options);
-        }
-    }, [navigate, toKeepSearch]);
+    const searchRef = useRef(useLocation().search);
+    searchRef.current = useLocation().search;
+    return useCallback((pathname: string, options?: NavigateOptions) => {
+        navigate({ pathname, search: searchRef.current }, options);
+    }, [navigate]);
 }

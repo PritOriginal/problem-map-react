@@ -79,7 +79,7 @@ const AboutProblem = observer(function AboutProblem() {
     return (
         <>
             <ShareButton />
-            {user.isModerator && mark.mark_id !== 0 && <ModerationBlock markId={mark.mark_id} onDone={reload} />}
+            {user.isModerator && mark.mark_id !== 0 && <ModerationBlock onDone={reload} />}
             {mark.description !== "" &&
                 <>
                     <p style={{ fontSize: 18 }}><b>Описание</b></p>
@@ -112,55 +112,69 @@ const MODERATABLE_STATUSES = [
     MarkStatusType.RediscoveredStatus,
 ];
 
-function ModerationBlock({ markId, onDone }: { markId: number, onDone: () => void }) {
+type ModerationAction = "confirm" | "reject";
+
+const MODERATION_ACTIONS: Record<ModerationAction, {
+    call: (markId: number) => Promise<unknown>;
+    question: string;
+    errorText: string;
+    label: string;
+    pendingLabel: string;
+    style: "green" | "red";
+}> = {
+    confirm: {
+        call: (id) => MarksService.confirmMark(id),
+        question: "Подтвердить проблему №{id}?",
+        errorText: "Не удалось подтвердить проблему",
+        label: "Подтвердить",
+        pendingLabel: "Подтверждаем…",
+        style: "green",
+    },
+    reject: {
+        call: (id) => MarksService.rejectMark(id),
+        question: "Отклонить проблему №{id}?",
+        errorText: "Не удалось отклонить проблему",
+        label: "Отклонить",
+        pendingLabel: "Отклоняем…",
+        style: "red",
+    },
+};
+
+function ModerationBlock({ onDone }: { onDone: () => void }) {
     const mark = useContext(MarkContext);
-    const [pending, setPending] = useState<"confirm" | "reject" | null>(null);
-    // the request may outlive the panel (user navigates away): skip state updates after unmount
-    const mounted = useRef(true);
-    useEffect(() => {
-        mounted.current = true;
-        return () => { mounted.current = false; };
-    }, []);
+    const [pending, setPending] = useState<ModerationAction | null>(null);
 
     if (!MODERATABLE_STATUSES.includes(mark.mark_status_id)) {
         return null;
     }
 
-    const moderate = (action: "confirm" | "reject") => {
-        const question = action === "confirm"
-            ? `Подтвердить проблему №${markId}?`
-            : `Отклонить проблему №${markId}?`;
-        if (!window.confirm(question)) {
+    const moderate = (action: ModerationAction) => {
+        const spec = MODERATION_ACTIONS[action];
+        if (!window.confirm(spec.question.replace("{id}", String(mark.mark_id)))) {
             return;
         }
         setPending(action);
-        const request = action === "confirm" ? MarksService.confirmMark(markId) : MarksService.rejectMark(markId);
-        request
+        spec.call(mark.mark_id)
             .then(() => {
                 notificationsStore.clear();
                 onDone();
             })
             .catch((error) => {
                 console.error(error);
-                notificationsStore.showError(error, action === "confirm" ? "Не удалось подтвердить проблему" : "Не удалось отклонить проблему");
+                notificationsStore.showError(error, spec.errorText);
             })
-            .finally(() => {
-                if (mounted.current) {
-                    setPending(null);
-                }
-            });
+            .finally(() => setPending(null));
     };
 
     return (
         <>
             <p style={{ fontSize: 18 }}><b>Модерация</b></p>
             <div style={{ display: "flex", gap: "8px" }}>
-                <Button style="green" disabled={pending !== null} onClick={() => moderate("confirm")}>
-                    {pending === "confirm" ? "Подтверждаем…" : "Подтвердить"}
-                </Button>
-                <Button style="red" disabled={pending !== null} onClick={() => moderate("reject")}>
-                    {pending === "reject" ? "Отклоняем…" : "Отклонить"}
-                </Button>
+                {(Object.keys(MODERATION_ACTIONS) as ModerationAction[]).map((action) => (
+                    <Button key={action} style={MODERATION_ACTIONS[action].style} disabled={pending !== null} onClick={() => moderate(action)}>
+                        {pending === action ? MODERATION_ACTIONS[action].pendingLabel : MODERATION_ACTIONS[action].label}
+                    </Button>
+                ))}
             </div>
             <hr />
         </>

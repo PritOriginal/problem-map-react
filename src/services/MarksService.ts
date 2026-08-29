@@ -1,3 +1,4 @@
+import { LngLat } from "@yandex/ymaps3-types";
 import BaseService, { IResponse } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
 import { Check } from "./ChecksService";
@@ -39,6 +40,17 @@ export interface AddMarkRequest {
     point: Point
     mark_type_id: number
     description: string
+}
+
+/**
+ * Converts ymaps3 `LngLat` (= [lng, lat]) into the point fields the backend expects.
+ * ВНИМАНИЕ: намеренная «перестановка». Бэкенд (handler/marks AddMark) собирает точку как
+ * geom.Coord{Latitude, Longitude}, т.е. кладёт поле latitude в X (долгота), а longitude — в Y (широта).
+ * Чтобы в БД оказалась корректная точка (X=lng, Y=lat), поля отправляются крест-накрест.
+ * Если бэкенд исправят на Coord{Longitude, Latitude} — поменять индексы местами только здесь.
+ */
+export function toApiPoint([lng, lat]: LngLat): Point {
+    return { longitude: lat, latitude: lng };
 }
 
 export interface AddMarkResponse extends IResponse {

@@ -1,10 +1,11 @@
 import BaseService, { IResponse, unwrapList } from "./BaseService";
+import { toRfc3339Range } from "../utils/dates";
 
 export type TimeseriesStep = "day" | "week" | "month";
 
 export interface AnalyticsRequest {
     boundary_id?: number;
-    /** ISO date (YYYY-MM-DD). */
+    /** `YYYY-MM-DD` (from `<input type="date">`) or RFC3339; converted to an RFC3339 range by `analyticsParams`. */
     from?: string;
     to?: string;
 }
@@ -44,11 +45,12 @@ export function analyticsParams(req: AnalyticsRequest, extra: Record<string, str
     if (req.boundary_id !== undefined && req.boundary_id > 0) {
         params.set("boundary_id", String(req.boundary_id));
     }
-    if (req.from) {
-        params.set("from", req.from);
+    const { from, to } = toRfc3339Range(req.from, req.to);
+    if (from) {
+        params.set("from", from);
     }
-    if (req.to) {
-        params.set("to", req.to);
+    if (to) {
+        params.set("to", to);
     }
     Object.entries(extra).forEach(([k, v]) => params.set(k, v));
     return params;

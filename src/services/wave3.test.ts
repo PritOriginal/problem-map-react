@@ -112,7 +112,13 @@ describe("wave-3 services", () => {
     it("AnalyticsService kpi / timeseries", async () => {
         fetchMock.mockResolvedValue(jsonResponse({ success: true, payload: { total: 1, by_status: {}, avg_confirm_hours: null, median_confirm_hours: null, avg_close_hours: null, refuted_share: null, open_older_than_30d: 0 } }));
         await AnalyticsService.getKpi({ boundary_id: 3, from: "2026-01-01", to: "2026-02-01" });
-        expect(lastCall(fetchMock).url).toBe("/api/analytics/kpi?boundary_id=3&from=2026-01-01&to=2026-02-01");
+        const kpiUrl = new URL(lastCall(fetchMock).url, "http://localhost");
+        expect(kpiUrl.pathname).toBe("/api/analytics/kpi");
+        expect(kpiUrl.searchParams.get("boundary_id")).toBe("3");
+        // `<input type="date">` values are expanded to an RFC3339 range (backend: "from must be RFC3339").
+        expect(kpiUrl.searchParams.get("from")).toBe(new Date(2026, 0, 1).toISOString());
+        expect(kpiUrl.searchParams.get("to")).toBe(new Date(2026, 1, 1, 23, 59, 59, 999).toISOString());
+        expect(kpiUrl.searchParams.get("from")).toMatch(/T.*Z$/);
         fetchMock.mockResolvedValue(jsonResponse({ success: true, payload: [] }));
         await AnalyticsService.getTimeseries({}, "week");
         expect(lastCall(fetchMock).url).toBe("/api/analytics/timeseries?step=week");

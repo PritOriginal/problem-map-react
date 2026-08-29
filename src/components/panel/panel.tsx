@@ -13,6 +13,7 @@ import selectedMark from "../../store/selected_mark";
 import selectedPoint from "../../store/selected_point";
 import { observer } from "mobx-react-lite";
 import panelStore from "../../store/panel";
+import user from "../../store/user";
 import { useDeviceDetect } from "../../utils/hooks";
 import { useNavigateKeepSearch } from "../../utils/navigation";
 import ErrorBanner from "../error-banner/error-banner";
@@ -20,23 +21,88 @@ import ErrorBanner from "../error-banner/error-banner";
 /* Panels are the bulk of the bundle (~3700 lines across 15 screens) and a
    visitor opens one or two of them. Loading them on demand keeps the moderation,
    admin and analytics screens out of the first paint for everyone who never
-   opens them. */
-const AboutProblem = lazy(() => import("./panels/problem/about-problem"));
-const AddProblem = lazy(() => import("./panels/add-problem"));
-const SignIn = lazy(() => import("./panels/sign-in"));
-const SignUp = lazy(() => import("./panels/sign-up"));
-const Profile = lazy(() => import("./panels/sign-out"));
-const AddCheck = lazy(() => import("./panels/problem/add-check"));
-const ProblemPanel = lazy(() => import("./panels/problem/problem"));
-const NotificationsPanel = lazy(() => import("./panels/notifications"));
-const Leaderboard = lazy(() => import("./panels/leaderboard"));
-const Analytics = lazy(() => import("./panels/analytics"));
-const TasksPanel = lazy(() => import("./panels/tasks"));
-const OrgPanel = lazy(() => import("./panels/org"));
-const ModerationPanel = lazy(() => import("./panels/moderation"));
-const AdminPanel = lazy(() => import("./panels/admin"));
-const UserProfilePanel = lazy(() => import("./panels/user-profile"));
-const QueuePanel = lazy(() => import("./panels/queue"));
+   opens them.
+
+   The import factories are named here rather than inlined into lazy() so the
+   prefetch below can call the very same ones: a second `import()` of a module
+   already in flight or resolved is deduplicated by the browser, so warming a
+   chunk and later rendering its panel share one request. */
+const load = {
+    aboutProblem: () => import("./panels/problem/about-problem"),
+    addProblem: () => import("./panels/add-problem"),
+    signin: () => import("./panels/sign-in"),
+    signup: () => import("./panels/sign-up"),
+    profile: () => import("./panels/sign-out"),
+    addCheck: () => import("./panels/problem/add-check"),
+    problem: () => import("./panels/problem/problem"),
+    notifications: () => import("./panels/notifications"),
+    leaderboard: () => import("./panels/leaderboard"),
+    analytics: () => import("./panels/analytics"),
+    tasks: () => import("./panels/tasks"),
+    org: () => import("./panels/org"),
+    moderation: () => import("./panels/moderation"),
+    admin: () => import("./panels/admin"),
+    userProfile: () => import("./panels/user-profile"),
+    queue: () => import("./panels/queue"),
+};
+
+const AboutProblem = lazy(load.aboutProblem);
+const AddProblem = lazy(load.addProblem);
+const SignIn = lazy(load.signin);
+const SignUp = lazy(load.signup);
+const Profile = lazy(load.profile);
+const AddCheck = lazy(load.addCheck);
+const ProblemPanel = lazy(load.problem);
+const NotificationsPanel = lazy(load.notifications);
+const Leaderboard = lazy(load.leaderboard);
+const Analytics = lazy(load.analytics);
+const TasksPanel = lazy(load.tasks);
+const OrgPanel = lazy(load.org);
+const ModerationPanel = lazy(load.moderation);
+const AdminPanel = lazy(load.admin);
+const UserProfilePanel = lazy(load.userProfile);
+const QueuePanel = lazy(load.queue);
+
+type PanelLoader = () => Promise<unknown>;
+
+/**
+ * What this visitor is most likely to open next, given who they are. Splitting the
+ * panels traded bundle size for a round trip on the first navigation; warming the
+ * likely chunks while the browser is idle buys the size back without the wait.
+ *
+ * `problem` is on every list: opening a mark is far and away the commonest move
+ * from the map. Nothing here is role-restricted UI -- the panels do their own
+ * authorisation -- so a warmed chunk grants nothing, it only saves a request.
+ */
+function likelyPanels(isSignedIn: boolean, isModerator: boolean, isService: boolean): PanelLoader[] {
+    const loaders: PanelLoader[] = [load.problem, load.aboutProblem];
+    if (isSignedIn) {
+        loaders.push(load.notifications, load.profile);
+    } else {
+        loaders.push(load.signin);
+    }
+    if (isModerator) {
+        loaders.push(load.moderation, load.admin);
+    }
+    if (isService) {
+        loaders.push(load.org, load.tasks);
+    }
+    return loaders;
+}
+
+/**
+ * `requestIdleCallback` with a `setTimeout` fallback -- Safari still ships without
+ * it. Returns its own canceller so the caller does not have to remember which of
+ * the two it got.
+ */
+function whenIdle(run: () => void): () => void {
+    if (typeof window.requestIdleCallback === "function") {
+        const handle = window.requestIdleCallback(run, { timeout: 2000 });
+        return () => window.cancelIdleCallback(handle);
+    }
+    const handle = window.setTimeout(run, 1000);
+    return () => window.clearTimeout(handle);
+}
 
 export default function PanelRoute() {
     return (
@@ -91,6 +157,19 @@ const Panel = observer(() => {
             panelStore.setHeight(0);
         }
     }, [location])
+
+    // Read as plain values so the effect re-runs on sign-in/sign-out and on a role
+    // change, rather than warming only whatever the visitor was when the map loaded.
+    const isSignedIn = user.id !== 0;
+    const { isModerator, isService } = user;
+    useEffect(() => {
+        return whenIdle(() => {
+            // Failures are ignored on purpose: this is a guess about the next
+            // navigation, and a chunk that will not load offline must not surface an
+            // error here -- the real navigation will report it if it happens.
+            likelyPanels(isSignedIn, isModerator, isService).forEach((loader) => { void loader().catch(() => {}); });
+        });
+    }, [isSignedIn, isModerator, isService]);
 
     const showCloseButton = !isMobile || (isMobile && !panelStore.isOpen);
 

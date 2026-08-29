@@ -48,6 +48,39 @@ describe("PanelRoute lazy panels", () => {
         expect(screen.getByText(ru["common.loading"])).toBeInTheDocument();
     });
 
+    /**
+     * The prefetch is a side effect with no visible output, so what is worth pinning
+     * down is the part that breaks silently: Safari has no requestIdleCallback, and a
+     * warm-up left scheduled after unmount would fire against a dead component.
+     */
+    describe("role prefetch scheduling", () => {
+        it("falls back to setTimeout where requestIdleCallback is missing, and cancels it", () => {
+            vi.stubGlobal("requestIdleCallback", undefined);
+            const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
+            const setTimeoutSpy = vi.spyOn(window, "setTimeout");
+
+            const { unmount } = renderPanel(<PanelRoute />, { route: "/leaderboard" });
+            expect(setTimeoutSpy).toHaveBeenCalled();
+            const handle = setTimeoutSpy.mock.results[0].value;
+
+            unmount();
+            expect(clearTimeoutSpy).toHaveBeenCalledWith(handle);
+        });
+
+        it("cancels the idle callback it booked when the panel unmounts", () => {
+            const requestIdleCallback = vi.fn(() => 42);
+            const cancelIdleCallback = vi.fn();
+            vi.stubGlobal("requestIdleCallback", requestIdleCallback);
+            vi.stubGlobal("cancelIdleCallback", cancelIdleCallback);
+
+            const { unmount } = renderPanel(<PanelRoute />, { route: "/leaderboard" });
+            expect(requestIdleCallback).toHaveBeenCalledTimes(1);
+
+            unmount();
+            expect(cancelIdleCallback).toHaveBeenCalledWith(42);
+        });
+    });
+
     it("renders nothing at /, so no panel chunk is needed for the map", () => {
         const { container } = renderPanel(<PanelRoute />, { route: "/" });
 

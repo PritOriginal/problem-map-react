@@ -17,11 +17,12 @@ import organizationsStore from "../../../../store/organizations";
 import { TranslationKey, localeOf, tOr, useT } from "../../../../i18n";
 import ReportButton from "../../../report/report-button";
 import CommentsBlock from "./comments";
-import { DuplicateBadge, HiddenBadge } from "../../../badges/badges";
+import { CommentsCount, DuplicateBadge, HiddenBadge } from "../../../badges/badges";
 import { STATUS_COLORS, STATUS_FALLBACK } from "../../../../styles/tokens";
 import { layerDepths, layerSpans, spanLabel } from "../../../../utils/history-column";
 import { useNow } from "../../../../utils/hooks";
 import "./history-column.scss";
+import "./mark-actions.scss";
 
 const AboutProblem = observer(function AboutProblem() {
     const navigate = useNavigateKeepSearch();
@@ -99,10 +100,12 @@ const AboutProblem = observer(function AboutProblem() {
 
     return (
         <>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <div className="mark-actions">
                 <ShareButton />
                 {user.id !== 0 && mark.mark_id !== 0 && <FollowButton onDone={reload} />}
                 {user.id !== 0 && mark.mark_id !== 0 && user.id !== mark.user_id && <ReportButton targetType="mark" targetId={mark.mark_id} />}
+                <span className="mark-actions__spacer" />
+                <span className="mark-actions__meta"><CommentsCount count={mark.comments_count} /></span>
             </div>
             {(mark.hidden || mark.merged_into_id) &&
                 <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
@@ -290,9 +293,17 @@ const FollowButton = observer(function FollowButton({ onDone }: { onDone: () => 
     };
 
     return (
-        <Button style={following ? "primary" : "secondary"} isMini disabled={pending} onClick={toggle}>
-            {t(following ? "mark.following" : "mark.follow")}{count !== undefined && ` · ${count}`}
-        </Button>
+        <button
+            type="button"
+            className={`mark-actions__btn${following ? " is-on" : ""}`}
+            disabled={pending}
+            aria-pressed={following}
+            onClick={toggle}
+        >
+            <FollowIcon filled={following} />
+            {t(following ? "mark.following" : "mark.follow")}
+            {count !== undefined && <span className="mark-actions__count">{count}</span>}
+        </button>
     );
 });
 
@@ -422,11 +433,29 @@ function ShareButton() {
     };
 
     return (
-        <div>
-            <Button style="secondary" isMini onClick={share}>
-                {t(copied ? "mark.linkCopied" : "mark.share")}
-            </Button>
-        </div>
+        <button type="button" className="mark-actions__btn" onClick={share}>
+            <ShareIcon />
+            {t(copied ? "mark.linkCopied" : "mark.share")}
+        </button>
+    );
+}
+
+function ShareIcon() {
+    return (
+        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor"
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8 10.5V2M8 2 5 5M8 2l3 3M3 9v4.5h10V9" />
+        </svg>
+    );
+}
+
+/** A bookmark, filled once you are following: the state is in the shape, not only the word. */
+function FollowIcon({ filled }: { filled: boolean }) {
+    return (
+        <svg viewBox="0 0 16 16" width="15" height="15" fill={filled ? "currentColor" : "none"}
+            stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 2.5h8v11l-4-3-4 3z" />
+        </svg>
     );
 }
 

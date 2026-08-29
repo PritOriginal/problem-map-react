@@ -1,0 +1,117 @@
+// Utility actions on a mark: share, follow, report.
+//
+// These used to be three bordered buttons at the top of the content, which made
+// them the first thing a reader met and gave them the same weight as the actions
+// the screen exists for. They are now a strip between the header and the content:
+// labels kept, so nothing has to be guessed from an icon alone, but the boxes
+// gone. The follow count sits beside its own control instead of being crammed
+// into the label, and the comment tally rides along at the far end, since it is a
+// fact about the mark rather than an action.
+
+.mark-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+
+    margin: calc(var(--space-7) * -1) calc(var(--space-7) * -1) 0;
+    padding: var(--space-3) var(--space-5);
+
+    background-color: var(--paper);
+    border-bottom: 1px solid var(--rule);
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3);
+
+        padding: var(--space-3) var(--space-4);
+
+        font: inherit;
+        font-size: var(--fs-caption);
+        color: var(--ink-soft);
+
+        background: none;
+        border: 0;
+        border-radius: var(--radius-1);
+        cursor: pointer;
+
+        transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+
+        svg {
+            flex-shrink: 0;
+        }
+
+        &:hover:not(:disabled) {
+            background-color: var(--neutral-bg);
+            color: var(--ink);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+
+        &:disabled {
+            color: var(--ink-faint);
+            cursor: not-allowed;
+        }
+
+        // Following is a state you are in, so it stays lit rather than only
+        // changing its label.
+        &.is-on {
+            color: var(--accent-ink);
+            font-weight: 600;
+        }
+
+        // Reporting is a last resort. It stays reachable and stays quiet.
+        &.is-muted {
+            color: var(--ink-faint);
+        }
+    }
+
+    &__count {
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+    }
+
+    &__spacer {
+        flex: 1 1 auto;
+    }
+
+    &__meta {
+        padding-right: var(--space-4);
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+    }
+}
+
+// The report trigger is a shared component with its own styling for comment rows.
+// Inside the strip it takes the strip's shape, muted: reachable, never shouting.
+.mark-actions .report-button {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--fs-caption);
+    color: var(--ink-faint);
+    border-radius: var(--radius-1);
+    text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+
+    &:hover {
+        background-color: var(--neutral-bg);
+        color: var(--danger-ink);
+        text-decoration: none;
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+    }
+}
+
+// The reason picker opens below the strip, not inside it.
+.mark-actions + .report-form {
+    margin-top: var(--space-4);
+}

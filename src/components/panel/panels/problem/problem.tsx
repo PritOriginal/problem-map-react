@@ -14,7 +14,7 @@ import marksStore from "../../../../store/marks";
 import { LngLat } from "@yandex/ymaps3-types";
 import { MarkContext, MarkReloadContext, emptyMark } from "./mark-context";
 import { useT } from "../../../../i18n";
-import { CommentsCount, HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/badges";
+import { HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/badges";
 
 
 const ProblemPanel = observer(() => {
@@ -99,12 +99,11 @@ const ProblemPanel = observer(() => {
                     <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="var(--on-chrome)" />
                     <p>{markType.name}</p>
                 </div>
-                {(mark.sla_due_at || mark.organization_id || mark.hidden || mark.comments_count !== undefined) &&
+                {(mark.sla_due_at || mark.organization_id || mark.hidden) &&
                     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
                         <HiddenBadge hidden={mark.hidden} />
                         <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
                         <OrgLabel organizationId={mark.organization_id} />
-                        <span style={{ color: "var(--on-chrome-faint)", fontSize: 12 }}><CommentsCount count={mark.comments_count} /></span>
                     </div>
                 }
             </div>

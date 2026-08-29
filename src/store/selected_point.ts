@@ -1,6 +1,6 @@
 import { LngLat, PolygonGeometry } from "@yandex/ymaps3-types";
 import { makeAutoObservable } from 'mobx';
-import { circle } from '@turf/turf';
+import { circle } from "@turf/circle";
 
 /** Radius (km) of the zone drawn around the home point while signing up. */
 export const HOME_ZONE_RADIUS_KM = 0.5;
@@ -74,8 +74,11 @@ class SelectedPoint {
     }
 }
 
+/** Vertices of the generated ring; turf's own default, pinned so an upstream change cannot reshape the zone. */
+export const CIRCLE_STEPS = 64;
+
 export function circleGeometry(center: LngLat, radiusKm: number): PolygonGeometry {
-    const { geometry } = circle([center[0], center[1]], radiusKm, { units: "kilometers" });
+    const { geometry } = circle([center[0], center[1]], radiusKm, { steps: CIRCLE_STEPS, units: "kilometers" });
     return geometry as PolygonGeometry;
 }
 

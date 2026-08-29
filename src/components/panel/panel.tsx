@@ -14,6 +14,9 @@ import SignUp from "./panels/sign-up";
 import Profile from "./panels/sign-out";
 import AddCheck from "./panels/problem/add-check";
 import ProblemPanel from "./panels/problem/problem";
+import NotificationsPanel from "./panels/notifications";
+import Leaderboard from "./panels/leaderboard";
+import Analytics from "./panels/analytics";
 import { useEffect } from "react";
 import selectedMark from "../../store/selected_mark";
 import selectedPoint from "../../store/selected_point";
@@ -35,6 +38,9 @@ export default function PanelRoute() {
                 <Route path='/signin' element={<SignIn />} />
                 <Route path='/signup' element={<SignUp />} />
                 <Route path='/profile' element={<Profile />} />
+                <Route path='/notifications' element={<NotificationsPanel />} />
+                <Route path='/leaderboard' element={<Leaderboard />} />
+                <Route path='/analytics' element={<Analytics />} />
             </Route>
         </Routes>
     );

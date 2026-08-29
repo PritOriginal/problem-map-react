@@ -60,6 +60,8 @@ export const en: Partial<Dictionary> = {
     "auth.signInError": "Sign-in failed",
     "auth.signUpError": "Sign-up failed",
     "auth.signOut": "Sign out",
+    "auth.homePointHint": "Drag the blue marker on the map — tasks will be assigned within {radius} m of it",
+    "auth.coords": "Coordinates",
 
     "map.addMark": "Report a problem",
     "map.add": "Report",
@@ -79,6 +81,7 @@ export const en: Partial<Dictionary> = {
     "map.heatLegendAria": "Heatmap legend",
     "map.heatLegendTitle": "Problems per cell",
     "map.heatLegendEmpty": "No data in this area",
+    "map.myTasks": "My tasks",
 
     "mark.n": "#{id}",
     "mark.share": "Share",

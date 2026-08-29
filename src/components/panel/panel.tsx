@@ -75,9 +75,11 @@ const Panel = observer(() => {
 
     useEffect(() => {
         if (location.pathname == "/add") {
-            selectedPoint.showPoint();
+            selectedPoint.setAddMode();
+        } else if (location.pathname == "/signup") {
+            selectedPoint.setSignupMode();
         } else {
-            selectedPoint.hidePoint();
+            selectedPoint.hideAll();
         }
         if (location.pathname == "/") {
             panelStore.setHeight(0);

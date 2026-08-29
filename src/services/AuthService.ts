@@ -1,9 +1,12 @@
+import { PointGeometry } from "@yandex/ymaps3-types"
 import BaseService, { IResponse } from "./BaseService"
 
 export interface SignUpRequest {
     username: string
     login: string
     password: string
+    /** Home point: the user gets tasks for marks around it (required by the backend). */
+    home_point: PointGeometry
 }
 
 export interface SignUpResponse extends IResponse {

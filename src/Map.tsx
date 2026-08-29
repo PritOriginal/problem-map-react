@@ -8,6 +8,8 @@ import {
   YMapMarker,
   YMapCustomClusterer,
   YMapDefaultMarker,
+  YMapLayer,
+  YMapFeatureDataSource,
 } from "ymap3-components";
 
 import customization from './customization.json'
@@ -37,6 +39,8 @@ import LocateIcon from "./assets/locate.svg?react"
 import markStatusesStore from "./store/mark-statuses";
 import markTypesStore from "./store/mark-types";
 import panelStore from "./store/panel";
+import tasksStore from "./store/tasks";
+import user from "./store/user";
 import notificationsStore from "./store/notifications";
 import { useDeviceDetect } from "./utils/hooks";
 import heatmapStore from "./store/heatmap";
@@ -252,7 +256,7 @@ const Map = observer(() => {
   }, [flyTo]);
 
   const cluster = useCallback((coordinates: LngLat, features: Feature[]) => (
-    <YMapMarker coordinates={coordinates}>
+    <YMapMarker source="markerSource" coordinates={coordinates}>
       <div className="circle">
         <div className="circle-content" style={{ backgroundColor: '#' + getColorByFeatues(features) }}>
           <span className="circle-text">
@@ -265,12 +269,20 @@ const Map = observer(() => {
 
   const selectedId = selectedMark.id;
   const types = markTypesStore.types;
+  const assignedMarkIds = tasksStore.assignedMarkIds;
   const marker = useCallback((feature: Feature) => {
     const mark = feature.properties!.mark as Mark;
     return (
-      <MarkItem mark={mark} type={types.find((x) => x.mark_type_id === mark.mark_type_id)} size={size} selected={mark.mark_id === selectedId} onClick={onClickOnMark} />
+      <MarkItem
+        mark={mark}
+        type={types.find((x) => x.mark_type_id === mark.mark_type_id)}
+        size={size}
+        selected={mark.mark_id === selectedId}
+        assigned={assignedMarkIds.has(mark.mark_id)}
+        onClick={onClickOnMark}
+      />
     );
-  }, [size, selectedId, onClickOnMark, types]);
+  }, [size, selectedId, onClickOnMark, types, assignedMarkIds]);
 
   // back online: incremental refresh instead of a full reload (wave-5 `GET /marks/changes`)
   useEffect(() => {
@@ -281,10 +293,14 @@ const Map = observer(() => {
     return () => window.removeEventListener("online", onOnline);
   }, []);
 
+  const onlyMine = tasksStore.onlyMine;
   const points = useMemo(() => {
     const p: Feature[] = [];
     for (let i = 0; i < marks.length; i++) {
       const mark = marks[i];
+      if (onlyMine && !assignedMarkIds.has(mark.mark_id)) {
+        continue;
+      }
       p.push({
         geometry: mark.geom,
         type: "Feature",
@@ -295,7 +311,7 @@ const Map = observer(() => {
       })
     }
     return p
-  }, [marks]);
+  }, [marks, onlyMine, assignedMarkIds]);
 
   return (
     <>
@@ -315,6 +331,17 @@ const Map = observer(() => {
           >
             <YMapDefaultSchemeLayer customization={customization as VectorCustomization} />
             <YMapDefaultFeaturesLayer />
+
+            {/* own sources + layers so that boundaries < zones < marks < the draggable point, whatever the mount order */}
+            <YMapFeatureDataSource id="boundariesSource" />
+            <YMapLayer source="boundariesSource" type="features" zIndex={1800} />
+            <YMapFeatureDataSource id="userPolygonsSource" />
+            <YMapLayer source="userPolygonsSource" type="features" zIndex={1900} />
+            <YMapFeatureDataSource id="markerSource" />
+            <YMapLayer source="markerSource" type="markers" zIndex={2000} />
+            <YMapFeatureDataSource id="userSource" />
+            <YMapLayer source="userSource" type="markers" zIndex={2100} />
+
             {filteredBoundaries.map((boundary) => (
               <BoundaryItem
                 key={boundary.id}
@@ -348,14 +375,24 @@ const SelectedPoint = observer(() => {
 
   return (
     <>
-      {selectedPoint.visibility ?
+      {selectedPoint.visibility && selectedPoint.visibilityCircle &&
+        <YMapFeature
+          source="userPolygonsSource"
+          style={{
+            stroke: [{ color: selectedPoint.color, width: 1, opacity: 0.6 }],
+            fill: selectedPoint.color,
+            fillOpacity: 0.1,
+          }}
+          geometry={selectedPoint.circleGeom}
+        />
+      }
+      {selectedPoint.visibility &&
         <YMapDefaultMarker
+          source="userSource"
+          color={selectedPoint.color}
           coordinates={selectedPoint.coords}
           onDragMove={handleDragMoveHandler}
-          zIndex={1}
         />
-        :
-        <></>
       }
     </>
   );
@@ -413,6 +450,7 @@ const BoundaryItem = memo(function ({ boundary, count }: { boundary: AdminBounda
   const color = '#' + getColorPolygon(count);
   return (
     <YMapFeature
+      source="boundariesSource"
       style={{
         stroke: [
           {
@@ -517,6 +555,16 @@ const Filters = observer(() => {
                 onClick={() => heatmapStore.toggle()}
               />
             </div>
+            {user.id !== 0 &&
+              <div className="filters__content__block">
+                <FilterItem
+                  icon={<div style={{ height: "12px", width: "12px", borderRadius: "50%", backgroundColor: "#d3d3d3", border: "1px solid gray", outline: "2px dashed #1e6fff", outlineOffset: "1px" }}></div>}
+                  name={t("map.myTasks")}
+                  checked={tasksStore.onlyMine}
+                  onClick={() => tasksStore.toggleOnlyMine()}
+                />
+              </div>
+            }
             <div className="filters__content__block">
               <p><b>{t("map.statuses")}</b></p>
               {markStatusesStore.statuses.map((status) => (

@@ -130,17 +130,28 @@ export function TypeIcon({ typeId, type, color }: { typeId: number; type?: MarkT
   return <span className="type-glyph" style={{ color }} aria-hidden="true">{(type?.name ?? "?").slice(0, 1).toUpperCase()}</span>;
 }
 
-const MarkItem = memo(function ({ mark, type, size, selected, onClick }: { mark: Mark, type?: MarkType, size: MarkerSize, selected: boolean, onClick: (mark: Mark) => void }) {
+interface MarkItemProps {
+  mark: Mark;
+  type?: MarkType;
+  size: MarkerSize;
+  selected: boolean;
+  /** A task on this mark is assigned to the current user. */
+  assigned?: boolean;
+  onClick: (mark: Mark) => void;
+}
+
+const MarkItem = memo(function ({ mark, type, size, selected, assigned = false, onClick }: MarkItemProps) {
   const color = COLOR_MARK_STATUSES[mark.mark_status_id] ?? "#d3d3d3";
   const ring = typeColor(type);
 
   return (
     <YMapMarker
+      source="markerSource"
       coordinates={mark.geom.coordinates}
       onClick={() => { onClick(mark) }}
     >
       <div
-        className={`mark ${size} ${selected ? "selected" : ""} ${mark.hidden ? "hidden-mark" : ""}`}
+        className={`mark ${size} ${selected ? "selected" : ""} ${mark.hidden ? "hidden-mark" : ""} ${assigned ? "assigned" : ""}`}
         style={{ backgroundColor: color, boxShadow: ring ? `0 0 0 2px ${ring}` : undefined }}
         title={mark.hidden ? "hidden" : undefined}
       >
@@ -163,6 +174,7 @@ export default MarkItem;
 export function MarkerItem({ coordinates, color }: { coordinates: LngLat, color: string }) {
   return (
     <YMapMarker
+      source="markerSource"
       coordinates={coordinates}
     >
       <div className="mark medium" style={{ backgroundColor: color }}>

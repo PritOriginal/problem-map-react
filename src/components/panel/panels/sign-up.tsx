@@ -6,8 +6,10 @@ import { signIn } from "../../../services/session";
 import notificationsStore from "../../../store/notifications";
 import { Link, useNavigate } from "react-router-dom";
 import panelStore from "../../../store/panel";
+import selectedPoint, { HOME_ZONE_RADIUS_KM } from "../../../store/selected_point";
+import { observer } from "mobx-react-lite";
 
-export default function SignUp() {
+const SignUp = observer(function SignUp() {
     const { t } = useT();
     const panelHeaderRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -27,7 +29,11 @@ export default function SignUp() {
         const req: SignUpRequest = {
             username: username,
             login: login,
-            password: password
+            password: password,
+            home_point: {
+                type: "Point",
+                coordinates: [selectedPoint.coords[0], selectedPoint.coords[1]],
+            },
         }
 
         AuthService.signUp(req)
@@ -86,6 +92,11 @@ export default function SignUp() {
                     }}
                 />
                 <div>
+                    <p><b>{t("profile.homePoint")}</b></p>
+                    <p style={{ fontSize: "12px" }}>{t("auth.homePointHint", { radius: Math.round(HOME_ZONE_RADIUS_KM * 1000) })}</p>
+                    <p style={{ fontSize: "12px" }}>{t("auth.coords")}: {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}</p>
+                </div>
+                <div>
                     <Button style="white-2-black" onClick={onClick}>
                         <p>{t("nav.signUp")}</p>
                     </Button>
@@ -99,4 +110,6 @@ export default function SignUp() {
             </div>
         </>
     )
-}
+});
+
+export default SignUp;

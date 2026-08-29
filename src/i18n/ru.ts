@@ -66,6 +66,8 @@ export const ru = {
     "auth.signInError": "Ошибка авторизации",
     "auth.signUpError": "Не удалось зарегистрироваться",
     "auth.signOut": "Выйти из аккаунта",
+    "auth.homePointHint": "Перетащите синюю метку на карте — задания будут выдаваться в радиусе {radius} м",
+    "auth.coords": "Координаты",
 
     // map
     "map.addMark": "Отметить проблему",
@@ -86,6 +88,7 @@ export const ru = {
     "map.heatLegendAria": "Легенда тепловой карты",
     "map.heatLegendTitle": "Проблем в ячейке",
     "map.heatLegendEmpty": "Нет данных в этой области",
+    "map.myTasks": "Мои задания",
 
     // mark / problem card
     "mark.n": "№{id}",

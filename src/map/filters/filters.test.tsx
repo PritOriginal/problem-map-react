@@ -60,6 +60,17 @@ describe("Filters", () => {
         expect(panel()).toBeNull();
     });
 
+    it("opens from a real button, named for screen readers", () => {
+        renderPanel(<Filters />);
+
+        // A <button>, not a div dressed as one: the keyboard behaviour and the name are
+        // then the platform's rather than ours to reimplement.
+        const button = screen.getByRole("button", { name: t("map.filtersTitle") });
+        expect(button.tagName).toBe("BUTTON");
+        expect(button).toHaveAttribute("type", "button");
+        expect(button).toBe(roundButton());
+    });
+
     it("morphs the button into the panel and back", () => {
         renderPanel(<Filters />);
 

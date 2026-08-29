@@ -16,7 +16,6 @@ import heatmapStore from "../../store/heatmap";
 import tasksStore from "../../store/tasks";
 import user from "../../store/user";
 import { FILTERS_CLOSE_MS, FILTERS_OPEN_MS } from "../map-constants";
-import { buttonProps } from "../controls/map-buttons";
 import ExportLink from "../controls/export-link";
 
 import FilterIcon from "../../assets/filter.svg?react";
@@ -94,15 +93,17 @@ const Filters = observer(() => {
     return (
         <>
             {(!showFilters || phase !== null) &&
-                <div
+                <button
+                    type="button"
                     className={`circle-button filters-button${phase ? ` filters-button--${phase}` : ""}`}
                     title={t("map.filters")}
-                    {...buttonProps(t("map.filtersTitle"), open)}
+                    aria-label={t("map.filtersTitle")}
+                    onClick={open}
                 >
-                    <div className="circle-button__content">
+                    <span className="circle-button__content">
                         <FilterIcon style={{ transform: "translate(0, 2px)" }} />
-                    </div>
-                </div>
+                    </span>
+                </button>
             }
 
             {showFilters &&

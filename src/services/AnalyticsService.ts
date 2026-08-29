@@ -1,4 +1,4 @@
-import BaseService, { IResponse } from "./BaseService";
+import BaseService, { IResponse, unwrapList } from "./BaseService";
 
 export type TimeseriesStep = "day" | "week" | "month";
 
@@ -16,7 +16,10 @@ export interface Kpi {
     median_confirm_hours: number | null;
     avg_close_hours: number | null;
     refuted_share: number | null;
-    open_older_than_30d: number;
+    /** Not provided by the current backend (`models.KPI`); shown as 0 when absent. */
+    open_older_than_30d?: number;
+    sla_breach_share?: number | null;
+    by_organization?: { organization_id: number; name: string; total: number; overdue: number }[];
 }
 
 export interface TimeseriesPoint {
@@ -31,6 +34,7 @@ export interface GetKpiResponse extends IResponse {
     payload: Kpi;
 }
 
+/** `GET /analytics/timeseries` returns `{ timeseries: TimeseriesPoint[] }`; `payload` is unwrapped to the list. */
 export interface GetTimeseriesResponse extends IResponse {
     payload: TimeseriesPoint[];
 }
@@ -56,7 +60,8 @@ class AnalyticsService extends BaseService {
     }
 
     public getTimeseries(req: AnalyticsRequest, step: TimeseriesStep = "week"): Promise<GetTimeseriesResponse> {
-        return this.request<GetTimeseriesResponse>(`/api/analytics/timeseries?${analyticsParams(req, { step })}`);
+        return this.request<IResponse>(`/api/analytics/timeseries?${analyticsParams(req, { step })}`)
+            .then((res) => ({ ...res, payload: unwrapList<TimeseriesPoint>(res.payload, "timeseries") }));
     }
 }
 

@@ -2,6 +2,8 @@ import { LngLat } from "@yandex/ymaps3-types";
 import BaseService, { IResponse, withIdempotencyKey } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
 import { Check } from "./ChecksService";
+import { isRecord, unwrapList } from "./http";
+import { parseSimilarMarks } from "../utils/similar";
 
 
 export interface Mark {
@@ -42,6 +44,7 @@ export interface GetSimilarMarksRequest {
     radius?: number;
 }
 
+/** `GET /marks/similar` returns `{ marks: [...] }`; `payload` is unwrapped to the list. */
 export interface GetSimilarMarksResponse extends IResponse {
     payload: SimilarMark[];
 }
@@ -51,8 +54,11 @@ export interface UpdateMarkRequest {
     mark_type_id?: number;
 }
 
+/** `POST/DELETE /marks/{id}/follow` return `{ mark_id, following }`. */
 export interface FollowMarkResponse extends IResponse {
     payload?: {
+        mark_id?: number;
+        following?: boolean;
         followers_count?: number;
     };
 }
@@ -97,13 +103,8 @@ export type ExportFormat = "geojson" | "csv";
  * Wave-4 dictionaries come as `{ id, code, name }` (localized `name`); older backends
  * return `{ mark_type_id, name }` in `payload.mark_types`. Accept both shapes.
  */
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
-}
-
 function dictList(payload: unknown, legacyKey: string): Record<string, unknown>[] {
-    const list = Array.isArray(payload) ? payload : isRecord(payload) ? payload[legacyKey] : [];
-    return Array.isArray(list) ? list.filter(isRecord) : [];
+    return unwrapList<unknown>(payload, legacyKey).filter(isRecord);
 }
 
 function dictId(item: Record<string, unknown>, legacyKey: string): number {
@@ -271,7 +272,8 @@ class MarksService extends BaseService {
         if (req.radius !== undefined) {
             params.set("radius", String(req.radius));
         }
-        return this.request<GetSimilarMarksResponse>(`/api/marks/similar?${params}`);
+        return this.request<IResponse>(`/api/marks/similar?${params}`)
+            .then((res) => ({ ...res, payload: parseSimilarMarks(res.payload) }));
     }
 
     /**

@@ -1,4 +1,4 @@
-import BaseService, { IResponse } from "./BaseService";
+import BaseService, { IResponse, unwrapList } from "./BaseService";
 import { ListMeta } from "./http";
 
 /** User notification (`GET /notifications`). */
@@ -19,9 +19,10 @@ export interface GetNotificationsRequest {
     unread?: boolean;
 }
 
+/** `GET /notifications` returns `{ notifications: Notification[] }`; `payload` is unwrapped to the list. */
 export interface GetNotificationsResponse extends IResponse {
     payload: Notification[];
-    meta: ListMeta;
+    meta?: ListMeta;
 }
 
 export interface GetUnreadCountResponse extends IResponse {
@@ -43,7 +44,8 @@ class NotificationsService extends BaseService {
             params.set("unread", "true");
         }
         const query = params.toString();
-        return this.requestWithAuth<GetNotificationsResponse>(`/api/notifications${query ? `?${query}` : ""}`);
+        return this.requestWithAuth<IResponse>(`/api/notifications${query ? `?${query}` : ""}`)
+            .then((res) => ({ ...res, payload: unwrapList<Notification>(res.payload, "notifications") }));
     }
 
     public getUnreadCount(): Promise<GetUnreadCountResponse> {

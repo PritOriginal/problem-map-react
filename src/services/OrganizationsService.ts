@@ -1,4 +1,5 @@
-import BaseService, { IResponse } from "./BaseService";
+import BaseService, { IResponse, unwrapList, unwrapOne } from "./BaseService";
+import { isRecord } from "./http";
 import { ListMeta } from "./http";
 import { Mark } from "./MarksService";
 
@@ -8,10 +9,38 @@ export interface Organization {
     description?: string;
 }
 
-export interface GetMyOrganizationResponse extends IResponse {
-    payload: Organization;
+/**
+ * The backend identifies organizations by `id` (`models.OrganizationRef` / `OrganizationDetails`);
+ * older builds used `organization_id`. Accepts both and always fills `organization_id`.
+ */
+export function normalizeOrganization(raw: unknown): Organization | null {
+    if (!isRecord(raw)) {
+        return null;
+    }
+    const id = Number(raw.organization_id ?? raw.id);
+    if (!Number.isFinite(id)) {
+        return null;
+    }
+    return {
+        ...raw,
+        organization_id: id,
+        name: String(raw.name ?? ""),
+        description: typeof raw.description === "string" ? raw.description : undefined,
+    };
 }
 
+export function normalizeOrganizations(payload: unknown): Organization[] {
+    return unwrapList<unknown>(payload, "organizations")
+        .map(normalizeOrganization)
+        .filter((o): o is Organization => o !== null);
+}
+
+/** `GET /organizations/me` returns `{ organization: {...} }`; `payload` is unwrapped to the organization. */
+export interface GetMyOrganizationResponse extends IResponse {
+    payload: Organization | null;
+}
+
+/** `GET /organizations` returns `{ organizations: [...] }`; `payload` is unwrapped to the list. */
 export interface GetOrganizationsResponse extends IResponse {
     payload: Organization[];
 }
@@ -23,6 +52,7 @@ export interface GetOrganizationMarksRequest {
     offset?: number;
 }
 
+/** `GET /organizations/{id}/marks` returns `{ marks: Mark[] }`; `payload` is unwrapped to the list. */
 export interface GetOrganizationMarksResponse extends IResponse {
     payload: Mark[];
     meta?: ListMeta;
@@ -32,12 +62,14 @@ export interface GetOrganizationMarksResponse extends IResponse {
 class OrganizationsService extends BaseService {
     /** Organization of the signed-in service user (`GET /organizations/me`). */
     public getMe(): Promise<GetMyOrganizationResponse> {
-        return this.requestWithAuth<GetMyOrganizationResponse>("/api/organizations/me");
+        return this.requestWithAuth<IResponse>("/api/organizations/me")
+            .then((res) => ({ ...res, payload: normalizeOrganization(unwrapOne(res.payload, "organization")) }));
     }
 
     /** Dictionary of all organizations (`GET /organizations`). */
     public getOrganizations(): Promise<GetOrganizationsResponse> {
-        return this.request<GetOrganizationsResponse>("/api/organizations");
+        return this.request<IResponse>("/api/organizations")
+            .then((res) => ({ ...res, payload: normalizeOrganizations(res.payload) }));
     }
 
     /** Queue of marks assigned to the organization (`GET /organizations/{id}/marks`). */
@@ -56,7 +88,8 @@ class OrganizationsService extends BaseService {
             params.set("offset", String(req.offset));
         }
         const query = params.toString();
-        return this.requestWithAuth<GetOrganizationMarksResponse>(`/api/organizations/${organizationId}/marks${query ? `?${query}` : ""}`);
+        return this.requestWithAuth<IResponse>(`/api/organizations/${organizationId}/marks${query ? `?${query}` : ""}`)
+            .then((res) => ({ ...res, payload: unwrapList<Mark>(res.payload, "marks") }));
     }
 }
 

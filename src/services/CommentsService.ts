@@ -1,4 +1,4 @@
-import BaseService, { IResponse, withIdempotencyKey } from "./BaseService";
+import BaseService, { IResponse, unwrapList, unwrapOne, withIdempotencyKey } from "./BaseService";
 import { ListMeta } from "./http";
 
 /** Comment on a mark (backend integration/wave-5). Replies are one level deep (`parent_id`). */
@@ -22,6 +22,7 @@ export const COMMENT_EDIT_WINDOW_MS = 15 * 60_000;
 /** Maximum comment length accepted by the backend. */
 export const COMMENT_MAX_LENGTH = 2000;
 
+/** `GET /marks/{id}/comments` returns `{ comments: Comment[] }`; `payload` is unwrapped to the list. */
 export interface GetCommentsResponse extends IResponse {
     payload: Comment[];
     meta?: ListMeta;
@@ -32,22 +33,23 @@ export interface AddCommentRequest {
     parent_id?: number;
 }
 
+/** `POST /marks/{id}/comments` returns `{ comment: Comment }`; `payload` is unwrapped to the comment. */
 export interface AddCommentResponse extends IResponse {
-    payload: Comment | { comment_id: number };
+    payload: Comment | null;
 }
 
 class CommentsService extends BaseService {
     public getComments(markId: number, limit: number = 100, offset: number = 0): Promise<GetCommentsResponse> {
         return this.request<GetCommentsResponse>(`/api/marks/${markId}/comments?limit=${limit}&offset=${offset}`)
-            .then((res) => ({ ...res, payload: Array.isArray(res.payload) ? res.payload : [] }));
+            .then((res) => ({ ...res, payload: unwrapList<Comment>(res.payload, "comments") }));
     }
 
     public addComment(markId: number, req: AddCommentRequest, idempotencyKey?: string): Promise<AddCommentResponse> {
-        return this.requestWithAuth<AddCommentResponse>(`/api/marks/${markId}/comments`, withIdempotencyKey({
+        return this.requestWithAuth<IResponse>(`/api/marks/${markId}/comments`, withIdempotencyKey({
             method: "POST",
             headers: { "Content-Type": "application/json;charset=utf-8" },
             body: JSON.stringify(req),
-        }, idempotencyKey));
+        }, idempotencyKey)).then((res) => ({ ...res, payload: unwrapOne<Comment>(res.payload, "comment") }));
     }
 
     /** Author only, within `COMMENT_EDIT_WINDOW_MS` after creation. */

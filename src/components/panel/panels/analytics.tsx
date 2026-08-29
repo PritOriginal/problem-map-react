@@ -158,7 +158,7 @@ const StatTiles = observer(function StatTiles({ kpi }: { kpi: Kpi }) {
         <>
             <div className="stat-grid">
                 <StatTile value={kpi.total} label={t("analytics.total")} />
-                <StatTile value={kpi.open_older_than_30d} label={t("analytics.olderThan30")} />
+                <StatTile value={kpi.open_older_than_30d ?? 0} label={t("analytics.olderThan30")} />
                 <StatTile value={formatHours(kpi.avg_confirm_hours)} label={t("analytics.avgConfirm")} />
                 <StatTile value={formatHours(kpi.median_confirm_hours)} label={t("analytics.medianConfirm")} />
                 <StatTile value={formatHours(kpi.avg_close_hours)} label={t("analytics.avgClose")} />

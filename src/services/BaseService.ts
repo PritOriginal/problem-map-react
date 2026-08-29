@@ -3,6 +3,7 @@ import { ensureAccessToken, getAccessToken, refreshTokens, signOut } from "./tok
 import { getLang, t } from "../i18n";
 
 export type { IResponse } from "./http";
+export { unwrapList, unwrapOne } from "./http";
 
 class BaseService {
     /** Performs a request and parses the response; rejects with ApiError on failure. */
@@ -71,7 +72,26 @@ class BaseService {
     }
 }
 
-const ETAG_PREFIX = "etag:";
+/**
+ * Versioned so a body cached by an older build (which stored a different payload shape,
+ * e.g. bare lists) is never served to newer code; stale versions are purged on first use.
+ */
+const ETAG_PREFIX = "etag:v2:";
+const ETAG_LEGACY_PREFIX = "etag:";
+
+/** Drops entries written under an older `ETAG_PREFIX` (a handful of keys at most, so it runs per read). */
+function purgeStaleEtagEntries(): void {
+    try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(ETAG_LEGACY_PREFIX) && !key.startsWith(ETAG_PREFIX)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch {
+        // ignore
+    }
+}
 /**
  * localStorage is ~5 MB per origin and shared with the tokens: bodies above this size (e.g. admin
  * boundaries with full geometry) are not cached, the request then simply goes without `If-None-Match`.
@@ -84,6 +104,7 @@ interface EtagEntry<T> {
 }
 
 function readEtagEntry<T>(key: string): EtagEntry<T> | null {
+    purgeStaleEtagEntries();
     try {
         const raw = localStorage.getItem(key);
         if (!raw) {
@@ -114,7 +135,7 @@ export function clearEtagCache(): void {
     try {
         for (let i = localStorage.length - 1; i >= 0; i--) {
             const key = localStorage.key(i);
-            if (key && key.startsWith(ETAG_PREFIX)) {
+            if (key && key.startsWith(ETAG_LEGACY_PREFIX)) {
                 localStorage.removeItem(key);
             }
         }

@@ -1,4 +1,4 @@
-import BaseService, { IResponse } from "./BaseService";
+import BaseService, { IResponse, unwrapList } from "./BaseService";
 import { ListMeta } from "./http";
 import { Mark } from "./MarksService";
 
@@ -39,6 +39,7 @@ export interface GetQueueRequest {
     offset?: number;
 }
 
+/** `GET /moderation/queue` returns `{ reports: Report[] }`; `payload` is unwrapped to the list. */
 export interface GetQueueResponse extends IResponse {
     payload: Report[];
     meta?: ListMeta;
@@ -72,7 +73,7 @@ class ReportsService extends BaseService {
         }
         const query = params.toString();
         return this.requestWithAuth<GetQueueResponse>(`/api/moderation/queue${query ? `?${query}` : ""}`)
-            .then((res) => ({ ...res, payload: Array.isArray(res.payload) ? res.payload : [] }));
+            .then((res) => ({ ...res, payload: unwrapList<Report>(res.payload, "reports") }));
     }
 
     /** Moderator/admin: closes a complaint. */

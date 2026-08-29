@@ -1,5 +1,6 @@
 import { PointGeometry } from "@yandex/ymaps3-types";
-import BaseService, { IResponse } from "./BaseService";
+import BaseService, { IResponse, unwrapList, unwrapOne } from "./BaseService";
+import { isRecord } from "./http";
 import { ListMeta } from "./http";
 import { Role } from "../utils/role";
 import { parseProfile } from "../utils/profile";
@@ -31,8 +32,9 @@ export interface UserStats {
     tasks_completed: number;
 }
 
+/** `GET /users/{id}/stats` returns `{ stats: {...} }`; `payload` is unwrapped to the stats (null when absent). */
 export interface GetUserStatsResponse extends IResponse {
-    payload: UserStats;
+    payload: UserStats | null;
 }
 
 export interface LeaderboardEntry {
@@ -44,6 +46,10 @@ export interface LeaderboardEntry {
     badges_count?: number;
 }
 
+/**
+ * `GET /leaderboard` returns `{ leaderboard: [...] }` with `level` as a `models.Level` object;
+ * `payload` is unwrapped to the list and `level` reduced to its number.
+ */
 export interface GetLeaderboardResponse extends IResponse {
     payload: LeaderboardEntry[];
     meta?: ListMeta;
@@ -93,8 +99,24 @@ export interface GetProfileResponse extends IResponse {
     payload: UserProfile;
 }
 
+/** `GET /badges` returns `{ badges: [...] }`; `payload` is unwrapped to the list. */
 export interface GetBadgesResponse extends IResponse {
     payload: BadgeInfo[];
+}
+
+/** Accepts `level` as a number or as `{ number, name, next_threshold }`. */
+export function normalizeLeaderboard(payload: unknown): LeaderboardEntry[] {
+    return unwrapList<unknown>(payload, "leaderboard").filter(isRecord).map((raw) => {
+        const level = isRecord(raw.level) ? raw.level.number : raw.level;
+        return {
+            ...raw,
+            user_id: Number(raw.user_id),
+            username: String(raw.username ?? ""),
+            rating: typeof raw.rating === "number" ? raw.rating : Number(raw.rating ?? 0),
+            level: typeof level === "number" ? level : undefined,
+            badges_count: typeof raw.badges_count === "number" ? raw.badges_count : undefined,
+        };
+    });
 }
 
 class UsersService extends BaseService {
@@ -103,11 +125,13 @@ class UsersService extends BaseService {
     }
 
     public getMyStats(): Promise<GetUserStatsResponse> {
-        return this.requestWithAuth<GetUserStatsResponse>("/api/users/me/stats");
+        return this.requestWithAuth<IResponse>("/api/users/me/stats")
+            .then((res) => ({ ...res, payload: unwrapOne<UserStats>(res.payload, "stats") }));
     }
 
     public getUserStats(id: number): Promise<GetUserStatsResponse> {
-        return this.request<GetUserStatsResponse>(`/api/users/${id}/stats`);
+        return this.request<IResponse>(`/api/users/${id}/stats`)
+            .then((res) => ({ ...res, payload: unwrapOne<UserStats>(res.payload, "stats") }));
     }
 
     public getLeaderboard(req: GetLeaderboardRequest = {}): Promise<GetLeaderboardResponse> {
@@ -120,8 +144,8 @@ class UsersService extends BaseService {
         }
         params.set("limit", String(req.limit ?? 50));
         params.set("offset", String(req.offset ?? 0));
-        return this.request<GetLeaderboardResponse>(`/api/leaderboard?${params}`)
-            .then((res) => ({ ...res, payload: Array.isArray(res.payload) ? res.payload : [] }));
+        return this.request<IResponse>(`/api/leaderboard?${params}`)
+            .then((res) => ({ ...res, payload: normalizeLeaderboard(res.payload) }));
     }
 
     public getProfile(id: number): Promise<GetProfileResponse> {
@@ -136,8 +160,8 @@ class UsersService extends BaseService {
 
     /** Catalogue of all badges (`GET /badges`). */
     public getBadges(): Promise<GetBadgesResponse> {
-        return this.requestCached<GetBadgesResponse>("/api/badges")
-            .then((res) => ({ ...res, payload: Array.isArray(res.payload) ? res.payload : [] }));
+        return this.requestCached<IResponse>("/api/badges")
+            .then((res) => ({ ...res, payload: unwrapList<BadgeInfo>(res.payload, "badges") }));
     }
 }
 

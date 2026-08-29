@@ -24,6 +24,8 @@ export const en: Partial<Dictionary> = {
     "common.loading": "Loading…",
     "common.cancel": "Cancel",
     "common.close": "Close",
+    "panel.expand": "Expand the panel",
+    "panel.collapse": "Collapse the panel",
     "common.save": "Save",
     "common.saving": "Saving…",
     "common.delete": "Delete",

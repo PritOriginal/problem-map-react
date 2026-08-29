@@ -28,6 +28,8 @@ export const ru = {
     "common.loading": "Загрузка…",
     "common.cancel": "Отмена",
     "common.close": "Закрыть",
+    "panel.expand": "Развернуть панель",
+    "panel.collapse": "Свернуть панель",
     "common.save": "Сохранить",
     "common.saving": "Сохраняем…",
     "common.delete": "Удалить",

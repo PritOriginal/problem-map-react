@@ -51,7 +51,7 @@ const AddCheck = observer(function AddCheck() {
                     if (res.queued) {
                         notificationsStore.showError(null, t("offline.checkQueued"));
                     } else {
-                        marksStore.fetch();
+                        marksStore.sync();
                         adminBoundariesStore.fetchMarksCount();
                         tasksStore.fetch();
                     }

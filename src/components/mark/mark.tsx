@@ -38,13 +38,8 @@ export const TypeMarkIcons: TypeMarkIcons = {
 export function Trash({ color }: { color: string }) {
   return (
     <TrashIcon
-      style={{
-        minWidth: "16px",
-        maxWidth: "16px",
-        minHeight: "16px",
-        maxHeight: "16px",
-        fill: color
-      }}
+      className="type-svg"
+      style={{ fill: color }}
     />
   );
 }
@@ -52,13 +47,8 @@ export function Trash({ color }: { color: string }) {
 export function Trees({ color }: { color: string }) {
   return (
     <TreeIcon
-      style={{
-        minWidth: "16px",
-        maxWidth: "16px",
-        minHeight: "16px",
-        maxHeight: "16px",
-        fill: color
-      }}
+      className="type-svg"
+      style={{ fill: color }}
     />
   );
 }
@@ -66,13 +56,8 @@ export function Trees({ color }: { color: string }) {
 export function Road({ color }: { color: string }) {
   return (
     <RoadIcon
-      style={{
-        minWidth: "16px",
-        maxWidth: "16px",
-        minHeight: "16px",
-        maxHeight: "16px",
-        fill: color
-      }}
+      className="type-svg"
+      style={{ fill: color }}
     />
   );
 }
@@ -80,13 +65,8 @@ export function Road({ color }: { color: string }) {
 export function Blob({ color }: { color: string }) {
   return (
     <BlobIcon
-      style={{
-        minWidth: "16px",
-        maxWidth: "16px",
-        minHeight: "16px",
-        maxHeight: "16px",
-        fill: color
-      }}
+      className="type-svg"
+      style={{ fill: color }}
     />
   )
 }
@@ -94,13 +74,8 @@ export function Blob({ color }: { color: string }) {
 export function Sign({ color }: { color: string }) {
   return (
     <SignIcon
-      style={{
-        minWidth: "16px",
-        maxWidth: "16px",
-        minHeight: "16px",
-        maxHeight: "16px",
-        fill: color
-      }}
+      className="type-svg"
+      style={{ fill: color }}
     />
   )
 }

@@ -205,4 +205,27 @@ describe("service payloads match the backend contract", () => {
         clearEtagCache();
         expect(localStorage.getItem("etag:v2:ru:/api/badges")).toBeNull();
     });
+
+    it("GET /organizations and GET /tasks/statuses go through the ETag cache, anonymously", async () => {
+        fetchMock.mockResolvedValue(jsonResponse({ success: true, payload: { organizations: [{ id: 5, name: "ЖКХ" }] } }, 200, { ETag: '"o1"' }));
+        expect((await OrganizationsService.getOrganizations()).payload[0]).toMatchObject({ organization_id: 5, name: "ЖКХ" });
+        const [orgsUrl, orgsInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+        expect(orgsUrl).toBe("/api/organizations");
+        expect(new Headers(orgsInit.headers).get("Authorization")).toBeNull();
+        expect(localStorage.getItem("etag:v2:ru:/api/organizations")).not.toBeNull();
+
+        // the second call revalidates and a 304 is answered from the stored body
+        fetchMock.mockResolvedValue(new Response(null, { status: 304 }));
+        const cached = await OrganizationsService.getOrganizations();
+        expect(new Headers((fetchMock.mock.calls[1] as [string, RequestInit])[1].headers).get("If-None-Match")).toBe('"o1"');
+        expect(cached.payload[0]).toMatchObject({ organization_id: 5, name: "ЖКХ" });
+
+        fetchMock.mockResolvedValue(jsonResponse({ success: true, payload: { task_statuses: [{ id: 1, code: "assigned", name: "Выдано" }] } }, 200, { ETag: '"s1"' }));
+        expect((await TasksService.getTaskStatuses()).payload[0].code).toBe("assigned");
+        const [statusesUrl, statusesInit] = fetchMock.mock.calls[2] as [string, RequestInit];
+        expect(statusesUrl).toBe("/api/tasks/statuses");
+        expect(new Headers(statusesInit.headers).get("Authorization")).toBeNull();
+        expect(new Headers(statusesInit.headers).get("Accept-Language")).toBe("ru");
+        expect(localStorage.getItem("etag:v2:ru:/api/tasks/statuses")).not.toBeNull();
+    });
 });

@@ -34,9 +34,8 @@ const Analytics = observer(function Analytics() {
     const { t } = useT();
 
     useEffect(() => {
-        if (adminBoundariesStore.boundaries.length === 0 && !adminBoundariesStore.isLoadingBoundaries) {
-            adminBoundariesStore.fetchBoundaries();
-        }
+        // the store loads once and shares an in-flight request, so this reuses the map's data
+        adminBoundariesStore.fetchBoundaries();
         if (markStatusesStore.statuses.length === 0 && !markStatusesStore.isLoading) {
             markStatusesStore.fetch();
         }

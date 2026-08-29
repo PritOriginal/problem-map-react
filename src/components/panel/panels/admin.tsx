@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
@@ -6,6 +6,7 @@ import markTypesStore from "../../../store/mark-types";
 import AdminService, { AddMarkTypeRequest, AdminMarkType, AdminSettings, ApiKey, CreatedApiKey, UpdateMarkTypeRequest } from "../../../services/AdminService";
 import { SETTINGS_FIELDS, getPath, normalizeSettings, setPath, validateSettings } from "../../../utils/admin-settings";
 import { isHexColor } from "../../../utils/mark-types";
+import { useAsyncData } from "../../../utils/use-async-data";
 import { Button } from "../../button/button";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
@@ -60,28 +61,20 @@ const SettingsForm = function SettingsForm() {
     const [pending, setPending] = useState(false);
     const [ok, setOk] = useState(false);
 
+    // The loaded settings seed two pieces of state -- the saved copy and the editable
+    // form -- so the answer is copied into them once rather than read from `data`.
+    const { data: loaded } = useAsyncData(
+        (signal) => AdminService.getSettings({ signal }).then((res) => normalizeSettings(res.payload)),
+        [],
+        { errorMessage: t("admin.settingsLoadFailed") },
+    );
+
     useEffect(() => {
-        let ignore = false;
-        AdminService.getSettings()
-            .then((data) => {
-                if (!ignore) {
-                    const s = normalizeSettings(data.payload);
-                    setSaved(s);
-                    setForm(s);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("admin.settingsLoadFailed"));
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        if (loaded) {
+            setSaved(loaded);
+            setForm(loaded);
+        }
+    }, [loaded]);
 
     if (!form || !saved) {
         return <p className="empty-state">{t("common.loading")}</p>;
@@ -170,43 +163,21 @@ const EMPTY_TYPE: AddMarkTypeRequest = { code: "", name_ru: "", name_en: "", ico
 
 const MarkTypesTable = function MarkTypesTable() {
     const { t } = useT();
-    const [types, setTypes] = useState<AdminMarkType[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [adding, setAdding] = useState(false);
-    const [version, setVersion] = useState(0);
-    const reload = useCallback(() => {
-        setVersion((v) => v + 1);
+
+    const { data, isLoading, reload: reloadTypes } = useAsyncData(
+        (signal) => AdminService.getMarkTypes({ signal }).then((res) => res.payload),
+        [],
+        { errorMessage: t("admin.types.loadFailed") },
+    );
+    const types: AdminMarkType[] = data ?? [];
+
+    const reload = () => {
+        reloadTypes();
         // the public dictionary (map markers / filters) follows the change: forced, since the
         // store keeps what it already loaded and would otherwise skip the request
         markTypesStore.fetch(true);
-    }, []);
-
-    useEffect(() => {
-        let ignore = false;
-        setIsLoading(true);
-        AdminService.getMarkTypes()
-            .then((data) => {
-                if (!ignore) {
-                    setTypes(data.payload);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("admin.types.loadFailed"));
-            })
-            .finally(() => {
-                if (!ignore) {
-                    setIsLoading(false);
-                }
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [version]);
+    };
 
     return (
         <div className="admin-form">
@@ -368,34 +339,17 @@ function MarkTypeEditor({ initial, isNew = false, sortOrder = 0, active = true, 
 
 const ApiKeysBlock = function ApiKeysBlock() {
     const { t, lang } = useT();
-    const [keys, setKeys] = useState<ApiKey[]>([]);
     const [name, setName] = useState("");
     const [created, setCreated] = useState<CreatedApiKey | null>(null);
     const [copied, setCopied] = useState(false);
     const [pending, setPending] = useState<string | null>(null);
-    const [version, setVersion] = useState(0);
-    const reload = useCallback(() => setVersion((v) => v + 1), []);
 
-    useEffect(() => {
-        let ignore = false;
-        AdminService.getApiKeys()
-            .then((data) => {
-                if (!ignore) {
-                    setKeys(data.payload);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("admin.keys.loadFailed"));
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [version]);
+    const { data, reload } = useAsyncData(
+        (signal) => AdminService.getApiKeys({ signal }).then((res) => res.payload),
+        [],
+        { errorMessage: t("admin.keys.loadFailed") },
+    );
+    const keys: ApiKey[] = data ?? [];
 
     const create = () => {
         const keyName = name.trim();

@@ -5,7 +5,7 @@ import notificationsStore from "../../../store/notifications";
 import adminBoundariesStore from "../../../store/admin-boundaries";
 import markStatusesStore from "../../../store/mark-statuses";
 import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesStep } from "../../../services/AnalyticsService";
-import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, toIsoDate, yTicks } from "../../../utils/chart";
+import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, pointX, pointY, toIsoDate, yTicks } from "../../../utils/chart";
 
 const SERIES_META: { key: keyof Omit<TimeseriesPoint, "period">; label: string; color: string }[] = [
     { key: "created", label: "Создано", color: "#1f77b4" },
@@ -184,8 +184,6 @@ export function LineChart({ points }: { points: TimeseriesPoint[] }) {
     const rawMax = series.reduce((m, s) => Math.max(m, ...s.values), 0);
     const yMax = niceMax(rawMax);
     const ticks = yTicks(yMax);
-    const innerH = height - padding.top - padding.bottom;
-    const innerW = width - padding.left - padding.right;
 
     if (points.length === 0) {
         return <p style={{ fontSize: 14 }}>Нет данных за период</p>;
@@ -197,7 +195,7 @@ export function LineChart({ points }: { points: TimeseriesPoint[] }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label="График динамики проблем" style={{ background: "white", border: "1px solid rgb(201, 201, 201)" }}>
                 {ticks.map((t) => {
-                    const y = padding.top + innerH - (innerH * t) / yMax;
+                    const y = pointY(t, yMax, layout);
                     return (
                         <g key={t}>
                             <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#e5e5e5" strokeWidth={1} />
@@ -209,7 +207,7 @@ export function LineChart({ points }: { points: TimeseriesPoint[] }) {
                     if (i % labelEvery !== 0 && i !== points.length - 1) {
                         return null;
                     }
-                    const x = padding.left + (points.length === 1 ? innerW / 2 : (innerW * i) / (points.length - 1));
+                    const x = pointX(i, points.length, layout);
                     return (
                         <text key={p.period} x={x} y={height - 6} fontSize={8} textAnchor="middle" fill="#555">{periodLabel(p.period)}</text>
                     );
@@ -217,11 +215,15 @@ export function LineChart({ points }: { points: TimeseriesPoint[] }) {
                 {series.map((s) => (
                     <polyline key={s.key} points={linePoints(s.values, yMax, layout)} fill="none" stroke={s.color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
                 ))}
+                {/* a polyline with a single point is invisible: draw a dot per series instead */}
+                {points.length === 1 && series.map((s) => (
+                    <circle key={s.key} cx={pointX(0, 1, layout)} cy={pointY(s.values[0], yMax, layout)} r={3} fill={s.color} />
+                ))}
             </svg>
             <div className="chart-legend">
                 {series.map((s) => (
                     <div key={s.key} className="chart-legend__item">
-                        <i style={{ backgroundColor: s.color }} />
+                        <i style={{ backgroundColor: s.color }} aria-hidden="true" />
                         {s.label}
                     </div>
                 ))}

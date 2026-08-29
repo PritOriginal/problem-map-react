@@ -85,7 +85,19 @@ const NotificationRow = observer(function NotificationRow({ item }: { item: Noti
         );
     }
     return (
-        <div className={`profile-list__item ${unread ? "unread" : ""}`} onClick={onOpen}>
+        <div
+            className={`profile-list__item ${unread ? "unread" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-label={unread ? "Отметить прочитанным" : undefined}
+            onClick={onOpen}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onOpen();
+                }
+            }}
+        >
             {content}
         </div>
     );

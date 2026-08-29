@@ -26,8 +26,11 @@ class InboxStore {
         }
         try {
             const response = await NotificationsService.getUnreadCount();
+            if (user.id === 0) {
+                return; // signed out while the request was in flight
+            }
             runInAction(() => {
-                this.unreadCount = response.payload.count;
+                this.unreadCount = response.payload?.count ?? 0;
             });
         } catch (error) {
             // the counter is auxiliary: do not spam the banner on each poll
@@ -43,6 +46,9 @@ class InboxStore {
         this.error = null;
         try {
             const response = await NotificationsService.getNotifications({ limit, offset });
+            if (user.id === 0) {
+                return; // signed out while the request was in flight (state was reset by stopPolling)
+            }
             runInAction(() => {
                 this.items = response.payload ?? [];
                 this.total = response.meta?.total ?? this.items.length;
@@ -51,6 +57,9 @@ class InboxStore {
             // the list is paginated: the badge is authoritative from the counter endpoint
             this.fetchUnreadCount();
         } catch (error) {
+            if (user.id === 0) {
+                return;
+            }
             console.error(error);
             runInAction(() => {
                 this.error = notificationsStore.showError(error, "Не удалось загрузить уведомления");
@@ -116,6 +125,7 @@ class InboxStore {
         this.items = [];
         this.total = 0;
         this.unreadCount = 0;
+        this.isLoading = false;
         this.error = null;
     }
 }

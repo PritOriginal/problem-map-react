@@ -169,8 +169,6 @@ const Map = observer(() => {
     selectedPoint.setCoords(o.location.center);
   }, [scheduleHeatmap]);
 
-
-
   const flyTo = useCallback((center: LngLat, minZoom: number) => {
     map?.setLocation({
       center,
@@ -385,7 +383,7 @@ const HeatmapLegend = observer(() => {
       {features.length === 0 && !isLoading && <p className="heatmap-legend__empty">Нет данных в этой области</p>}
       {steps.map((step) => (
         <div key={step.label} className="heatmap-legend__row">
-          <i style={{ backgroundColor: step.color }} />
+          <i style={{ backgroundColor: step.color }} aria-hidden="true" />
           <span>{step.label}</span>
         </div>
       ))}
@@ -530,7 +528,7 @@ function FilterItem({ icon, name, checked, onClick }: { icon: JSX.Element, name:
         name=""
         id={id}
         checked={checked}
-        onClick={onClick}
+        onChange={onClick}
       />
       {icon}
       <p>{name}</p>

@@ -37,25 +37,37 @@ export function linePoints(values: number[], yMax: number, layout: ChartLayout):
     if (n === 0) {
         return "";
     }
-    const { width, height, padding } = layout;
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
     return values
-        .map((v, i) => {
-            const x = padding.left + (n === 1 ? innerW / 2 : (innerW * i) / (n - 1));
-            const y = padding.top + innerH - (innerH * Math.max(0, v)) / (yMax || 1);
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-        })
+        .map((v, i) => `${pointX(i, n, layout).toFixed(1)},${pointY(v, yMax, layout).toFixed(1)}`)
         .join(" ");
 }
 
-/** Y tick values (0 .. yMax) for a given number of steps. */
+/**
+ * Y tick values (0 .. yMax) for a given number of steps. For small integer maxima the number
+ * of steps is reduced so that the rounded tick labels stay unique (`0, 1, 2` instead of `0, 0, 1, 1, 2`).
+ */
 export function yTicks(yMax: number, steps: number = 4): number[] {
+    const safeMax = Number.isFinite(yMax) && yMax > 0 ? yMax : 1;
+    const n = Math.max(1, Math.min(steps, Math.floor(safeMax)));
     const ticks: number[] = [];
-    for (let i = 0; i <= steps; i++) {
-        ticks.push((yMax * i) / steps);
+    for (let i = 0; i <= n; i++) {
+        ticks.push((safeMax * i) / n);
     }
     return ticks;
+}
+
+/** X coordinate of the i-th of `n` points; a single point is centered. */
+export function pointX(i: number, n: number, layout: ChartLayout): number {
+    const { width, padding } = layout;
+    const innerW = width - padding.left - padding.right;
+    return padding.left + (n === 1 ? innerW / 2 : (innerW * i) / (n - 1));
+}
+
+/** Y coordinate of a value scaled into the layout (negative values are clamped to 0). */
+export function pointY(value: number, yMax: number, layout: ChartLayout): number {
+    const { height, padding } = layout;
+    const innerH = height - padding.top - padding.bottom;
+    return padding.top + innerH - (innerH * Math.max(0, value)) / (yMax || 1);
 }
 
 /** Short period label: `2026-08-17` -> `17.08`, `2026-08` -> `08.26`; other strings are returned as is. */

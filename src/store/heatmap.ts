@@ -21,8 +21,11 @@ class HeatmapStore {
     setEnabled = (enabled: boolean) => {
         this.enabled = enabled;
         if (!enabled) {
+            // invalidate in-flight requests so a late response does not repopulate a disabled layer
+            this.requestId++;
             this.features = [];
             this.maxCount = 0;
+            this.isLoading = false;
             this.lastKey = "";
         }
     }
@@ -46,7 +49,7 @@ class HeatmapStore {
         this.isLoading = true;
         try {
             const response = await MapService.getHeatmap({ bbox, cell_m: cellM, mark_type_ids: [...mark_type_ids], mark_status_ids: [...mark_status_ids] });
-            if (id !== this.requestId) {
+            if (id !== this.requestId || !this.enabled) {
                 return;
             }
             runInAction(() => {

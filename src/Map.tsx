@@ -12,9 +12,7 @@ import {
   YMapFeatureDataSource,
 } from "ymap3-components";
 
-import customization from './customization.json'
-import customizationDark from './customization-dark.json'
-import { useTheme } from './theme'
+import { type ResolvedTheme, useTheme } from './theme'
 
 import { AdminBoundary, AdminBoundaryMarksCount } from './services/MapService';
 import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -117,12 +115,48 @@ const getColorPolygon = (count: AdminBoundaryMarksCount) => {
   }
 }
 
+/**
+ * The two basemap style sheets are 250 kB of JSON between them and exactly one of
+ * them is ever used, so they are fetched for the theme in force instead of being
+ * built into the entry chunk -- they were, on their own, more than a third of it.
+ *
+ * The scheme layer stays mounted throughout and simply takes the style when it
+ * lands: unmounting it while the JSON is in flight would reorder the map's layers
+ * against the sources declared under it. In practice the JSON arrives well before
+ * the map does -- the Yandex SDK itself is a network fetch made after this one.
+ */
+function useMapCustomization(resolvedTheme: ResolvedTheme): VectorCustomization | undefined {
+  const [customization, setCustomization] = useState<VectorCustomization>();
+
+  useEffect(() => {
+    let ignore = false;
+    const loading = resolvedTheme === "dark"
+      ? import('./customization-dark.json')
+      : import('./customization.json');
+    loading
+      .then((module) => {
+        if (!ignore) {
+          setCustomization(module.default as VectorCustomization);
+        }
+      })
+      // A basemap in the SDK's default colours is a far better outcome than a
+      // crash, so a failed style fetch is logged and left at that.
+      .catch((error) => console.error(error));
+    return () => {
+      ignore = true;
+    };
+  }, [resolvedTheme]);
+
+  return customization;
+}
+
 const Map = observer(() => {
   const { isMobile } = useDeviceDetect();
   const { t } = useT();
   // The basemap has to follow the theme too: dark chrome around a bright map
   // reads as a hole punched in the page.
   const { resolved: resolvedTheme } = useTheme();
+  const customization = useMapCustomization(resolvedTheme);
 
   const location = useLocation();
   const navigate = useNavigateKeepSearch();
@@ -348,7 +382,7 @@ const Map = observer(() => {
             // dark-on-dark and the black wordmark disappears into the basemap.
             theme={resolvedTheme}
           >
-            <YMapDefaultSchemeLayer customization={(resolvedTheme === "dark" ? customizationDark : customization) as VectorCustomization} />
+            <YMapDefaultSchemeLayer customization={customization} />
             <YMapDefaultFeaturesLayer />
 
             {/* own sources + layers so that boundaries < zones < marks < the draggable point, whatever the mount order */}

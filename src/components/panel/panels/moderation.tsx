@@ -210,7 +210,7 @@ const ReportCard = observer(function ReportCard({ report, onDone }: { report: Re
                         onDone={(target) => {
                             setMerging(false);
                             setMark({ ...mark, merged_into_id: target.mark_id, mark_status_id: MarkStatusType.DuplicateStatus });
-                            marksStore.fetch();
+                            marksStore.sync();
                             onDone();
                         }}
                     />

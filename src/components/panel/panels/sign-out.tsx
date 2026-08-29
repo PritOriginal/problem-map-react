@@ -5,12 +5,14 @@ import { signOut } from "../../../services/tokens";
 import { Link, To } from "react-router-dom";
 import panelStore from "../../../store/panel";
 import notificationsStore from "../../../store/notifications";
-import UsersService, { CurrentUser, UserStats } from "../../../services/UsersService";
+import UsersService, { CurrentUser, UserProfile, UserStats } from "../../../services/UsersService";
+import { BadgesBlock, LevelBlock } from "../../profile/profile-blocks";
+import { useBadgeCatalogue } from "../../../utils/badges";
 import MarksService, { Mark } from "../../../services/MarksService";
 import ChecksService, { Check } from "../../../services/ChecksService";
 import { StatTile } from "../../stat-tile/stat-tile";
 import markTypesStore from "../../../store/mark-types";
-import { TypeMarkIcons } from "../../mark/mark";
+import { TypeIcon } from "../../mark/mark";
 import { MarkBadges } from "../../badges/badges";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import organizationsStore from "../../../store/organizations";
@@ -43,7 +45,9 @@ const Profile = observer(function Profile() {
     const [marks, setMarks] = useState<Mark[]>([]);
     const [checks, setChecks] = useState<Check[]>([]);
     const [stats, setStats] = useState<UserStats | null>(null);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const catalogue = useBadgeCatalogue();
 
     const userId = user.id;
 
@@ -58,7 +62,8 @@ const Profile = observer(function Profile() {
             MarksService.getMarksByUserId(userId),
             ChecksService.getChecksByUserId(userId),
             UsersService.getMyStats(),
-        ]).then(([meRes, marksRes, checksRes, statsRes]) => {
+            UsersService.getMyProfile(),
+        ]).then(([meRes, marksRes, checksRes, statsRes, profileRes]) => {
             if (ignore) {
                 return;
             }
@@ -89,6 +94,13 @@ const Profile = observer(function Profile() {
                 // stats require backend integration/wave-3; keep the rest of the profile usable
                 console.error(statsRes.reason);
                 setStats(null);
+            }
+            if (profileRes.status === "fulfilled") {
+                setProfile(profileRes.value.payload);
+            } else {
+                // level/badges require backend integration/wave-5
+                console.error(profileRes.reason);
+                setProfile(null);
             }
         });
         organizationsStore.fetch();
@@ -124,7 +136,16 @@ const Profile = observer(function Profile() {
                         {me?.home_point &&
                             <p><b>{t("profile.homePoint")}:</b> {me.home_point.coordinates[1].toFixed(6)}, {me.home_point.coordinates[0].toFixed(6)}</p>
                         }
+                        <Link to={toKeepSearch(`/users/${userId}`)} style={{ fontSize: 14 }}>{t("profile.openPublic")}</Link>
                         <hr />
+                        {profile &&
+                            <>
+                                <LevelBlock rating={profile.rating} level={profile.level} />
+                                <p style={{ fontSize: 18 }}><b>{t("profile.badges")}</b> ({profile.badges.length})</p>
+                                <BadgesBlock badges={profile.badges} catalogue={catalogue} />
+                                <hr />
+                            </>
+                        }
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
                             <p style={{ fontSize: 18 }}><b>{t("profile.stats")}</b></p>
                             <Link to={toKeepSearch("/leaderboard")} style={{ fontSize: 14 }}>{t("profile.leaderboardLink")}</Link>
@@ -175,11 +196,10 @@ function StatsBlock({ stats }: { stats: UserStats }) {
 const MarkRow = observer(function MarkRow({ mark, to }: { mark: Mark, to: To }) {
     const { t, lang } = useT();
     const type = markTypesStore.types.find((t) => t.mark_type_id === mark.mark_type_id);
-    const Icon = TypeMarkIcons[mark.mark_type_id];
     return (
         <Link className="profile-list__item" to={to}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                {Icon && Icon({ color: "#000" })}
+                <TypeIcon typeId={mark.mark_type_id} type={type} color="#000" />
                 <p style={{ fontSize: 14 }}><b>{t("mark.n", { id: mark.mark_id })}</b> {type?.name ?? ""}</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>

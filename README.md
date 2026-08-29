@@ -61,3 +61,14 @@ npm run lint   # ESLint
 npm test       # vitest
 npm run build  # tsc + vite build
 ```
+
+## Требует бэкенд integration/wave-3
+
+Функции ниже написаны по контрактам ветки бэкенда `integration/wave-3` и без неё будут показывать ошибки загрузки / недоступность (остальной интерфейс работает):
+
+- Уведомления: колокольчик в шапке (`GET /notifications/unread-count`, поллинг раз в 60 с), панель `/notifications` (`GET /notifications`, `PATCH /notifications/{id}/read`, `PATCH /notifications/read-all`).
+- Профиль: блок «Статистика» (`GET /users/me/stats`); страница `/leaderboard` (`GET /leaderboard?limit=50`).
+- Создание метки: проверка похожих (`GET /marks/similar?lon&lat&mark_type_id`), обработка `409` с `payload.similar_marks`, повтор с `POST /marks?force=true`.
+- Карточка своей неподтверждённой метки: `PATCH /marks/{id}` (описание/тип), `DELETE /marks/{id}`; кнопка «Следить/Слежу» (`POST/DELETE /marks/{id}/follow`, поля `followers_count`, `is_following` в `Mark`).
+- Тепловая карта: переключатель в фильтрах, `GET /map/heatmap?bbox&cell_m&mark_type_ids&mark_status_ids` (`cell_m`: zoom ≤12 → 1000, 13–14 → 500, ≥15 → 250).
+- Дашборд `/analytics`: `GET /analytics/kpi`, `GET /analytics/timeseries?step=day|week|month` (фильтр по району из `admin-boundaries` и периоду).

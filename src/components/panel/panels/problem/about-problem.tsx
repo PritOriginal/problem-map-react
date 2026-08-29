@@ -20,6 +20,7 @@ import { CommentsCount, DuplicateBadge, HiddenBadge } from "../../../badges/badg
 import { STATUS_COLORS, STATUS_FALLBACK } from "../../../../styles/tokens";
 import { layerDepths, layerSpans, spanLabel } from "../../../../utils/history-column";
 import { useNow } from "../../../../utils/hooks";
+import { useAsyncData } from "../../../../utils/use-async-data";
 import "./history-column.scss";
 import "./mark-actions.scss";
 import "./checks.scss";
@@ -30,7 +31,11 @@ const AboutProblem = observer(function AboutProblem() {
 
     const mark = useContext(MarkContext)
     const reload = useContext(MarkReloadContext)
-    const [historyItems, setHistoryItems] = useState<MarkStatusHistoryItem[]>([])
+    const { data: historyItems = [] } = useAsyncData<MarkStatusHistoryItem[]>(
+        (signal) => MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true, { signal }).then((res) => res.payload.items),
+        [mark],
+        { enabled: mark.mark_id !== 0, errorMessage: t("mark.historyLoadFailed") },
+    );
 
     const groups: MarkStatusHistoryItem[][] = []
     let groupHistoryItems: MarkStatusHistoryItem[] = []
@@ -69,30 +74,6 @@ const AboutProblem = observer(function AboutProblem() {
             }
         });
     }
-
-    useEffect(() => {
-        if (mark.mark_id === 0) {
-            return;
-        }
-        let ignore = false;
-        MarksService.getMarkStatusHistoryByMarkId(mark.mark_id, true)
-            .then((data) => {
-                if (!ignore) {
-                    setHistoryItems(data.payload.items);
-                }
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("mark.historyLoadFailed"));
-            });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mark])
 
     const handleOnClickNewCheck = () => {
         navigate(`/problem/${mark.mark_id}/add-check`)

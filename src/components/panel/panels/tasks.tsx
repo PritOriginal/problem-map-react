@@ -1,8 +1,7 @@
-import { KeyboardEvent, useEffect, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { LngLat } from "@yandex/ymaps3-types";
 import user from "../../../store/user";
-import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
 import taskStatusesStore from "../../../store/task-statuses";
 import selectedMark from "../../../store/selected_mark";
@@ -15,6 +14,7 @@ import { TypeIcon } from "../../mark/mark";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { deadlineState, formatDateTime, formatDeadline } from "../../../utils/deadline";
 import { useNow } from "../../../utils/hooks";
+import { useAsyncData } from "../../../utils/use-async-data";
 import { mapWithLimit } from "../../../utils/concurrency";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
@@ -38,57 +38,43 @@ const TasksPanel = observer(function TasksPanel() {
 
     const userId = user.id;
     const [tab, setTab] = useState<TabKey>("current");
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [marks, setMarks] = useState<Record<number, Mark>>({});
-    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        if (userId === 0) {
-            return;
-        }
-        let ignore = false;
-        setIsLoading(true);
-        const statuses = TABS.find((x) => x.key === tab)!.statuses;
-        TasksService.getUserTasks(userId, { statuses, limit: TASKS_LIMIT, offset: 0 })
-            .then(async (data) => {
-                if (ignore) {
-                    return;
-                }
-                const list = data.payload ?? [];
-                setTasks(list);
-                // marks are loaded per task (there is no batch endpoint); failures leave the card without details
-                const ids = Array.from(new Set(list.map((task) => task.mark_id)));
-                const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id));
-                if (ignore) {
-                    return;
-                }
-                const byId: Record<number, Mark> = {};
-                loaded.forEach((res, index) => {
-                    if (res.status === "fulfilled") {
-                        byId[ids[index]] = res.value.payload.mark;
-                    } else {
-                        console.error(res.reason);
-                    }
-                });
-                setMarks(byId);
-            })
-            .catch((error) => {
-                if (ignore) {
-                    return;
-                }
-                console.error(error);
-                notificationsStore.showError(error, t("tasks.loadFailed"));
-            })
-            .finally(() => {
-                if (!ignore) {
-                    setIsLoading(false);
+    const { data, isLoading } = useAsyncData(
+        (signal) => {
+            const statuses = TABS.find((x) => x.key === tab)!.statuses;
+            return TasksService
+                .getUserTasks(userId, { statuses, limit: TASKS_LIMIT, offset: 0 }, { signal })
+                .then((res) => res.payload ?? []);
+        },
+        [userId, tab],
+        { enabled: userId !== 0, errorMessage: t("tasks.loadFailed") },
+    );
+    const tasks: Task[] = useMemo(() => data ?? [], [data]);
+
+    // Marks are loaded per task (there is no batch endpoint) in a second pass, so the
+    // cards appear with the tasks and fill in as their marks arrive. A failure leaves a
+    // single card without its mark block, and the banner stays for the tasks request.
+    // The key is the id list itself: a re-read that returns the same tasks must not
+    // re-request every mark.
+    const markIds = useMemo(
+        () => Array.from(new Set(tasks.map((task) => task.mark_id))).join(","),
+        [tasks],
+    );
+    const { data: marks } = useAsyncData(
+        async (signal) => {
+            const ids = markIds.split(",").map(Number);
+            const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id, { signal }));
+            const byId: Record<number, Mark> = {};
+            loaded.forEach((res, index) => {
+                if (res.status === "fulfilled") {
+                    byId[ids[index]] = res.value.payload.mark;
                 }
             });
-        return () => {
-            ignore = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId, tab]);
+            return byId;
+        },
+        [markIds],
+        { enabled: markIds !== "", silent: true },
+    );
 
     useEffect(() => {
         if (userId !== 0) {
@@ -138,7 +124,7 @@ const TasksPanel = observer(function TasksPanel() {
                             {isLoading && tasks.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
                             {!isLoading && tasks.length === 0 && <p className="empty-state">{t("tasks.empty")}</p>}
                             <div className="profile-list">
-                                {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks[task.mark_id]} />)}
+                                {tasks.map((task) => <TaskCard key={task.task_id} task={task} mark={marks?.[task.mark_id]} />)}
                             </div>
                         </div>
                     </>

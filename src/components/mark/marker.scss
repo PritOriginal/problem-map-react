@@ -54,3 +54,9 @@
 .mark.hidden-mark {
   opacity: 0.45;
 }
+
+/* a task on this mark is assigned to the current user */
+.mark.assigned {
+  outline: 3px dashed #1e6fff;
+  outline-offset: 2px;
+}

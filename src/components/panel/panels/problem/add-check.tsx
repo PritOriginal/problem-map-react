@@ -12,6 +12,7 @@ import marksStore from "../../../../store/marks";
 import adminBoundariesStore from "../../../../store/admin-boundaries";
 import notificationsStore from "../../../../store/notifications";
 import offlineQueueStore from "../../../../store/offline-queue";
+import tasksStore from "../../../../store/tasks";
 import { toQueuedPhotos } from "../../../../offline/queue";
 
 const AddCheck = observer(function AddCheck() {
@@ -51,7 +52,8 @@ const AddCheck = observer(function AddCheck() {
                         notificationsStore.showError(null, t("offline.checkQueued"));
                     } else {
                         marksStore.fetch();
-                        adminBoundariesStore.fetchMarksCount()
+                        adminBoundariesStore.fetchMarksCount();
+                        tasksStore.fetch();
                     }
                     navigate(`/problem/${mark.mark_id}`)
                 })

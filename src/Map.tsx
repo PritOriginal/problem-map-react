@@ -282,9 +282,11 @@ const Map = observer(() => {
     </YMapMarker>
   ), []);
 
-  const selectedId = selectedMark.id;
-  const types = markTypesStore.types;
   const assignedMarkIds = tasksStore.assignedMarkIds;
+  // Selection and assignment are NOT read here: `MarkItem` is an observer and
+  // reads them itself, so this callback keeps its identity across a click and
+  // the clusterer does not rebuild every marker.
+  const types = markTypesStore.types;
   const marker = useCallback((feature: Feature) => {
     const mark = feature.properties!.mark as Mark;
     return (
@@ -292,12 +294,10 @@ const Map = observer(() => {
         mark={mark}
         type={types.find((x) => x.mark_type_id === mark.mark_type_id)}
         size={size}
-        selected={mark.mark_id === selectedId}
-        assigned={assignedMarkIds.has(mark.mark_id)}
         onClick={onClickOnMark}
       />
     );
-  }, [size, selectedId, onClickOnMark, types, assignedMarkIds]);
+  }, [size, onClickOnMark, types]);
 
   // back online: incremental refresh instead of a full reload (wave-5 `GET /marks/changes`)
   useEffect(() => {

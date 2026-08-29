@@ -2,8 +2,10 @@ import { LngLat } from "@yandex/ymaps3-types";
 import { YMapMarker } from "ymap3-components";
 
 import "./marker.scss"
-import { memo } from "react";
+import { observer } from "mobx-react-lite";
 import { Mark, MarkType } from "../../services/MarksService";
+import selectedMark from "../../store/selected_mark";
+import tasksStore from "../../store/tasks";
 import { typeColor, typeIcon } from "../../utils/mark-types";
 import { MARKER_ICON, statusColors, STATUS_FALLBACK } from "../../styles/tokens";
 import { useTheme } from "../../theme";
@@ -123,14 +125,21 @@ interface MarkItemProps {
   mark: Mark;
   type?: MarkType;
   size: MarkerSize;
-  selected: boolean;
-  /** A task on this mark is assigned to the current user. */
-  assigned?: boolean;
   onClick: (mark: Mark) => void;
 }
 
-const MarkItem = memo(function ({ mark, type, size, selected, assigned = false, onClick }: MarkItemProps) {
+/**
+ * A single map marker.
+ *
+ * Selection and "assigned to me" are read from the stores here rather than passed
+ * down: as props they would change the identity of the `marker` callback the
+ * clusterer is given, and every click would rebuild every marker. As observed
+ * state they repaint exactly the two markers that changed.
+ */
+const MarkItem = observer(function MarkItem({ mark, type, size, onClick }: MarkItemProps) {
   const { resolved } = useTheme();
+  const selected = selectedMark.id === mark.mark_id;
+  const assigned = tasksStore.assignedMarkIds.has(mark.mark_id);
   const color = statusColors(resolved)[mark.mark_status_id] ?? STATUS_FALLBACK;
   const ring = typeColor(type);
 

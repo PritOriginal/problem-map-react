@@ -1,0 +1,154 @@
+// The photo picker.
+//
+// Empty it is a zone that names what it wants; with photos in it, a row of
+// thumbnails and the two ways to add another. The two routes are not decoration:
+// the case this app is built for is someone standing in front of the problem
+// with a phone, and only `capture="environment"` opens the camera directly.
+
+.photo-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    // The empty state. It used to be a 72px square with a plus in it -- the one
+    // field the form cannot be submitted without, promising nothing.
+    &__zone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: var(--space-8) var(--space-6);
+
+        color: var(--ink-muted);
+        background-color: var(--paper);
+        // Dashed: a slot to fill, not a photo.
+        border: 1px dashed var(--rule-hover);
+        border-radius: var(--radius-3);
+    }
+
+    &__title {
+        margin-top: var(--space-3);
+        font-size: var(--fs-small);
+        font-weight: 500;
+        color: var(--ink);
+    }
+
+    &__limit {
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-4);
+        margin-top: var(--space-5);
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+    }
+
+    &__foot &__actions {
+        margin-top: 0;
+    }
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: 8px 12px;
+
+        font-family: var(--font-body);
+        font-size: var(--fs-small);
+        color: var(--ink);
+
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-2);
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--rule-hover);
+        }
+
+        // Taking the photo now is the path this product exists for, so it is the
+        // one that carries the accent.
+        &--key {
+            font-weight: 600;
+            color: var(--paper);
+            background-color: var(--accent-ink);
+            border-color: var(--accent-ink);
+
+            &:hover {
+                background-color: var(--accent);
+                border-color: var(--accent);
+            }
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+    }
+
+    &__count {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+    }
+
+    &__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+    }
+
+    &__item {
+        position: relative;
+    }
+
+    // 72px square. The old picker drew 100x150 placeholders, so two photos filled
+    // the panel's width and the rest scrolled off sideways.
+    &__thumb {
+        display: block;
+        width: 72px;
+        height: 72px;
+        object-fit: cover;
+        border-radius: var(--radius-2);
+        background-color: var(--placeholder);
+    }
+
+    // Removing one was impossible before: the picker held its own copy of the
+    // list, and picking again replaced everything rather than adding to it.
+    &__remove {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        line-height: 1;
+        font-size: var(--fs-caption);
+        color: var(--on-chrome);
+        background-color: var(--chrome);
+        border: 1px solid var(--rule-chrome);
+        border-radius: var(--radius-round);
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--alert);
+            border-color: var(--alert);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+    }
+}

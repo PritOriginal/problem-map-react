@@ -182,28 +182,6 @@
     }
 }
 
-.photo {
-    background-color: var(--placeholder);
-    max-height: 150px;
-    min-height: 150px;
-
-    &.add {
-        min-width: 100px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: var(--fs-jumbo);
-
-        cursor: pointer;
-        transition: all 0.2s ease-in-out;
-
-        &:hover {
-            color: var(--on-chrome);
-            background-color: var(--ink);
-        }
-    }
-}
-
 .profile-list {
     display: flex;
     flex-direction: column;

@@ -213,9 +213,7 @@ function ResolveForm({ mark, onCancel, onDone }: { mark: Mark; onCancel: () => v
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <p><b>{t("org.resolveTitle", { id: mark.mark_id })}</b></p>
             <p style={{ fontSize: 13 }}>{t("common.photos")}</p>
-            <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-                <SelectFiles onSelectedFiles={setPhotos} />
-            </div>
+            <SelectFiles files={photos} onChange={setPhotos} />
             <p style={{ fontSize: 13 }}>{t("common.comment")}</p>
             <textarea
                 className="edit-multiline-text"

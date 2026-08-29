@@ -80,9 +80,7 @@ const AddCheck = observer(function AddCheck() {
                     <h2 className="section-title">{t("check.title")}</h2>
 
                     <p><b>{t("common.photos")}</b></p>
-                    <div style={{ display: "flex", gap: "8px", width: "100%", overflow: "scroll" }}>
-                        <SelectFiles onSelectedFiles={onSelectedFile} />
-                    </div>
+                    <SelectFiles files={photos} onChange={onSelectedFile} />
 
                     <p><b>{t("common.comment")}</b></p>
                     <textarea

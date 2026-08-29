@@ -43,14 +43,14 @@ export interface AddMarkRequest {
 }
 
 /**
- * Converts ymaps3 `LngLat` (= [lng, lat]) into the point fields the backend expects.
- * ВНИМАНИЕ: намеренная «перестановка». Бэкенд (handler/marks AddMark) собирает точку как
- * geom.Coord{Latitude, Longitude}, т.е. кладёт поле latitude в X (долгота), а longitude — в Y (широта).
- * Чтобы в БД оказалась корректная точка (X=lng, Y=lat), поля отправляются крест-накрест.
- * Если бэкенд исправят на Coord{Longitude, Latitude} — поменять индексы местами только здесь.
+ * Converts ymaps3 `LngLat` (= [lng, lat]) into the point fields the backend expects:
+ * longitude = coords[0], latitude = coords[1] (natural order).
+ * ВНИМАНИЕ: требует бэкенд с фиксом `fix/coords-lonlat` (handler/marks AddMark собирает
+ * точку как Coord{Longitude, Latitude}). На старом бэкенде, который клал поле latitude в X,
+ * метки будут перепутаны местами (lng/lat).
  */
 export function toApiPoint([lng, lat]: LngLat): Point {
-    return { longitude: lat, latitude: lng };
+    return { longitude: lng, latitude: lat };
 }
 
 export interface AddMarkResponse extends IResponse {

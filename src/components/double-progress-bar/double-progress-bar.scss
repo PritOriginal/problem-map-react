@@ -40,38 +40,24 @@
 
     &__side {
         display: flex;
-        align-items: center;
+        align-items: stretch;
         width: 50%;
-        font-family: var(--font-mono);
-        font-size: var(--fs-caption);
-        font-weight: 700;
-        font-variant-numeric: tabular-nums;
-        color: var(--ink-muted);
     }
 
     &__fill {
-        display: flex;
-        align-items: center;
         height: 100%;
         min-width: 0;
         transition: width var(--dur-slow) var(--ease);
     }
 
-    &__count {
-        padding: 0 var(--space-3);
-        white-space: nowrap;
-    }
-
     // Refuting weighs to the left, confirming to the right: the beam tips the way
-    // the evidence does.
+    // the evidence does. Each fill is anchored at the fulcrum and grows outward.
     &__side--refute {
         justify-content: flex-end;
 
         .vote-beam__fill {
-            justify-content: flex-start;
             background-color: var(--vote-reject);
             border-radius: var(--radius-1) 0 0 var(--radius-1);
-            color: var(--paper);
         }
     }
 
@@ -79,17 +65,43 @@
         justify-content: flex-start;
 
         .vote-beam__fill {
-            justify-content: flex-end;
             background-color: var(--vote-confirm);
             border-radius: 0 var(--radius-1) var(--radius-1) 0;
-            color: var(--ink);
         }
     }
 
     &__labels {
         display: flex;
         justify-content: space-between;
+        gap: var(--space-4);
         font-size: var(--fs-caption);
         color: var(--ink-muted);
+    }
+
+    &__label {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-3);
+    }
+
+    // The tally, sized to be read rather than decoded, and always on the panel
+    // surface -- never on a coloured fill whose width it cannot control.
+    &__count {
+        font-family: var(--font-mono);
+        font-size: var(--fs-body);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+    }
+
+    // --danger-ink, not --vote-reject: the latter is a FILL colour and measures
+    // 4.37:1 as 14px text on the dark card, just under AA. The ink tokens are the
+    // text-weight pair and clear 7:1 in both themes.
+    &__count--refute {
+        color: var(--danger-ink);
+    }
+
+    &__count--confirm {
+        color: var(--success-ink);
     }
 }

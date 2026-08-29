@@ -1,0 +1,105 @@
+// Sign in / sign up.
+//
+// The fields all carried the same `id="sku_edit"` and `name="sku"`, copied from
+// wherever they were pasted in. Duplicate ids break the label-to-field link and
+// autofill, and a field named "sku" tells a password manager nothing. They now
+// get ids from useId and names the browser understands.
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    &__label {
+        font-size: var(--fs-micro);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-faint);
+    }
+
+    &__hint {
+        font-size: var(--fs-caption);
+        line-height: 1.4;
+        color: var(--ink-muted);
+    }
+
+    &__coords {
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        letter-spacing: -0.02em;
+        color: var(--ink-muted);
+    }
+
+    // The one action of the screen. It was set as the secondary style: white
+    // with a hairline border, indistinguishable from "cancel".
+    &__submit {
+        width: 100%;
+        padding: 11px;
+        font-family: var(--font-body);
+        font-size: var(--fs-base);
+        font-weight: 600;
+        color: var(--paper);
+        background-color: var(--accent-ink);
+        border: 0;
+        border-radius: var(--radius-2);
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+            background-color: var(--accent);
+        }
+
+        &:disabled {
+            background-color: var(--disabled-bg);
+            color: var(--ink-faint);
+            cursor: not-allowed;
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+    }
+
+    // The other road, stated as a road rather than as a sentence with a link
+    // buried in it.
+    &__alt {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: var(--fs-small);
+        color: var(--ink);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-2);
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--rule-hover);
+        }
+    }
+
+    &__or {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+
+        &::before,
+        &::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: var(--rule);
+        }
+    }
+}

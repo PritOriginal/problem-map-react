@@ -17,6 +17,7 @@ import SelectFiles from "../../SelectFiles";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { useT } from "../../../i18n";
 import "../../badges/badges.scss";
+import PanelHeader from "../panel-header";
 
 const ORG_QUEUE_LIMIT = 100;
 
@@ -101,10 +102,7 @@ const OrgPanel = observer(function OrgPanel() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{org?.name ?? t("org.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{org?.description || t("org.title")}</p>
-            </div>
+            <PanelHeader openOnMount title={org?.name ?? t("org.title")} subtitle={org?.description || t("org.title")} />
             <div className="panel__content">
                 {!isService ?
                     <UnauthorizedBlock text={t("unauth.org")} />

@@ -1,7 +1,6 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { StatTile } from "../../stat-tile/stat-tile";
 import { observer } from "mobx-react-lite";
-import panelStore from "../../../store/panel";
 import notificationsStore from "../../../store/notifications";
 import adminBoundariesStore from "../../../store/admin-boundaries";
 import markStatusesStore from "../../../store/mark-statuses";
@@ -9,6 +8,7 @@ import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesSte
 import { TranslationKey, useT } from "../../../i18n";
 import { SERIES_COLORS } from "../../../styles/tokens";
 import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, pointX, pointY, toIsoDate, yTicks } from "../../../utils/chart";
+import PanelHeader from "../panel-header";
 
 const SERIES_META: { key: keyof Omit<TimeseriesPoint, "period">; label: TranslationKey; color: string }[] = [
     { key: "created", label: "analytics.series.created", color: SERIES_COLORS.created },
@@ -32,13 +32,6 @@ function defaultRange(days: number): { from: string; to: string } {
 
 const Analytics = observer(function Analytics() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
 
     useEffect(() => {
         if (adminBoundariesStore.boundaries.length === 0 && !adminBoundariesStore.isLoadingBoundaries) {
@@ -101,10 +94,7 @@ const Analytics = observer(function Analytics() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("analytics.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("analytics.subtitle")}</p>
-            </div>
+            <PanelHeader openOnMount title={t("analytics.title")} subtitle={t("analytics.subtitle")} />
             <div className="panel__content">
                 <div className="analytics-controls">
                     <label style={{ gridColumn: "1 / -1" }}>

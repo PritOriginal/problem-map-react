@@ -94,20 +94,6 @@
         }
     }
 
-    // "вы" was appended to the name as text in brackets. It is a mark on the
-    // author, not part of what they are called.
-    &__you {
-        font-style: normal;
-        font-size: var(--fs-micro);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        line-height: 1.5;
-        padding: 0 5px;
-        color: var(--accent-ink);
-        border: 1px solid var(--accent);
-        border-radius: 999px;
-    }
-
     &__date {
         margin-left: auto;
         font-family: var(--font-mono);

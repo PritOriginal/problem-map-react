@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { LngLat } from "@yandex/ymaps3-types";
-import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
@@ -17,6 +16,7 @@ import { REASON_LABELS } from "../../../utils/report";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
+import PanelHeader from "../panel-header";
 
 const QUEUE_LIMIT = 100;
 
@@ -35,13 +35,6 @@ const TARGET_LABELS: Record<ReportTargetType, TranslationKey> = {
 /** `/moderation`: the report queue with mark actions (moderator/admin, backend integration/wave-5). */
 const ModerationPanel = observer(function ModerationPanel() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
 
     const [status, setStatus] = useState<ReportStatus>("open");
     const [targetType, setTargetType] = useState<ReportTargetType | "">("");
@@ -84,10 +77,7 @@ const ModerationPanel = observer(function ModerationPanel() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("moderation.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("moderation.subtitle")}</p>
-            </div>
+            <PanelHeader openOnMount title={t("moderation.title")} subtitle={t("moderation.subtitle")} />
             <div className="panel__content">
                 {!isModerator ?
                     <p className="empty-state">{t("moderation.unavailable")}</p>

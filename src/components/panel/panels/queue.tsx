@@ -1,6 +1,4 @@
-import { useEffect, useRef } from "react";
 import { observer } from "mobx-react-lite";
-import panelStore from "../../../store/panel";
 import offlineQueueStore from "../../../store/offline-queue";
 import user from "../../../store/user";
 import { Button } from "../../button/button";
@@ -9,18 +7,12 @@ import { useOnline } from "../../../utils/hooks";
 import { localeOf, useT } from "../../../i18n";
 import type { QueuedItem } from "../../../offline/types";
 import "../../badges/badges.scss";
+import PanelHeader from "../panel-header";
 
 /** `/queue`: pending offline requests with a manual "Send" (backend integration/wave-5). */
 const QueuePanel = observer(function QueuePanel() {
     const { t, lang } = useT();
     const online = useOnline();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
 
     const items = offlineQueueStore.pending;
 
@@ -37,39 +29,56 @@ const QueuePanel = observer(function QueuePanel() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("offline.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("offline.queued", { count: items.length })}</p>
-            </div>
+            <PanelHeader
+                openOnMount
+                title={t("offline.title")}
+                subtitle={t("offline.queued", { count: items.length })}
+                count={items.length}
+                actions={user.id !== 0 &&
+                    <button
+                        type="button"
+                        className="panel__header__act"
+                        disabled={!online || offlineQueueStore.isFlushing || items.length === 0}
+                        onClick={() => offlineQueueStore.flush()}
+                    >
+                        {t(offlineQueueStore.isFlushing ? "offline.sending" : "offline.send")}
+                    </button>
+                }
+            />
             <div className="panel__content">
                 {user.id === 0 ?
                     <UnauthorizedBlock text={t("unauth.profile")} />
                     :
                     <>
-                        <div className="task-card__actions">
-                            <Button style="primary" disabled={!online || offlineQueueStore.isFlushing || items.length === 0} onClick={() => offlineQueueStore.flush()}>
-                                {t(offlineQueueStore.isFlushing ? "offline.sending" : "offline.send")}
-                            </Button>
-                        </div>
                         {items.length === 0 && <p className="empty-state">{t("offline.empty")}</p>}
-                        <div className="profile-list">
-                            {items.map((item) => (
-                                <div key={item.id} className={`task-card ${item.last_error ? "overdue" : ""}`}>
-                                    <div className="task-card__row">
-                                        <p style={{ fontSize: 14 }}><b>{label(item)}</b></p>
-                                        <span className="data" style={{ fontSize: 12, color: "var(--ink-muted)" }}>{new Date(item.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}</span>
+                        {items.length > 0 &&
+                            <div className="list-rows">
+                                {items.map((item) => (
+                                    <div key={item.id} className={`list-row${item.last_error ? " list-row--alert" : ""}`}>
+                                        {/* The rule down the left says "this one failed",
+                                            which the row otherwise only admitted in small
+                                            red text at the bottom. */}
+                                        <span className="list-row__mark" aria-hidden="true" />
+                                        <span className="list-row__main">
+                                            <span className="list-row__top">
+                                                <b>{label(item)}</b>
+                                                <time className="list-row__time" dateTime={item.created_at}>
+                                                    {new Date(item.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" })}
+                                                </time>
+                                            </span>
+                                            {item.payload.kind === "mark" && item.payload.description && <span className="list-row__body">{item.payload.description}</span>}
+                                            {item.payload.kind === "check" && item.payload.comment && <span className="list-row__body">{item.payload.comment}</span>}
+                                            {item.payload.kind === "comment" && <span className="list-row__body">{item.payload.body}</span>}
+                                            {"photos" in item.payload && item.payload.photos.length > 0 && <span className="list-row__ref">{t("common.photos")}: {item.payload.photos.length}</span>}
+                                            {item.last_error && <span className="list-row__error">{item.last_error} · {t("offline.attempts", { n: item.attempts })}</span>}
+                                            <span className="list-row__actions">
+                                                <Button style="secondary" isMini disabled={offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.remove(item.id)}>{t("offline.remove")}</Button>
+                                            </span>
+                                        </span>
                                     </div>
-                                    {item.payload.kind === "mark" && item.payload.description && <p className="task-card__desc">{item.payload.description}</p>}
-                                    {item.payload.kind === "check" && item.payload.comment && <p className="task-card__desc">{item.payload.comment}</p>}
-                                    {item.payload.kind === "comment" && <p className="task-card__desc">{item.payload.body}</p>}
-                                    {"photos" in item.payload && item.payload.photos.length > 0 && <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>{t("common.photos")}: {item.payload.photos.length}</p>}
-                                    {item.last_error && <p style={{ fontSize: 12, color: "var(--danger-ink)" }}>{item.last_error} · {t("offline.attempts", { n: item.attempts })}</p>}
-                                    <div className="task-card__actions">
-                                        <Button style="secondary" isMini disabled={offlineQueueStore.isFlushing} onClick={() => offlineQueueStore.remove(item.id)}>{t("offline.remove")}</Button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        }
                     </>
                 }
             </div>

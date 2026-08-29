@@ -68,6 +68,10 @@ export const en: Partial<Dictionary> = {
     "unauth.tasks": "Sign in to see your tasks",
     "unauth.org": "The service desk is available to organization staff only",
 
+    "auth.signInWhy": "So you can report problems and follow them",
+    "auth.signUpWhy": "Report problems in your city and see what happens to them",
+    "auth.loginPlaceholder": "Your login",
+    "auth.or": "or",
     "auth.signInTitle": "Sign in",
     "auth.signUpTitle": "Sign up",
     "auth.login": "Login",

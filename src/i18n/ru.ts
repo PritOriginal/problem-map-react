@@ -74,6 +74,10 @@ export const ru = {
     "unauth.org": "Кабинет службы доступен только сотрудникам организаций",
 
     // auth
+    "auth.signInWhy": "Чтобы отмечать проблемы и следить за ними",
+    "auth.signUpWhy": "Отмечайте проблемы города и следите, что с ними стало",
+    "auth.loginPlaceholder": "Ваш логин",
+    "auth.or": "или",
     "auth.signInTitle": "Вход в аккаунт",
     "auth.signUpTitle": "Регистрация",
     "auth.login": "Логин",

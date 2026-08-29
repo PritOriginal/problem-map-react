@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
-import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import notificationsStore from "../../../store/notifications";
 import markTypesStore from "../../../store/mark-types";
@@ -11,6 +10,7 @@ import { Button } from "../../button/button";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import "./admin.scss";
+import PanelHeader from "../panel-header";
 
 type TabKey = "settings" | "types" | "keys";
 
@@ -23,22 +23,12 @@ const TABS: { key: TabKey; label: TranslationKey }[] = [
 /** `/admin`: settings, problem types and API keys (role admin, backend integration/wave-5). */
 const AdminPanel = observer(function AdminPanel() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
     const [tab, setTab] = useState<TabKey>("settings");
     const isAdmin = user.id !== 0 && user.role === "admin";
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("admin.title")}</b></p>
-                <p style={{ fontSize: 12 }}>{t("admin.subtitle")}</p>
-            </div>
+            <PanelHeader openOnMount title={t("admin.title")} subtitle={t("admin.subtitle")} />
             <div className="panel__content">
                 {!isAdmin ?
                     <p className="empty-state">{t("admin.unavailable")}</p>

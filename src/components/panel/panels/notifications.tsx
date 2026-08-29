@@ -1,24 +1,18 @@
-import { useEffect, useRef } from "react";
-import { localeOf, useT } from "../../../i18n";
+import { useEffect } from "react";
+import { TranslationKey, localeOf, useT } from "../../../i18n";
+import { useNow } from "../../../utils/hooks";
+import { relativeTime } from "../../../utils/relative-time";
 import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
-import panelStore from "../../../store/panel";
 import user from "../../../store/user";
 import inboxStore from "../../../store/inbox";
 import { Notification } from "../../../services/NotificationsService";
 import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
-import { Button } from "../../button/button";
 import { useToKeepSearch } from "../../../utils/navigation";
+import PanelHeader from "../panel-header";
 
 const NotificationsPanel = observer(function NotificationsPanel() {
     const { t } = useT();
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight);
-            panelStore.setOpen(true);
-        }
-    }, []);
 
     const userId = user.id;
     useEffect(() => {
@@ -31,27 +25,33 @@ const NotificationsPanel = observer(function NotificationsPanel() {
 
     return (
         <>
-            <div ref={panelHeaderRef} className="panel__header" onClick={() => panelStore.toggle()}>
-                <p><b>{t("notifications.title")}</b>{unreadCount > 0 && <span style={{ fontSize: 12 }}> {t("notifications.new", { count: unreadCount })}</span>}</p>
-            </div>
+            <PanelHeader
+                openOnMount
+                title={t("notifications.title")}
+                count={unreadCount}
+                actions={userId !== 0 &&
+                    <>
+                        <button type="button" className="panel__header__act" disabled={unreadCount === 0} onClick={inboxStore.markAllRead}>
+                            {t("notifications.readAll")}
+                        </button>
+                        <button type="button" className="panel__header__act" disabled={isLoading} onClick={() => inboxStore.fetch()}>
+                            {t("common.refresh")}
+                        </button>
+                    </>
+                }
+            />
             <div className="panel__content">
                 {userId === 0 ?
                     <UnauthorizedBlock text={t("unauth.notifications")} />
                     :
                     <>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                            <Button style="secondary" isMini disabled={unreadCount === 0} onClick={inboxStore.markAllRead}>
-                                {t("notifications.readAll")}
-                            </Button>
-                            <Button style="secondary" isMini disabled={isLoading} onClick={() => inboxStore.fetch()}>
-                                {t("common.refresh")}
-                            </Button>
-                        </div>
                         {isLoading && items.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
                         {!isLoading && items.length === 0 && <p className="empty-state">{t("notifications.empty")}</p>}
-                        <div className="profile-list">
-                            {items.map((n) => <NotificationRow key={n.id} item={n} />)}
-                        </div>
+                        {items.length > 0 &&
+                            <div className="list-rows">
+                                {items.map((n) => <NotificationRow key={n.id} item={n} />)}
+                            </div>
+                        }
                     </>
                 }
             </div>
@@ -62,17 +62,32 @@ const NotificationsPanel = observer(function NotificationsPanel() {
 const NotificationRow = observer(function NotificationRow({ item }: { item: Notification }) {
     const toKeepSearch = useToKeepSearch();
     const { t, lang } = useT();
+    const now = useNow();
     const unread = item.read_at === null;
-    const date = new Date(item.created_at).toLocaleString(localeOf(lang));
+
+    // "3 дн" places a notification faster than a full timestamp does; past a week
+    // the exact date is what the reader wants instead.
+    const when = relativeTime(item.created_at, now);
+    const stamp = when.kind === "now"
+        ? t("common.justNow")
+        : when.kind === "span"
+            ? t("comments.ago", { span: `${when.value} ${t(`common.${when.unit}` as TranslationKey)}` })
+            : new Date(item.created_at).toLocaleString(localeOf(lang), { dateStyle: "short", timeStyle: "short" });
 
     const content = (
         <>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                <p style={{ fontSize: 14 }}>{unread && <span className="notification-dot" aria-label={t("notifications.unread")} />}<b>{item.title}</b></p>
-                <p style={{ fontSize: 12, whiteSpace: "nowrap" }}>{date}</p>
-            </div>
-            {item.body !== "" && <p style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>{item.body}</p>}
-            {item.mark_id !== null && <p style={{ fontSize: 12, color: "var(--ink-muted)" }}>{t("common.problemN", { id: item.mark_id })}</p>}
+            {/* Unread used to be said twice: a dot before the title and a rule down
+                the left edge. The rule alone carries it. */}
+            <span className="list-row__mark" aria-hidden="true" />
+            <span className="list-row__main">
+                <span className="list-row__top">
+                    {unread && <span className="visually-hidden">{t("notifications.unread")}: </span>}
+                    <b>{item.title}</b>
+                    <time className="list-row__time" dateTime={item.created_at}>{stamp}</time>
+                </span>
+                {item.body !== "" && <span className="list-row__body">{item.body}</span>}
+                {item.mark_id !== null && <span className="list-row__ref">{t("common.problemN", { id: item.mark_id })}</span>}
+            </span>
         </>
     );
 
@@ -82,14 +97,14 @@ const NotificationRow = observer(function NotificationRow({ item }: { item: Noti
 
     if (item.mark_id !== null) {
         return (
-            <Link className={`profile-list__item ${unread ? "unread" : ""}`} to={toKeepSearch(`/problem/${item.mark_id}`)} onClick={onOpen}>
+            <Link className={`list-row${unread ? " list-row--unread" : ""}`} to={toKeepSearch(`/problem/${item.mark_id}`)} onClick={onOpen}>
                 {content}
             </Link>
         );
     }
     return (
         <div
-            className={`profile-list__item ${unread ? "unread" : ""}`}
+            className={`list-row${unread ? " list-row--unread" : ""}`}
             role="button"
             tabIndex={0}
             aria-label={unread ? t("notifications.markRead") : undefined}

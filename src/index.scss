@@ -520,3 +520,137 @@ hr {
     drop-shadow(0 0 1px rgba(0, 0, 0, 0.55))
     drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
+
+
+// "you". A mark on the author, not part of what they are called -- it used to be
+// appended to the name as text in brackets. Shared so the same badge means the
+// same thing in a comment, a leaderboard row and a profile header.
+.you-chip {
+  font-style: normal;
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  padding: 0 5px;
+  color: var(--accent-ink);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+}
+
+
+// A row in a list of records: notifications, the offline queue, anything the
+// reader scans rather than reads. One primitive, because those lists were each
+// assembled out of inline fontSize: 14 / 12 and a colour, and drifted apart.
+.list-rows {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+}
+
+.list-row {
+    display: flex;
+    gap: var(--space-4);
+    width: 100%;
+    padding: var(--space-5);
+    text-align: left;
+    color: var(--ink);
+    background: none;
+    border: 0;
+
+    & + & {
+        border-top: 1px solid var(--rule-soft);
+    }
+
+    // Unread said twice before -- a dot before the title and a rule down the
+    // left. The rule alone carries it, and it survives at a glance.
+    &__mark {
+        flex: none;
+        width: 6px;
+        border-radius: 3px;
+        background-color: transparent;
+    }
+
+    &--unread {
+        background-color: var(--accent-bg);
+    }
+
+    &--unread &__mark {
+        background-color: var(--accent);
+    }
+
+    &--alert &__mark {
+        background-color: var(--alert);
+    }
+
+    &__main {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__top {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-4);
+        font-size: var(--fs-small);
+
+        b {
+            font-weight: 500;
+        }
+    }
+
+    &__time {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+        white-space: nowrap;
+    }
+
+    &__body {
+        margin-top: 2px;
+        font-size: var(--fs-caption);
+        line-height: 1.4;
+        color: var(--ink-muted);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    &__ref {
+        margin-top: var(--space-3);
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+    }
+
+    &__error {
+        margin-top: var(--space-3);
+        font-size: var(--fs-caption);
+        color: var(--danger-ink);
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+        margin-top: var(--space-4);
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+        position: relative;
+        z-index: 1;
+    }
+}
+
+a.list-row:hover,
+button.list-row:hover,
+.list-row[role="button"]:hover {
+    background-color: var(--surface);
+    cursor: pointer;
+}

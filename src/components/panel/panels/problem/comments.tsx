@@ -159,7 +159,7 @@ const CommentItem = observer(function CommentItem({ comment, onChanged, canReply
             <div className="comment__main">
                 <div className="comment__head">
                     <Link to={toKeepSearch(`/users/${comment.user_id}`)} className="comment__author">{comment.username}</Link>
-                    {comment.is_mine && <i className="comment__you">{t("common.youShort")}</i>}
+                    {comment.is_mine && <i className="you-chip">{t("common.youShort")}</i>}
                     <time className="comment__date" dateTime={comment.created_at}>
                         {stamp}
                         {edited && !comment.deleted && ` · ${t("comments.edited")}`}

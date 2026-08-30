@@ -1,0 +1,175 @@
+// Field checks on a mark: someone went to the spot and said yes or no.
+//
+// The verdict is carried twice on purpose -- as a coloured rule down the left
+// edge of the card and as a word. Colour alone is how the old block encoded it,
+// in a 1px line under a thumbnail, which is both invisible at a glance and
+// unavailable to anyone who cannot separate the two hues.
+//
+// Photographs are the evidence, so they are shown; but a check without any is
+// still a vote, and the block says "no photos" in words rather than leaving a
+// gap where a reader cannot tell whether there were none or they failed to load.
+
+.checks {
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        margin-bottom: var(--space-5);
+
+        h3 {
+            font-size: var(--fs-micro);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+        }
+    }
+
+    // The split is the headline figure of this block and the old header did not
+    // carry it at all. A tally, so monospace.
+    &__tally {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+
+        b {
+            font-weight: 700;
+        }
+
+        .ok {
+            color: var(--success-ink);
+        }
+
+        .no {
+            color: var(--danger-ink);
+        }
+
+        i {
+            font-style: normal;
+            color: var(--rule-faint);
+        }
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        list-style: none;
+    }
+
+    // Says how many are left rather than showing a bare arrow: the old control
+    // was a chevron alone, which names neither direction nor quantity.
+    &__more {
+        width: 100%;
+        margin-top: var(--space-5);
+        padding: 6px;
+        font-family: var(--font-body);
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+        background-color: var(--surface);
+        border: 1px solid var(--rule-soft);
+        border-radius: var(--radius-2);
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--rule-hover);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+    }
+}
+
+.check {
+    padding: var(--space-5);
+    background-color: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-left: 3px solid var(--rule);
+    border-radius: var(--radius-2);
+
+    &--confirm {
+        border-left-color: var(--vote-confirm);
+    }
+
+    &--refute {
+        border-left-color: var(--vote-reject);
+    }
+
+    &__top {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-4);
+    }
+
+    &__author {
+        font-size: var(--fs-small);
+        font-weight: 500;
+    }
+
+    &__verdict {
+        font-size: var(--fs-micro);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    &--confirm &__verdict {
+        color: var(--success-ink);
+    }
+
+    &--refute &__verdict {
+        color: var(--danger-ink);
+    }
+
+    // Monospace and no seconds: this is machine-stamped data, and a proportional
+    // face made the right-hand column jump from row to row.
+    &__time {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+        white-space: nowrap;
+    }
+
+    // No "Комментарий" heading above it: that it is the checker's own words is
+    // already plain from where it sits.
+    &__comment {
+        margin-top: var(--space-3);
+        font-size: var(--fs-small);
+        line-height: 1.4;
+        color: var(--ink-soft);
+    }
+
+    &__photos {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        margin-top: var(--space-4);
+        overflow-x: auto;
+    }
+
+    &__photo {
+        flex: none;
+        width: 56px;
+        height: 56px;
+        object-fit: cover;
+        background-color: var(--placeholder);
+        border-radius: var(--radius-1);
+    }
+
+    &__nophotos {
+        font-size: var(--fs-micro);
+        font-style: italic;
+        color: var(--ink-faint);
+    }
+
+    // Reporting is a rare action, and in the old block it was the loudest thing
+    // in every card: red and underlined. It stays reachable and stops shouting.
+    &__report {
+        margin-top: var(--space-4);
+    }
+}

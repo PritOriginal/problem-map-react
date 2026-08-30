@@ -1,4 +1,4 @@
-import BaseService, { IResponse } from "./BaseService"
+import BaseService, { IResponse, withIdempotencyKey } from "./BaseService"
 
 export interface Check {
     check_id: number;
@@ -51,22 +51,21 @@ export interface AddCheckResponsePayload {
 }
 
 
-class СhecksService extends BaseService {
+/** Some reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`); see each method. */
+class ChecksService extends BaseService {
     public getCheckById(id: number): Promise<GetCheckByIdResponse> {
-        return fetch(`/api/checks/${id}`).then(this.getResponse)
+        return this.request<GetCheckByIdResponse>(`/api/checks/${id}`)
     }
 
     public getChecksByMarkId(markId: number): Promise<GetChecksByMarkIdResponse> {
-        return fetch(`/api/checks/mark/${markId}`).then(this.getResponse)
+        return this.request<GetChecksByMarkIdResponse>(`/api/checks/mark/${markId}`)
     }
 
-    public getChecksByUserId(userId: number): Promise<GetChecksByUserIdResponse> {
-        return fetch(`/api/checks/user/${userId}`).then(this.getResponse)
+    public getChecksByUserId(userId: number, init?: Pick<RequestInit, "signal">): Promise<GetChecksByUserIdResponse> {
+        return this.request<GetChecksByUserIdResponse>(`/api/checks/user/${userId}`, init)
     }
 
-    public addCheck(req: AddCheckRequest, photos: File[]): Promise<AddCheckResponse> {
-        const bearer = 'Bearer ' + localStorage.getItem('access_token');
-
+    public addCheck(req: AddCheckRequest, photos: Blob[], idempotencyKey?: string): Promise<AddCheckResponse> {
         const form = new FormData();
         form.append("mark_id", req.mark_id.toString())
         form.append("result", req.result ? "true" : "false")
@@ -75,14 +74,11 @@ class СhecksService extends BaseService {
             form.append("photos", photo)
         });
 
-        return fetch("/api/checks", {
+        return this.requestWithAuth<AddCheckResponse>("/api/checks", withIdempotencyKey({
             method: "POST",
-            headers: {
-                'Authorization': bearer,
-            },
             body: form
-        }).then(this.getResponse)
+        }, idempotencyKey))
     }
 }
 
-export default new СhecksService();
+export default new ChecksService();

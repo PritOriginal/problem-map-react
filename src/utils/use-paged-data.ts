@@ -1,0 +1,121 @@
+import { DependencyList, useCallback, useRef } from "react";
+import { AsyncOptions, useAsyncData } from "./use-async-data";
+import type { ListMeta } from "../services/http";
+
+/** One page as a service hands it back: the unwrapped list plus the envelope's `meta`. */
+export interface Page<T> {
+    items: T[];
+    meta?: ListMeta;
+}
+
+export interface PagedState<T> {
+    /** Every page loaded so far, in the order they arrived. */
+    items: T[];
+    /** A request is in flight (the first page or a further one). */
+    isLoading: boolean;
+    /** The request in flight is a "show more" one, so `items` is what stays on screen. */
+    isLoadingMore: boolean;
+    /** Last rejection (never an abort). */
+    error: unknown;
+    /** `meta.total` of the last page; `undefined` when the backend sent no `meta`. */
+    total: number | undefined;
+    /** Whether the backend says there is more than what `items` holds. */
+    hasMore: boolean;
+    /** How many are still unread; `0` while `total` is unknown. */
+    remaining: number;
+    /** Asks for the next page and appends it. Stable across renders. */
+    loadMore: () => void;
+    /** Re-reads from the first page, dropping the ones already loaded. */
+    reload: () => void;
+}
+
+/**
+ * `useAsyncData` for a list that comes in pages: the same one load tied to the component's
+ * lifetime, plus an accumulator so "show more" appends rather than replaces.
+ *
+ * It is a wrapper rather than a second loader on purpose -- cancellation, the error banner
+ * and the `fetcher`-in-a-ref trick all stay in `useAsyncData`, and the only thing added here
+ * is *which offset* the next run asks for:
+ *
+ * - `loadMore` sets the offset to what is already loaded and bumps `useAsyncData`'s `reload`,
+ *   so the extra page goes through the very same cancellable request;
+ * - a second click while the first page is still coming aborts it and re-asks for the *same*
+ *   offset (the accumulator only grows once a page has actually landed), so a fast double
+ *   press can neither duplicate a page nor skip one;
+ * - a change in `deps` (a filter) resets the offset during render, before the effect runs,
+ *   so the new filter always starts at 0 and never appends onto the old filter's rows.
+ *
+ * `total` comes from the envelope's `meta`, which the services pass through untouched; when
+ * the backend sends none, `hasMore` is false and the call site simply shows no button.
+ */
+export function usePagedData<T>(
+    /** Reads one page. `offset` is how many rows are already held. */
+    fetchPage: (offset: number, signal: AbortSignal) => Promise<Page<T>>,
+    deps: DependencyList,
+    options?: AsyncOptions,
+): PagedState<T> {
+    const fetchPageRef = useRef(fetchPage);
+    fetchPageRef.current = fetchPage;
+
+    const accRef = useRef<T[]>([]);
+    const offsetRef = useRef(0);
+
+    // Adjusting state while rendering, rather than in an effect: the effect that runs the
+    // request lives in `useAsyncData` and would otherwise fire once with the new filter and
+    // the old offset. `deps` at every call site is a list of primitives.
+    const key = deps.map((dep) => String(dep)).join("\u0000");
+    const keyRef = useRef(key);
+    if (keyRef.current !== key) {
+        keyRef.current = key;
+        accRef.current = [];
+        offsetRef.current = 0;
+    }
+
+    const state = useAsyncData<{ items: T[]; total: number | undefined }>(
+        async (signal) => {
+            const offset = offsetRef.current;
+            const page = await fetchPageRef.current(offset, signal);
+            // The abort can also land between the response and this line; appending then
+            // would put the same page in twice. `useAsyncData` drops the result anyway.
+            if (signal.aborted) {
+                return { items: accRef.current, total: undefined };
+            }
+            const items = offset === 0 ? page.items : [...accRef.current, ...page.items];
+            accRef.current = items;
+            return { items, total: page.meta?.total };
+        },
+        deps,
+        options,
+    );
+
+    const innerReload = state.reload;
+
+    const loadMore = useCallback(() => {
+        offsetRef.current = accRef.current.length;
+        innerReload();
+    }, [innerReload]);
+
+    const reload = useCallback(() => {
+        offsetRef.current = 0;
+        accRef.current = [];
+        innerReload();
+    }, [innerReload]);
+
+    const items = state.data?.items ?? [];
+    const total = state.data?.total;
+    const remaining = total === undefined ? 0 : Math.max(0, total - items.length);
+
+    return {
+        items,
+        isLoading: state.isLoading,
+        // The offset is back at 0 for a filter change (reset above), so only a real
+        // "show more" reads as one.
+        isLoadingMore: state.isLoading && offsetRef.current > 0,
+        error: state.error,
+        total,
+        hasMore: remaining > 0,
+        remaining,
+        loadMore,
+        reload,
+    };
+}

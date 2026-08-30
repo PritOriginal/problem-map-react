@@ -5,8 +5,8 @@
     // width: 16px;
     // height: 16px;
 
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    border-radius: 50%;
+    border: 2px solid var(--marker-ring);
+    border-radius: var(--radius-round);
 
     transform: translate(-50%, -50%);
 
@@ -28,9 +28,9 @@
     &__number-checks-box {
         position: absolute;
 
-        border-radius: 50%;
+        border-radius: var(--radius-round);
 
-        background-color: rgba(255, 255, 255, 0.3);
+        background-color: var(--marker-veil);
         padding: 2px 8px;
 
         left: calc(100% + 6px);
@@ -40,6 +40,66 @@
     }
 
     &.selected {
-        box-shadow: 0px 0px 0px 8px rgba(35, 174, 255, 0.3);
+        box-shadow: 0px 0px 0px 8px var(--selected-ring);
+    }
+}
+/* Built-in type SVG inside a marker: a fixed 16px box. It is a class rather than an
+   inline style because the same five properties were rebuilt for every marker on the map. */
+.type-svg {
+  min-width: 16px;
+  max-width: 16px;
+  min-height: 16px;
+  max-height: 16px;
+}
+
+.type-glyph {
+  font-size: var(--fs-body);
+  line-height: 16px;
+  min-width: 16px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.mark.hidden-mark {
+  opacity: 0.45;
+}
+
+/* a task on this mark is assigned to the current user */
+.mark.assigned {
+  outline: 3px dashed var(--assigned);
+  outline-offset: 2px;
+}
+
+// A mark in a list. The two rows -- what it is, then what it carries -- used to be
+// three inline flex objects repeated per screen.
+.mark-row {
+    // The row is a <button> when it only runs a callback, and a button brings a
+    // browser stylesheet with it.
+    width: 100%;
+    font: inherit;
+    text-align: left;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        min-width: 0;
+    }
+
+    &__name {
+        font-size: var(--fs-small);
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+    }
+
+    &__date {
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+        white-space: nowrap;
     }
 }

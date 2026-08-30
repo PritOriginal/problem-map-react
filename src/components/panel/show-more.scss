@@ -1,0 +1,28 @@
+// The same control as `.checks__more` in the problem card, lifted out of that block:
+// a full-width, quiet line under a list that says how many rows are still unread.
+.show-more {
+    width: 100%;
+    margin-top: var(--space-5);
+    padding: 6px;
+    font-family: var(--font-body);
+    font-size: var(--fs-caption);
+    color: var(--ink-muted);
+    background-color: var(--surface);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        border-color: var(--rule-hover);
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+    }
+
+    &:disabled {
+        cursor: default;
+        opacity: 0.6;
+    }
+}

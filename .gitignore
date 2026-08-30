@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env
+.claude/worktrees/
+.claude/settings.local.json
+coverage

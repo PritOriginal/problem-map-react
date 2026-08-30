@@ -1,26 +1,28 @@
 import { useNavigate } from "react-router-dom";
+import { useT } from "../../i18n";
 import { Button } from "../button/button";
 import "./unauthorized-block.scss";
 
 const UnauthorizedBlock = ({ text }: { text: string }) => {
     const navigate = useNavigate();
+    const { t } = useT();
 
     return (
         <div className="unauthorized-block">
-            <p><b>Вы не авторизаваны</b></p>
-            <p>{text}</p>
+            <p className="unauthorized-block__title">{t("unauth.title")}</p>
+            <p className="unauthorized-block__text">{text}</p>
             <div className="unauthorized-block__buttons">
                 <Button
-                    style="white-2-black"
+                    style="secondary"
                     onClick={() => navigate("/signin")}
                 >
-                    <p>Войти</p>
+                    <p>{t("nav.signIn")}</p>
                 </Button>
                 <Button
-                    style="black-2-white"
+                    style="primary"
                     onClick={() => navigate("/signup")}
                 >
-                    <p>Зарегистрироваться</p>
+                    <p>{t("nav.signUp")}</p>
                 </Button>
             </div>
         </div>

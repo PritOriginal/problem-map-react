@@ -1,31 +1,48 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { makePersistable } from 'mobx-persist-store';
+import { Role, canModerate, isService } from '../utils/role';
 
 class User {
     username: string = "";
     id: number = 0;
+    role: Role = "user";
+    /** Resolves once the persisted state has been read from localStorage (hydration is async). */
+    readonly hydrated: Promise<void>;
 
     constructor() {
-        makeAutoObservable(this);
-        makePersistable(this, {
+        makeAutoObservable(this, { hydrated: false });
+        this.hydrated = makePersistable(this, {
             name: 'user',
-            properties: ['username', "id"],
+            properties: ['username', "id", "role"],
             storage: window.localStorage,
-        });
+        }).then(() => undefined);
     }
 
-    setUser = (username: string, id: number) => {
+    get isModerator(): boolean {
+        return this.id !== 0 && canModerate(this.role);
+    }
+
+    get isService(): boolean {
+        return this.id !== 0 && isService(this.role);
+    }
+
+    setUser = (username: string, id: number, role: Role = "user") => {
         runInAction(() => {
             this.username = username;
             this.id = id;
+            this.role = role;
         });
+    }
 
+    setRole = (role: Role) => {
+        this.role = role;
     }
 
     resetUser = () => {
         runInAction(() => {
             this.username = "";
             this.id = 0;
+            this.role = "user";
         });
     }
 }

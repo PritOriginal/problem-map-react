@@ -1,9 +1,5 @@
 @use "../../mixins" as *;
 
-:root {
-    --panel-header-height: 0px;
-}
-
 .panel {
     position: absolute;
     left: 0;
@@ -12,11 +8,11 @@
     height: calc(100dvh - var(--header-height));
     width: var(--panel-width);
 
-    background-color: #f9f9f9;
+    background-color: var(--surface);
 
-    border-right: 2px solid rgb(201, 201, 201);
+    box-shadow: var(--shadow-2);
 
-    transition: transform .3s ease-in-out 0s;
+    transition: transform var(--dur-slow) var(--ease) 0s;
 
     @include mobile {
         &.open {
@@ -33,28 +29,191 @@
     }
 
     &__header {
+        // Stacked rows rather than two columns. A right-hand column holds only
+        // while the title leaves room for it, and category names come from the
+        // backend -- a long one pushed that column onto its own line, where it
+        // shrank to the width of the status chip and left the mark number
+        // dangling under it, aligned to nothing.
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        align-items: stretch;
+        gap: var(--space-3);
         height: fit-content;
-        background-color: rgb(36, 36, 36);
-        color: white;
+        background-color: var(--chrome);
+        color: var(--on-chrome);
 
-        padding: 16px;
+        padding: var(--space-7);
 
-        @include mobile {
-            cursor: pointer;
+        // The sheet's grab handle, and the only thing in the header that
+        // collapses it -- a real button, so it answers Enter and Space and says
+        // whether the sheet is open. The whole header used to carry the click,
+        // which is why the action row needed a stopPropagation wrapper.
+        // Off on the desktop, where the panel does not collapse at all.
+        &__handle {
+            display: none;
         }
 
-        &__status {
-            position: absolute;
-            right: 16px;
-            top: 16px;
-            font-size: 12px;
+        @include mobile {
+            &__handle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                padding: var(--space-2) 0;
+                margin-top: calc(-1 * var(--space-4));
+                background: none;
+                border: none;
+                cursor: pointer;
+
+                &:focus-visible {
+                    outline: 2px solid var(--accent);
+                    outline-offset: 2px;
+                }
+            }
+
+            &__grip {
+                display: block;
+                width: 36px;
+                height: 4px;
+                border-radius: 999px;
+                background-color: var(--rule-chrome);
+            }
+        }
+
+        &__row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        // The shared "you" chip sits on the dark chrome here, where --accent-ink
+        // is too dark to read. The accent itself is 4.9:1 on --chrome.
+        .you-chip--on-chrome {
+            color: var(--accent);
+        }
+
+        // The figure the screen is opened for -- reports queued, complaints
+        // waiting. None of the nine headers carried it.
+        &__count {
+            margin-left: auto;
+            padding: 1px 8px;
+            font-family: var(--font-mono);
+            font-size: var(--fs-caption);
+            color: var(--paper);
+            background-color: var(--accent-ink);
+            border-radius: 999px;
+        }
+
+        &__sub {
+            font-size: var(--fs-caption);
+            line-height: 1.35;
+            color: var(--on-chrome-muted);
+        }
+
+        // Controls belonging to the whole screen. They used to sit as the first
+        // row of the content, where they scrolled away with it.
+        &__acts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-top: var(--space-2);
+        }
+
+        &__act {
+            padding: 3px 9px;
+            font-family: var(--font-body);
+            font-size: var(--fs-caption);
+            color: var(--on-chrome-muted);
+            background: none;
+            border: 1px solid var(--rule-chrome);
+            border-radius: var(--radius-1);
+            cursor: pointer;
+
+            &:hover:not(:disabled) {
+                color: var(--on-chrome);
+                border-color: var(--accent);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+        }
+
+        // The rule under the order line. Not a border on the labels row: that row
+        // wraps when the badges pile up, and a border would then hug the last
+        // wrapped line instead of separating the two halves of the header.
+        &__rule {
+            height: 1px;
+            background-color: var(--rule-chrome);
+        }
+
+        // The category is the title: a person recognises a mark by what the problem
+        // is, not by its id. Set in the TEXT face, not the display face -- these
+        // names come from the backend, so their length is not ours to control, and
+        // "Информационные и визуальные дефекты" runs to three lines in the wide
+        // display face, which on the mobile sheet also drives how far the map is
+        // pushed down. The display face stays for short fixed labels.
+        &__title {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-4);
+
+            font-family: var(--font-body);
+            font-size: var(--fs-title);
+            font-weight: 700;
+            line-height: 1.18;
+            letter-spacing: -0.01em;
+
+            // The glyph is centred on the CAP BAND, not on the line box and not on
+            // the whole word -- "Мусор" carries a descender that would drag the
+            // icon low, and the line box has leading the eye does not see. In em,
+            // so it still holds at the smaller size the mobile sheet uses; the
+            // fixed pixel value it replaces was only ever right at one size.
+            > svg,
+            > .type-glyph {
+                flex-shrink: 0;
+                margin-top: 0.2em;
+            }
 
             @include mobile {
-                font-size: 10px;
+                font-size: var(--fs-lead);
             }
+        }
+
+        // Machine-produced data: monospaced, so the digits line up and the pair
+        // reads as one coordinate rather than two numbers.
+        &__coords {
+            font-family: var(--font-mono);
+            font-size: var(--fs-caption);
+            color: var(--on-chrome-muted);
+            letter-spacing: -0.02em;
+        }
+
+        // The id, now the first thing on the header: this is what the mark is
+        // called in moderation and in a conversation about it, so it is set in
+        // full ink rather than the muted grey it wore as a trailing footnote.
+        &__ref {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: var(--fs-caption);
+            color: var(--on-chrome);
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+
+        // The order line: id, status, and the badges the record carries. One
+        // family, one row, wrapping together.
+        &__labels {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-3);
         }
     }
 
@@ -72,6 +231,17 @@
     }
 
     &__close-button {
+        // A real <button>, so this rule also has to undo what the UA gives one: its own
+        // font, its inline-block box and, in WebKit, its native appearance. The
+        // background, border and colour below are the ones it paints with.
+        appearance: none;
+        -webkit-appearance: none;
+        display: block;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        text-align: inherit;
+
         position: absolute;
         right: calc(-48px - 16px);
         top: 16px;
@@ -87,18 +257,32 @@
         height: 48px;
         width: 48px;
 
-        background-color: white;
-        border-radius: 50%;
+        background-color: var(--paper);
+        // The close glyph is an SVG path with no fill attribute of its own, so it
+        // inherits this one. Without it the path falls back to black and
+        // disappears against the dark disc.
+        fill: var(--ink);
+        color: var(--ink);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-round);
 
-        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--shadow-1);
 
         z-index: 1;
 
-        transition: all 0.2s ease-in-out;
+        transition:
+            background-color var(--dur-fast) var(--ease),
+            border-color var(--dur-fast) var(--ease),
+            fill var(--dur-fast) var(--ease);
 
         &:hover {
-            fill: white;
-            background-color: black;
+            border-color: var(--accent);
+            fill: var(--accent-ink);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
         }
     }
 
@@ -107,54 +291,338 @@
     }
 }
 
-.photo {
-    background-color: #e5e5e5;
-    max-height: 150px;
-    min-height: 150px;
+.profile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 
-    &.add {
-        min-width: 100px;
+    &__item {
         display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 64px;
-
+        flex-direction: column;
+        gap: var(--space-2);
+        padding: var(--space-4);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
+        color: inherit;
+        text-decoration: none;
         cursor: pointer;
-        transition: all 0.2s ease-in-out;
+
+        transition: border-color var(--dur-fast) var(--ease);
 
         &:hover {
-            color: white;
-            background-color: black;
+            border-color: var(--accent);
+        }
+    }
+
+    &__status {
+        font-size: var(--fs-caption);
+        border: 2px solid;
+        border-radius: var(--radius-1);
+        padding: 2px 4px;
+        background-color: var(--paper);
+    }
+}
+
+.profile-list__item.unread {
+    border-left: 3px solid var(--accent);
+}
+
+.notification-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: var(--radius-round);
+    background-color: var(--alert);
+    vertical-align: middle;
+}
+
+// A list, not a table: there are no column headings to give, and the three
+// values are place, who, and score -- a row, not a record. The initial disc is
+// the same one the comments use, so a person reads the same across screens.
+.leaderboard {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    background-color: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-4) var(--space-5);
+
+        & + & {
+            border-top: 1px solid var(--rule-soft);
+        }
+
+        // Your own row: marked on the edge with the accent, the same way the map
+        // marks a point that is yours.
+        &--me {
+            background-color: var(--accent-bg);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+    }
+
+    &__place {
+        width: 22px;
+        text-align: right;
+        color: var(--ink-faint);
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        width: 26px;
+        height: 26px;
+        border-radius: var(--radius-round);
+        background-color: var(--neutral-bg);
+        color: var(--ink-muted);
+        font-size: var(--fs-caption);
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    &__who {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-small);
+    }
+
+    &__name {
+        font-weight: 500;
+        color: inherit;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__meta {
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+    }
+
+    &__rating {
+        font-family: var(--font-mono);
+        font-size: var(--fs-small);
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+    }
+}
+
+// "Someone may have reported this already": a caution, not an error.
+.similar-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background-color: var(--highlight-bg);
+    border: 1px solid var(--hi-vis);
+    border-left: 3px solid var(--hi-vis);
+    border-radius: var(--radius-1);
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+    &__item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-3) var(--space-4);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
+        font-size: var(--fs-small);
+    }
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+
+    &__item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+        padding: var(--space-6);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
+
+        b {
+            font-family: var(--font-display);
+            font-size: var(--fs-title);
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+        }
+
+        span {
+            font-size: var(--fs-caption);
+            color: var(--ink-muted);
         }
     }
 }
 
-.thumb-photo {
-    background-color: #e5e5e5;
-    max-height: 100px;
-    min-height: 100px;
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    font-size: var(--fs-caption);
+    color: var(--ink-muted);
 
-    &.confirm {
-        border-bottom: 1px solid rgb(83, 237, 124);
-    }
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
 
-    &.reject {
-        border-bottom: 1px solid rgb(255, 31, 31);
+        i {
+            display: inline-block;
+            width: 12px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        // The bar series gets a block, not a rule, so the key matches the mark.
+        .chart-legend__bar {
+            height: 9px;
+            border-radius: 1px;
+            opacity: 0.45;
+        }
+
+        // The latest value of each series. Four lines with nothing to hover left
+        // no way to read a number off the chart at all.
+        b {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            color: var(--ink);
+        }
     }
 }
 
-.show-button {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    padding: 4px;
-    border: none;
-    background-color: #f9f9f9;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
+.analytics-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: var(--fs-caption);
 
-    &:hover {
-        fill: white;
-        background-color: rgb(36, 36, 36);
+    label {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    input, select {
+        padding: 4px;
+        font-size: var(--fs-small);
+    }
+
+    // A control that needs the whole row: the district filter, a button strip.
+    // Was `style={{ gridColumn: "1 / -1" }}` at every such call site.
+    &__span {
+        grid-column: 1 / -1;
+    }
+
+    // A label over a control that is not a single form element -- the segmented
+    // period switch. `<label>` would have nothing to point at.
+    &__label {
+        display: block;
+        margin-bottom: 2px;
+    }
+}
+
+// One choice out of a few, shown as one control rather than as loose buttons. The
+// period presets used to be three separate outline buttons sitting BELOW the two
+// date fields they overwrite, so the screen offered the manual way first and
+// mentioned the one-click way second.
+.segmented {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background-color: var(--surface-sunken);
+    border-radius: var(--radius-2);
+
+    button {
+        flex: 1;
+        padding: 5px var(--space-4);
+        font-family: var(--font-body);
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+        white-space: nowrap;
+        background: none;
+        border: none;
+        border-radius: var(--radius-1);
+        cursor: pointer;
+
+        transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+
+        &:hover {
+            color: var(--ink);
+        }
+
+        // The chosen one is raised, not merely tinted: the switch has to read at a
+        // glance which window the figures below it are counting.
+        &[aria-pressed="true"] {
+            color: var(--ink);
+            font-weight: 600;
+            background-color: var(--paper);
+            box-shadow: var(--shadow-1);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -1px;
+        }
+    }
+}
+
+// The window itself. Under a preset it is a sentence -- a screen full of zeros is
+// exactly when the reader asks which period produced them -- and only under "Свой"
+// does it become two fields.
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+
+    label {
+        flex: 1;
+        min-width: 0;
+    }
+
+    input {
+        width: 100%;
+        font-family: var(--font-mono);
+    }
+
+    s {
+        text-decoration: none;
+        color: var(--ink-faint);
+    }
+
+    &--said {
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
     }
 }

@@ -1,84 +1,95 @@
-.double-progress-bar {
-    &__title {
-        padding: 0 10px;
-        font-size: 12px;
-        text-align: center;
+// The vote on a status: a balance beam, not a progress bar.
+//
+// Nothing here is "progressing" toward a goal -- two sides are weighing a claim
+// against each other, and the reader's question is which way it tips and by how
+// much. So the bar grows outward from a centre fulcrum, and the beam crosses the
+// history column at the layer it belongs to.
+
+.vote-beam {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    &__question {
+        font-size: var(--fs-small);
+        font-weight: 500;
+        color: var(--ink-soft);
     }
 
-    &__scale {
+    &__beam {
         position: relative;
-        min-height: 1rem;
-        width: auto;
-        background-color: whitesmoke;
-        border-radius: 12px;
-        margin: 0.5rem;
-        color: white; 
-        font-size: 12px;
-
-        &__left__zone {
-            position: absolute;
-            left: 0;
-            height: 100%;
-            width: 20%;
-
-            background: linear-gradient(90deg, rgba(253, 163, 163, 1) 0%, rgba(0, 0, 0, 0) 100%);
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        }
-
-        &__right__zone {
-            position: absolute;
-            right: 0;
-            height: 100%;
-            width: 20%;
-
-            background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(214, 253, 163, 1) 100%);
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
-
-        &__left {
-            position: absolute;
-
-            right: 50%;
-
-            height: 100%;
-            background: linear-gradient(90deg, rgba(255, 31, 31, 1) 0%, rgba(255, 181, 43, 1) 100%);
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-            text-align: left;
-            padding-left: 10px;
-
-            &__text {
-                color: white;
-                font-weight: bold;
-            }
-        }
-
-        &__right {
-            position: absolute;
-
-            left: 50%;
-
-            height: 100%;
-            background: linear-gradient(90deg, rgba(255, 181, 43, 1) 0%, rgba(83, 237, 124, 1) 100%);
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-            text-align: right;
-            padding-right: 10px;
-
-            &__text {
-                color: white;
-                font-weight: bold;
-            }
-        }
+        display: flex;
+        align-items: stretch;
+        height: 22px;
+        background-color: var(--track);
+        border-radius: 999px;
+        overflow: hidden;
     }
 
-    &__signatures {
+    // The fulcrum: where the two sides are equal.
+    &__pivot {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background-color: var(--rule-hover);
+        transform: translateX(-50%);
+        z-index: 1;
+    }
+
+    // Each half carries the whole ramp and is clipped back to the part the votes
+    // have reached, so the colour under any given point never moves. Clipping
+    // rather than covering is what lets the revealed segment keep rounded ends:
+    // the outer end follows the track's pill, the end at the fulcrum takes a
+    // small radius so the two sides read as separate weights meeting.
+    &__side {
+        width: 50%;
+        transition: clip-path var(--dur-slow) var(--ease);
+    }
+
+    // Refuting weighs to the left, confirming to the right: saturated at the far
+    // edge, amber at the fulcrum, where a vote count is still inconclusive.
+    &__side--refute {
+        background: linear-gradient(90deg, var(--vote-reject), var(--vote-mid));
+    }
+
+    &__side--confirm {
+        background: linear-gradient(90deg, var(--vote-mid), var(--vote-confirm));
+    }
+
+    &__labels {
         display: flex;
         justify-content: space-between;
-        font-size: 12px;
-        padding: 0 10px;
+        gap: var(--space-4);
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+    }
+
+    &__label {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-3);
+    }
+
+    // The tally, sized to be read rather than decoded, and always on the panel
+    // surface -- never on a coloured fill whose width it cannot control.
+    &__count {
+        font-family: var(--font-mono);
+        font-size: var(--fs-body);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+    }
+
+    // --danger-ink, not --vote-reject: the latter is a FILL colour and measures
+    // 4.37:1 as 14px text on the dark card, just under AA. The ink tokens are the
+    // text-weight pair and clear 7:1 in both themes.
+    &__count--refute {
+        color: var(--danger-ink);
+    }
+
+    &__count--confirm {
+        color: var(--success-ink);
     }
 }

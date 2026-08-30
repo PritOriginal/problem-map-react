@@ -1,0 +1,516 @@
+@use "../../../../mixins" as *;
+
+.admin-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+
+    // No spinner buttons. They took a third of the width of a 74px field to offer
+    // stepping by one through a range of 100000, which nobody does.
+    input[type="number"] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    }
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+}
+
+.admin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: var(--fs-caption);
+
+    > span {
+        color: var(--ink-soft);
+    }
+
+    input[type="text"],
+    input[type="number"] {
+        padding: 5px 7px;
+        font-size: var(--fs-small);
+        border: 1px solid var(--rule-soft);
+        border-radius: var(--radius-1);
+        background-color: var(--paper);
+        width: 100%;
+    }
+
+    small {
+        color: var(--ink-faint);
+    }
+
+    &.invalid {
+        input {
+            border-color: var(--danger-ink);
+        }
+
+        small {
+            color: var(--danger-ink);
+        }
+    }
+
+    &--check {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-3);
+        align-self: end;
+        padding-bottom: 6px;
+
+        input {
+            width: auto;
+            accent-color: var(--accent);
+        }
+    }
+}
+
+// A settings group as a card that says what the group is for. These are edited by
+// an administrator who opens the screen once a quarter and does not remember what
+// "целевая вероятность" means; the groups used to be a bold word of the same size
+// as the field labels, so they did not read as groups at all.
+.admin-card {
+    background-color: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+
+    &__h {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-4);
+        padding: var(--space-5) var(--space-5) var(--space-3);
+
+        font-size: var(--fs-micro);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+
+        // The hint is a sentence, so it drops the group heading's letter-spacing
+        // and capitals rather than inheriting them.
+        s {
+            text-decoration: none;
+            flex-shrink: 1;
+            min-width: 0;
+            text-align: right;
+            font-size: var(--fs-micro);
+            font-weight: 400;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+    }
+}
+
+// Label on the left, value on the right: a column of numbers can be compared by
+// eye. They used to be a 2×N grid of labelled boxes, where the third field of an
+// odd group sat alone in its row and no two values lined up.
+.admin-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: 7px var(--space-5);
+    font-size: var(--fs-small);
+
+    + .admin-row {
+        border-top: 1px solid var(--rule-soft);
+    }
+
+    > span {
+        flex: 1;
+        min-width: 0;
+        color: var(--ink-soft);
+    }
+
+    // The allowed range, next to the field it constrains. It used to be
+    // "Диапазон 1–100" under every one of the nine fields -- the same fact the
+    // input's own min/max already carry, spelled out nine times.
+    em {
+        font-style: normal;
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+        white-space: nowrap;
+    }
+
+    input {
+        width: 74px;
+        padding: 4px 6px;
+        text-align: right;
+        font-family: var(--font-mono);
+        font-size: var(--fs-small);
+        font-variant-numeric: tabular-nums;
+        border: 1px solid var(--rule-soft);
+        border-radius: var(--radius-1);
+        background-color: var(--surface);
+
+        &:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+            background-color: var(--paper);
+        }
+    }
+
+    // The duration is written, not counted, so it reads left to right.
+    &--wide input {
+        width: 96px;
+        text-align: left;
+    }
+
+    // Which rows are unsaved, said on the rows themselves.
+    &.changed {
+        background-color: var(--accent-bg);
+
+        input {
+            border-color: var(--accent);
+        }
+    }
+
+    &.invalid input {
+        border-color: var(--danger-ink);
+    }
+}
+
+// The state of the form before the action it offers. Both buttons used to be
+// full-width grey blocks, and a disabled "Сохранить" that size reads as broken
+// rather than as "there is nothing to save".
+.admin-save {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-6);
+    background-color: var(--surface-sunken);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+
+    span {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+    }
+
+    &--dirty {
+        background-color: var(--highlight-bg);
+        border-color: var(--highlight-rule);
+
+        span {
+            color: var(--ink-soft);
+        }
+    }
+}
+
+// The mark-type dictionary: five entries, five rows. It was five 96px cards whose
+// tallest part read "SLA, ч: 72 · Порядок: 0 · Активен: ✓" -- three key-value
+// pairs in a row, which scans as a log line and not as a reference table.
+.type-list {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--paper);
+    border: 1px solid var(--rule-soft);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+
+    &:empty {
+        display: none;
+    }
+
+    &__acts {
+        display: flex;
+        gap: var(--space-4);
+
+        // `.btn` is full-width by default, so two of them side by side have to be
+        // told to share the row rather than each claim all of it.
+        > * {
+            flex: 1;
+        }
+    }
+}
+
+.type-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--space-5);
+    padding: var(--space-5);
+
+    + .type-row {
+        border-top: 1px solid var(--rule-soft);
+    }
+
+    // A type that is off is not a type with a label saying so: it steps back onto
+    // the sunken ground, and only the exception carries a word.
+    &--off {
+        background-color: var(--surface-sunken);
+    }
+
+    &__swatch {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: var(--radius-1);
+        background-color: var(--swatch-empty);
+        font-size: var(--fs-body);
+        flex-shrink: 0;
+
+        // No colour set, said as hatching. The grey circle this replaces could not
+        // be told apart from a type whose colour genuinely is grey.
+        &--none {
+            background-image: repeating-linear-gradient(45deg, transparent 0 4px, var(--rule-soft) 4px 8px);
+            background-color: var(--surface-sunken);
+        }
+    }
+
+    &__name {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+
+        b {
+            font-size: var(--fs-small);
+            font-weight: 600;
+        }
+
+        // The English name is the same name again, so it recedes.
+        s {
+            text-decoration: none;
+            font-weight: 400;
+            color: var(--ink-muted);
+        }
+
+        // Id and code: the machine's names for the row.
+        > span {
+            font-family: var(--font-mono);
+            font-size: var(--fs-micro);
+            color: var(--ink-faint);
+        }
+    }
+
+    &__side {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+    }
+
+    // On a phone the row is 375px wide, and a backend-supplied name like
+    // "Информационные и визуальные дефекты" then has to share it with the SLA and
+    // the edit link -- the name column collapses to about a third of the row and
+    // runs to four lines. Below the breakpoint the right-hand side moves under
+    // the name instead, aligned to the same left edge as the text it belongs to.
+    @include mobile {
+        grid-template-columns: auto 1fr;
+        row-gap: var(--space-3);
+
+        &__side {
+            grid-column: 2;
+            justify-content: flex-start;
+        }
+    }
+
+    &__sla {
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-muted);
+        white-space: nowrap;
+    }
+
+    &__off {
+        font-size: var(--fs-micro);
+        color: var(--ink-soft);
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        padding: 1px 7px;
+        white-space: nowrap;
+    }
+
+    &__edit {
+        padding: 2px 4px;
+        font-size: var(--fs-caption);
+        color: var(--accent-ink);
+        background: none;
+        border: none;
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: var(--radius-1);
+        }
+    }
+
+    &__arrow {
+        width: 26px;
+        height: 24px;
+        font-size: var(--fs-caption);
+        line-height: 1;
+        color: var(--ink-muted);
+        background-color: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-1);
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+    }
+}
+
+.type-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-2);
+
+    hr {
+        width: 100%;
+        height: 1px;
+        border: 0;
+        margin: 0;
+        background-color: var(--rule-soft);
+    }
+}
+
+// The mark as it will be drawn on the map, above the fields that make it. Colour
+// and icon were two text inputs and a system colour swatch, and nothing showed
+// what they produced -- which is the only reason those fields are filled in.
+.type-preview {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    padding: var(--space-5) var(--space-6);
+    background-color: var(--surface-sunken);
+    border-radius: var(--radius-2);
+
+    &__pin {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        // The map pin's own silhouette: a disc with one corner drawn down to a
+        // point, rotated so the point is at the bottom.
+        border-radius: 50% 50% 50% 2px;
+        transform: rotate(-45deg);
+        box-shadow: var(--shadow-1);
+
+        span {
+            transform: rotate(45deg);
+            font-size: var(--fs-base);
+            line-height: 1;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+
+        b {
+            font-size: var(--fs-small);
+        }
+
+        span {
+            font-family: var(--font-mono);
+            font-size: var(--fs-micro);
+            color: var(--ink-faint);
+        }
+    }
+}
+
+// Six colours and a hex field, instead of the OS colour dialog: sixteen million
+// choices is how a dictionary ends up with five types in five near-identical greys.
+.type-palette {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+
+    button {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 1px solid var(--rule-soft);
+        border-radius: var(--radius-1);
+        cursor: pointer;
+
+        &[aria-pressed="true"] {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--focus);
+            outline-offset: 2px;
+        }
+    }
+
+    &__hex {
+        width: 96px;
+        flex: none;
+        padding: 4px 6px;
+        font-family: var(--font-mono);
+        font-size: var(--fs-small);
+        border: 1px solid var(--rule-soft);
+        border-radius: var(--radius-1);
+        background-color: var(--paper);
+    }
+}
+
+// A settled value, not a field that failed to load. The code used to be a disabled
+// input, which says "broken" rather than "this one is decided".
+.type-locked {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding: 5px 7px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+    background-color: var(--surface-sunken);
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius-1);
+
+    s {
+        text-decoration: none;
+        font-family: var(--font-body);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+    }
+}
+
+.api-key {
+    display: block;
+    padding: 6px;
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    font-size: var(--fs-caption);
+    word-break: break-all;
+    user-select: all;
+}

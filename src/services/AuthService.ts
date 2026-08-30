@@ -1,10 +1,12 @@
-import user from "../store/user"
+import { PointGeometry } from "@yandex/ymaps3-types"
 import BaseService, { IResponse } from "./BaseService"
 
 export interface SignUpRequest {
     username: string
     login: string
     password: string
+    /** Home point: the user gets tasks for marks around it (required by the backend). */
+    home_point: PointGeometry
 }
 
 export interface SignUpResponse extends IResponse {
@@ -29,66 +31,25 @@ export interface SignInResponse extends IResponse {
     payload: SignInResponsePayload;
 }
 
-export interface RefreshTokensRequest {
-    refresh_token: string
-}
-
-export interface RefreshTokensResponse extends IResponse {
-    payload: RefreshTokensResponsePayload;
-}
-
-export interface RefreshTokensResponsePayload {
-    access_token: string
-    refresh_token: string
-}
-
 class AuthService extends BaseService {
     public signUp(req: SignUpRequest): Promise<SignUpResponse> {
-        return fetch("/api/auth/signup", {
+        return this.request<SignUpResponse>("/api/auth/signup", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
             },
             body: JSON.stringify(req),
-        }).then(this.getResponse)
+        })
     }
 
     public signIn(req: SignInRequest): Promise<SignInResponse> {
-        return fetch("/api/auth/signin", {
+        return this.request<SignInResponse>("/api/auth/signin", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
             },
             body: JSON.stringify(req),
-        }).then(this.getResponse)
-    }
-
-    public async refreshTokens() {
-        const refresh_token = localStorage.getItem('refresh_token');
-        if (refresh_token !== null) {
-            const req: RefreshTokensRequest = {
-                refresh_token: refresh_token
-            };
-
-            try {
-                const response = await fetch("/api/auth/tokens/refresh", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json;charset=utf-8',
-                    },
-                    body: JSON.stringify(req),
-                });
-
-                const data: RefreshTokensResponse = await this.getResponse(response);
-                localStorage.setItem('access_token', data.payload.access_token);
-                localStorage.setItem('refresh_token', data.payload.refresh_token);
-                return true;
-            } catch (error) {
-                console.log(error);
-                user.resetUser();
-            }
-        }
-        return false;
+        })
     }
 }
 

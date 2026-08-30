@@ -1,0 +1,16 @@
+.marks-truncated {
+    position: absolute;
+    left: 50%;
+    top: 16px;
+    transform: translateX(-50%);
+    z-index: 1;
+    max-width: min(90vw, 420px);
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-1);
+    box-shadow: var(--shadow-1);
+    color: var(--ink-muted);
+    font-size: var(--fs-caption);
+    text-align: center;
+}

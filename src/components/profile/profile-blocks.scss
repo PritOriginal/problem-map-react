@@ -1,0 +1,69 @@
+.level-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+
+    &__row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    &__bar {
+        height: 8px;
+        background-color: var(--disabled-bg);
+        border-radius: var(--radius-1);
+        overflow: hidden;
+    }
+
+    &__fill {
+        height: 100%;
+        background-color: var(--success-ink);
+        transition: width 0.3s ease-in-out;
+    }
+}
+
+.badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+}
+
+.badge-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    cursor: help;
+    text-align: center;
+
+    &.locked {
+        opacity: 0.4;
+        filter: grayscale(1);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--ink);
+    }
+
+    &__icon {
+        font-size: 24px;
+        line-height: 28px;
+    }
+
+    &__name {
+        font-size: 11px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+}

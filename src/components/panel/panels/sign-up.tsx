@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import { Button } from "../../button/button";
-import AuthService, { SignInRequest, SignUpRequest } from "../../../services/AuthService";
-import { jwtDecode } from "jwt-decode";
-import user from "../../../store/user";
+import { useId, useState } from "react";
+import { useT } from "../../../i18n";
+import AuthService, { SignUpRequest } from "../../../services/AuthService";
+import { signIn } from "../../../services/session";
+import notificationsStore from "../../../store/notifications";
 import { Link, useNavigate } from "react-router-dom";
-import panelStore from "../../../store/panel";
+import selectedPoint, { HOME_ZONE_RADIUS_KM } from "../../../store/selected_point";
+import { observer } from "mobx-react-lite";
+import PanelHeader from "../panel-header";
+import "./auth.scss";
 
-export default function SignUp() {
-    const panelHeaderRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (panelHeaderRef.current) {
-            panelStore.setHeight(panelHeaderRef.current.offsetHeight)
-            panelStore.setOpen(true);
-        }
-    }, []);
+const SignUp = observer(function SignUp() {
+    const { t } = useT();
+    const id = useId();
 
     const [username, setUsername] = useState("")
     const [login, setLogin] = useState("")
@@ -25,97 +23,82 @@ export default function SignUp() {
         const req: SignUpRequest = {
             username: username,
             login: login,
-            password: password
+            password: password,
+            home_point: {
+                type: "Point",
+                coordinates: [selectedPoint.coords[0], selectedPoint.coords[1]],
+            },
         }
 
         AuthService.signUp(req)
-            .then((data) => {
-                console.log(data.payload)
-                signIn();
-            })
-            .catch(function (error) {
-                console.log(error);
-            });
-    }
-
-    const signIn = () => {
-        const req: SignInRequest = {
-            login: login,
-            password: password
-        }
-
-        AuthService.signIn(req)
-            .then((data) => {
-                console.log(data.payload)
-                const payload = jwtDecode(data.payload.access_token)
-                localStorage.setItem('access_token', data.payload.access_token);
-                localStorage.setItem('refresh_token', data.payload.refresh_token);
-                user.setUser(login, Number(payload.sub));
-                navigate(-1);
-            })
-            .catch(function (error) {
-                console.log(error);
+            .then(() => signIn(login, password))
+            .then(() => navigate(-1))
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, t("auth.signUpError"));
             });
     }
 
     return (
         <>
-            <div
-                ref={panelHeaderRef}
-                className="panel__header"
-                onClick={() => panelStore.toggle()}
-            >
-                <p><b>Регистрация</b></p>
-            </div>
+            <PanelHeader openOnMount title={t("auth.signUpTitle")} subtitle={t("auth.signUpWhy")} />
             <div className="panel__content">
-                <p><b>Имя</b></p>
-                <input
-                    id="sku_edit"
-                    className="edit-multiline-text"
-                    name="sku"
-                    value={username}
-                    placeholder="Имя"
-                    onChange={(e) => {
-                        setUsername(e.target.value)
-                    }}
-                />
-                <p><b>Логин</b></p>
-                <input
-                    id="sku_edit"
-                    className="edit-multiline-text"
-                    name="sku"
-                    value={login}
-                    placeholder="login"
-                    onChange={(e) => {
-                        setLogin(e.target.value)
-                    }}
-                />
-                <div>
-                    <p><b>Пароль</b></p>
-                    <p style={{ fontSize: "12px" }}>Минимум 8 символов</p>
-                </div>
-                <input
-                    id="sku_edit"
-                    className="edit-multiline-text"
-                    name="sku"
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                        setPassword(e.target.value)
-                    }}
-                />
-                <div>
-                    <Button style="white-2-black" onClick={onClick}>
-                        <p>Зарегистрироваться</p>
-                    </Button>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <p>Уже есть аккаунт?</p>
-                    <Link to={"/signin"}>
-                        Войти
-                    </Link>
-                </div>
+                {/* A real form: Enter submits, and every field carries an id of its
+                    own. All three used to be id="sku_edit" name="sku", which breaks
+                    the label-to-field link, breaks autofill, and tells a password
+                    manager nothing about what it is filling. */}
+                <form className="auth-form" onSubmit={(e) => { e.preventDefault(); onClick(); }}>
+                    <div className="auth-form__field">
+                        <label className="auth-form__label" htmlFor={`${id}-name`}>{t("auth.name")}</label>
+                        <input
+                            id={`${id}-name`}
+                            className="edit-multiline-text"
+                            name="nickname"
+                            autoComplete="nickname"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                        />
+                    </div>
+                    <div className="auth-form__field">
+                        <label className="auth-form__label" htmlFor={`${id}-login`}>{t("auth.login")}</label>
+                        <input
+                            id={`${id}-login`}
+                            className="edit-multiline-text"
+                            name="username"
+                            autoComplete="username"
+                            value={login}
+                            placeholder={t("auth.loginPlaceholder")}
+                            onChange={(e) => setLogin(e.target.value)}
+                        />
+                    </div>
+                    <div className="auth-form__field">
+                        <label className="auth-form__label" htmlFor={`${id}-password`}>{t("auth.password")}</label>
+                        <p className="auth-form__hint">{t("auth.passwordHint")}</p>
+                        <input
+                            id={`${id}-password`}
+                            className="edit-multiline-text"
+                            name="new-password"
+                            type="password"
+                            autoComplete="new-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+                    <div className="auth-form__field">
+                        <span className="auth-form__label">{t("profile.homePoint")}</span>
+                        <p className="auth-form__hint">{t("auth.homePointHint", { radius: Math.round(HOME_ZONE_RADIUS_KM * 1000) })}</p>
+                        <p className="auth-form__coords">
+                            <span className="visually-hidden">{t("auth.coords")}: </span>
+                            {selectedPoint.coords[1].toFixed(6)}, {selectedPoint.coords[0].toFixed(6)}
+                        </p>
+                    </div>
+                    <button type="submit" className="auth-form__submit">{t("nav.createAccount")}</button>
+                    <p className="auth-form__or">{t("auth.or")}</p>
+                    <Link className="auth-form__alt" to={"/signin"}>{t("nav.signIn")}</Link>
+                </form>
             </div>
         </>
     )
-}
+});
+
+export default SignUp;

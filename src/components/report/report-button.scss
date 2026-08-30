@@ -1,0 +1,45 @@
+.report-button {
+    border: none;
+    background: none;
+    color: var(--danger-ink);
+    font-size: var(--fs-small);
+    cursor: pointer;
+    padding: 4px 0;
+    text-decoration: underline dotted;
+
+    &.small {
+        font-size: var(--fs-caption);
+        padding: 0;
+    }
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.report-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    background-color: var(--danger-bg-soft);
+    border: 1px solid var(--danger-rule);
+    font-size: var(--fs-small);
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        select {
+            padding: 4px;
+            font-size: var(--fs-small);
+        }
+    }
+
+    &__actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+}

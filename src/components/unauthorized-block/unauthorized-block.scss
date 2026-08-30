@@ -1,11 +1,30 @@
+// Shown where a screen needs an account. It states what is needed and offers the
+// two ways forward -- an invitation, not a rejection.
 .unauthorized-block {
-    display: flex; 
+    display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--space-6);
+    padding: var(--space-8) var(--space-7);
     text-align: center;
+
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-1);
+
+    &__title {
+        font-family: var(--font-display);
+        font-size: var(--fs-lead);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    &__text {
+        font-size: var(--fs-body);
+        color: var(--ink-muted);
+    }
 
     &__buttons {
         display: flex;
-        gap: 16px;
+        gap: var(--space-4);
     }
 }

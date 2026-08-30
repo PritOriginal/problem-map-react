@@ -1,0 +1,204 @@
+// The discussion on a mark, set as a conversation rather than a table.
+//
+// The old block drew a hairline box around every comment on a white fill over a
+// grey panel, so three replies read as three rows of a spreadsheet. Here the
+// boxes are gone: an initial disc says who is speaking, and a single hairline
+// rail says which replies belong to which comment.
+
+.comments {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+
+    &__thread {
+        display: flex;
+        flex-direction: column;
+    }
+
+    // The reply rail. One line, indented past the initial disc, so a reply is
+    // attached to what it answers instead of merely being pushed 20px right.
+    &__replies {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-5);
+        margin-top: var(--space-5);
+        margin-left: 14px;
+        padding-left: calc(var(--space-6) + 2px);
+        border-left: 1px solid var(--rule);
+    }
+
+    &__signin {
+        margin-top: var(--space-6);
+        padding-top: var(--space-6);
+        border-top: 1px solid var(--rule);
+        font-size: var(--fs-small);
+        color: var(--ink-muted);
+    }
+}
+
+// The initial disc. The old block gave no sign of who was speaking beyond a bold
+// name at 12px, which is not enough to scan a thread by.
+.comment-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-round);
+    background-color: var(--neutral-bg);
+    color: var(--ink-muted);
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    text-transform: uppercase;
+
+    &--mine {
+        background-color: var(--accent-bg);
+        color: var(--accent-ink);
+    }
+}
+
+.comment {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+
+    &--deleted {
+        opacity: 0.65;
+    }
+
+    &--reply .comment-avatar {
+        width: 22px;
+        height: 22px;
+        font-size: var(--fs-micro);
+    }
+
+    &__main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        font-size: var(--fs-small);
+    }
+
+    &__author {
+        font-weight: 500;
+        color: inherit;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__date {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+        white-space: nowrap;
+    }
+
+    &__body {
+        margin-top: 2px;
+        font-size: var(--fs-small);
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+
+        &--deleted {
+            font-style: italic;
+            color: var(--ink-faint);
+        }
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-5);
+        margin-top: var(--space-3);
+    }
+
+    // Plain text at the weight of a caption, not dotted underlines in blue and
+    // red. Replying is the one action worth colour here; reporting is rare and
+    // was the loudest thing in every comment.
+    &__link {
+        padding: 0;
+        border: none;
+        background: none;
+        font-family: var(--font-body);
+        font-size: var(--fs-caption);
+        color: var(--ink-faint);
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+            color: var(--ink);
+        }
+
+        &--key {
+            color: var(--accent-ink);
+            font-weight: 500;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+            border-radius: 2px;
+        }
+    }
+}
+
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    // The top-level form is the end of the block, so it is ruled off from the
+    // thread above it. A reply form sits inside a thread and is not.
+    &--root {
+        margin-top: var(--space-7);
+        padding-top: var(--space-6);
+        border-top: 1px solid var(--rule);
+    }
+
+    &__row {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-4);
+
+        textarea {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+    }
+
+    // The limit exists (2000 characters) and the old form never showed it.
+    &__count {
+        font-family: var(--font-mono);
+        font-size: var(--fs-micro);
+        color: var(--ink-faint);
+
+        &--over {
+            color: var(--danger-ink);
+        }
+    }
+
+    &__submit {
+        margin-left: auto;
+    }
+}

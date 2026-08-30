@@ -1,3 +1,5 @@
+@use "../../../../mixins" as *;
+
 .admin-form {
     display: flex;
     flex-direction: column;
@@ -300,6 +302,21 @@
         display: flex;
         align-items: center;
         gap: var(--space-4);
+    }
+
+    // On a phone the row is 375px wide, and a backend-supplied name like
+    // "Информационные и визуальные дефекты" then has to share it with the SLA and
+    // the edit link -- the name column collapses to about a third of the row and
+    // runs to four lines. Below the breakpoint the right-hand side moves under
+    // the name instead, aligned to the same left edge as the text it belongs to.
+    @include mobile {
+        grid-template-columns: auto 1fr;
+        row-gap: var(--space-3);
+
+        &__side {
+            grid-column: 2;
+            justify-content: flex-start;
+        }
     }
 
     &__sla {

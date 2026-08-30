@@ -70,7 +70,9 @@ export const BoundarySelect = observer(function BoundarySelect({ value, onChange
         adminBoundariesStore.fetchBoundaries();
     }, []);
 
-    const raw = adminBoundariesStore.boundaries;
+    // `index`, not `boundaries`: a `<select>` needs `id` and `name`, and waiting for the
+    // polygons would leave the filter empty for as long as they take.
+    const raw = adminBoundariesStore.index;
     const options = useMemo(() => [
         { value: 0, label: t("analytics.wholeCity") },
         ...[...raw]

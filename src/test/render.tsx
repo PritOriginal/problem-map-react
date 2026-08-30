@@ -87,15 +87,9 @@ export function resetStores(): void {
         // against re-fetching, the same shape organizations has. Left standing it
         // makes the store claim it has data it no longer has: the second test in a
         // file gets an empty list and no request.
-        (adminBoundariesStore as unknown as { loadedBoundaries: boolean }).loadedBoundaries = false;
-        adminBoundariesStore.boundaries = [];
-        adminBoundariesStore.marksCount = [];
+        adminBoundariesStore.reset();
         adminBoundariesStore.filtersBoundaries = { admin_levels: [6, 9, 10] };
         adminBoundariesStore.filtersMarksCount = { admin_levels: [6, 9, 10], mark_type_ids: [] };
-        adminBoundariesStore.isLoadingBoundaries = false;
-        adminBoundariesStore.isLoadingMarksCount = false;
-        adminBoundariesStore.errorBoundaries = null;
-        adminBoundariesStore.errorMarkCount = null;
 
         // heatmap -- setEnabled(false) also drops features (and so maxCount) and the request guard
         heatmapStore.setEnabled(false);

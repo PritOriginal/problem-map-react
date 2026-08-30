@@ -25,7 +25,8 @@ const PUBLIC_DICTIONARY_PATHS = [
     "/api/marks/types",
     "/api/marks/statuses",
     "/api/organizations",
-    "/api/map/admin-boundaries",
+    // the boundaries are read through the geometry-less index, which is the marks counter
+    // (see `MapService.getAdminBoundaryIndex`); the bulk list is only the fallback
     "/api/map/admin-boundaries/marks/count",
 ];
 
@@ -120,7 +121,7 @@ describe("useDictionaryReload", () => {
                 "/api/marks/types",
                 "/api/marks/statuses",
                 "/api/organizations",
-                "/api/map/admin-boundaries",
+                "/api/map/admin-boundaries/marks/count",
             ]));
         });
     });

@@ -455,4 +455,48 @@ describe("service payloads match the backend contract", () => {
         fetchMock.mockImplementation(ok({ comments: [] }));
         expect((await CommentsService.getComments(1)).meta).toBeUndefined();
     });
+
+    // The boundary list is the heaviest response in the app -- 61 boundaries, 1 080 153 bytes,
+    // 99.2% of it `geom`, and past `ETAG_MAX_ENTRY_CHARS`. `admin_levels` is the only knob the
+    // handler has, so the geometry is read one boundary at a time instead (`Cache-Control:
+    // public, max-age=86400`), and the list for the district `<select>` comes from the one
+    // endpoint that answers for the same boundaries without any geometry.
+    it("map: the boundary index has no geometry, and .geojson answers a bare Feature", async () => {
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(async (input: string) => {
+            const level = new URL(input, "http://localhost").searchParams.get("admin_levels");
+            return jsonResponse({ success: true, payload: { admin_boundaries: [{ id: Number(level), name: `l${level}`, total_count: 0 }] } });
+        });
+        const index = await MapService.getAdminBoundaryIndex([6, 9]);
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+            "/api/map/admin-boundaries/marks/count?admin_levels=6",
+            "/api/map/admin-boundaries/marks/count?admin_levels=9",
+        ]);
+        // the level is not in the response: it is taken from the request that asked for it
+        expect(index).toEqual([
+            { id: 6, name: "l6", admin_level: 6 },
+            { id: 9, name: "l9", admin_level: 9 },
+        ]);
+
+        // the .geojson route answers with the Feature itself, not with the envelope
+        fetchMock.mockClear();
+        const feature = { type: "Feature", id: 13, geometry: { type: "MultiPolygon", coordinates: [] }, properties: { name: "Тамбов", admin_level: 6 } };
+        fetchMock.mockImplementation(async () => jsonResponse(feature));
+        const geo = await MapService.getAdminBoundaryGeoJSON(13);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/map/admin-boundaries/13.geojson");
+        expect(geo.payload).toEqual(feature);
+
+        // an enveloped Feature is accepted too; anything that is not one yields null
+        fetchMock.mockImplementation(ok(feature));
+        expect((await MapService.getAdminBoundaryGeoJSON(13)).payload).toEqual(feature);
+        fetchMock.mockImplementation(ok({ nothing: true }));
+        expect((await MapService.getAdminBoundaryGeoJSON(13)).payload).toBeNull();
+
+        // the bulk list keeps its keyed shape and its `admin_levels` filter (the fallback path)
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ admin_boundaries: [{ id: 1, name: "a", admin_level: 6, geom: { type: "MultiPolygon", coordinates: [] } }] }));
+        const bulk = await MapService.getAdminBoundaries({ admin_levels: [6, 9, 10] });
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/map/admin-boundaries?admin_levels=6%2C9%2C10");
+        expect(bulk.payload.admin_boundaries[0].id).toBe(1);
+    });
 });

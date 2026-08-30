@@ -43,10 +43,11 @@ export const SettingsForm = function SettingsForm() {
     // Field-wise, and only when one of the two objects is replaced: the previous
     // `JSON.stringify(form) !== JSON.stringify(saved)` serialised the whole settings
     // tree twice on every keystroke and every unrelated re-render.
-    const dirty = useMemo(
-        () => form !== null && saved !== null && !settingsEqual(form, saved),
+    const changedCount = useMemo(
+        () => (form === null || saved === null ? 0 : countChanged(form, saved)),
         [form, saved],
     );
+    const dirty = changedCount > 0;
 
     if (!form || !saved) {
         return <p className="empty-state">{t("common.loading")}</p>;
@@ -77,7 +78,11 @@ export const SettingsForm = function SettingsForm() {
             .finally(() => setPending(false));
     };
 
-    const numberField = (path: string) => {
+    // The range used to be repeated under every one of the nine fields as
+    // "Диапазон 1–100" -- the same fact `min`/`max` already carry, spelled out nine
+    // times. It stays only where it differs per field; the rating group shares one
+    // range for all five of its fields, so that one is stated once, on the group.
+    const numberField = (path: string, showRange = true) => {
         const field: NumericField | undefined = SETTINGS_FIELDS.find((f) => f.path === path);
         if (!field) {
             // Every call below passes a path out of SETTINGS_FIELDS, so this is
@@ -86,9 +91,11 @@ export const SettingsForm = function SettingsForm() {
             return null;
         }
         const error = errors[path];
+        const changed = !Object.is(getPath(form, path), getPath(saved, path));
         return (
-            <label key={path} className={`admin-field ${error ? "invalid" : ""}`}>
+            <label key={path} className={`admin-row ${error ? "invalid" : ""} ${changed ? "changed" : ""}`}>
                 <span>{t(`admin.settings.${path}` as TranslationKey)}</span>
+                {showRange && <em>{field.min}–{field.max}</em>}
                 <input
                     type="number"
                     min={field.min}
@@ -97,53 +104,74 @@ export const SettingsForm = function SettingsForm() {
                     value={String(getPath(form, path) ?? "")}
                     onChange={(e) => setForm(setPath(form, path, e.target.value === "" ? NaN : Number(e.target.value)))}
                 />
-                <small>{t("admin.range", { min: field.min, max: field.max })}</small>
             </label>
         );
     };
 
     return (
         <div className="admin-form">
-            <div className="admin-grid">
+            {/* Three cards, one per group, each saying what the group is for. These
+                settings are edited by an administrator who opens this screen once a
+                quarter and does not remember what "целевая вероятность" means; the
+                old form gave the groups nothing but a bold word of the same size as
+                the field labels, so they did not read as groups at all. */}
+            <section className="admin-card">
+                <h3 className="admin-card__h">
+                    {t("admin.settings.confirm")}
+                    <s>{t("admin.settings.confirmHint")}</s>
+                </h3>
                 {numberField("vote_threshold")}
                 {numberField("dedup_radius_m")}
                 {numberField("max_checks_per_day")}
-            </div>
-            <p><b>{t("admin.settings.rating")}</b></p>
-            <div className="admin-grid">
-                {(["check_correct", "check_wrong", "mark_confirmed", "mark_refuted", "task_completed"] as const).map((k) => numberField(`rating.${k}`))}
-            </div>
-            <p><b>{t("admin.settings.tasker")}</b></p>
-            <div className="admin-grid">
+            </section>
+            <section className="admin-card">
+                <h3 className="admin-card__h">
+                    {t("admin.settings.rating")}
+                    <s>{t("admin.settings.ratingHint")}</s>
+                </h3>
+                {(["check_correct", "check_wrong", "mark_confirmed", "mark_refuted", "task_completed"] as const).map((k) => numberField(`rating.${k}`, false))}
+            </section>
+            <section className="admin-card">
+                <h3 className="admin-card__h">
+                    {t("admin.settings.tasker")}
+                    <s>{t("admin.settings.taskerHint")}</s>
+                </h3>
                 {numberField("tasker.max_tasks_per_user")}
                 {numberField("tasker.target_probability")}
                 {numberField("tasker.max_radius_meters")}
-                <label className={`admin-field ${errors["tasker.task_ttl"] ? "invalid" : ""}`}>
+                <label className={`admin-row admin-row--wide ${errors["tasker.task_ttl"] ? "invalid" : ""} ${form.tasker.task_ttl !== saved.tasker.task_ttl ? "changed" : ""}`}>
                     <span>{t("admin.settings.tasker.task_ttl")}</span>
+                    <em>24h · 90m</em>
                     <input type="text" value={form.tasker.task_ttl} onChange={(e) => setForm(setPath(form, "tasker.task_ttl", e.target.value))} />
-                    <small>1h30m · 24h · 90m</small>
                 </label>
-            </div>
-            <div className="task-card__actions">
-                <Button style="positive" disabled={pending || !dirty || Object.keys(errors).length > 0} onClick={save}>
-                    {t(pending ? "common.saving" : ok ? "admin.settingsSaved" : "common.save")}
+            </section>
+            {/* The save bar says what state the form is in before it offers the
+                action. Both buttons used to be full-width grey blocks, and a
+                disabled "Сохранить" that size reads as broken rather than as
+                "nothing to save". */}
+            <div className={`admin-save ${dirty ? "admin-save--dirty" : ""}`}>
+                <span>{dirty ? t("admin.changed", { n: changedCount }) : ok ? t("admin.settingsSaved") : t("admin.unchanged")}</span>
+                {dirty && <Button style="secondary" isMini disabled={pending} onClick={() => setForm(saved)}>{t("admin.reset")}</Button>}
+                <Button style="positive" isMini disabled={pending || !dirty || Object.keys(errors).length > 0} onClick={save}>
+                    {t(pending ? "common.saving" : "common.save")}
                 </Button>
-                <Button style="secondary" disabled={pending || !dirty} onClick={() => setForm(saved)}>{t("admin.reset")}</Button>
             </div>
         </div>
     );
 };
 
 /**
- * Equality over exactly the fields the form can edit: the numeric paths plus the one
- * free-text duration. `Object.is` so a cleared numeric input (NaN) equals itself, which
- * is what serialising both sides to `null` used to give.
+ * How many of the editable fields differ -- the numeric paths plus the one free-text
+ * duration. `Object.is` so a cleared numeric input (NaN) equals itself, which is what
+ * serialising both sides to `null` used to give.
+ *
+ * A count, not a boolean: the save bar says how many fields are unsaved, and the
+ * previous `JSON.stringify(form) !== JSON.stringify(saved)` serialised the whole
+ * settings tree twice on every keystroke to answer even the boolean question.
  */
-function settingsEqual(a: AdminSettings, b: AdminSettings): boolean {
-    if (!Object.is(a.tasker.task_ttl, b.tasker.task_ttl)) {
-        return false;
-    }
-    return SETTINGS_FIELDS.every((field) => Object.is(getPath(a, field.path), getPath(b, field.path)));
+function countChanged(a: AdminSettings, b: AdminSettings): number {
+    const ttl = Object.is(a.tasker.task_ttl, b.tasker.task_ttl) ? 0 : 1;
+    return ttl + SETTINGS_FIELDS.filter((field) => !Object.is(getPath(a, field.path), getPath(b, field.path))).length;
 }
 
 export default SettingsForm;

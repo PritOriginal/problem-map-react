@@ -2,10 +2,11 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import markStatusesStore from "../../../store/mark-statuses";
 import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesStep } from "../../../services/AnalyticsService";
-import { TranslationKey, useT } from "../../../i18n";
+import { localeOf, TranslationKey, useT } from "../../../i18n";
 import { statusColors, STATUS_FALLBACK } from "../../../styles/tokens";
 import { useTheme } from "../../../theme";
 import { ChartSeries, DEFAULT_CHART_LAYOUT, hoursFigure, linePoints, niceMax, periodLabel, pointX, pointY, shareFigure, toIsoDate, yTicks } from "../../../utils/chart";
+import { formatDay } from "../../../utils/dates";
 import { useAsyncData } from "../../../utils/use-async-data";
 import PanelHeader from "../panel-header";
 import "./analytics.scss";
@@ -35,7 +36,7 @@ function defaultRange(days: number): { from: string; to: string } {
 }
 
 const Analytics = observer(function Analytics() {
-    const { t } = useT();
+    const { t, lang } = useT();
 
     useEffect(() => {
         if (markStatusesStore.statuses.length === 0 && !markStatusesStore.isLoading) {
@@ -46,6 +47,19 @@ const Analytics = observer(function Analytics() {
     const [boundaryId, setBoundaryId] = useState(0);
     const [range, setRange] = useState(() => defaultRange(90));
     const [step, setStep] = useState<TimeseriesStep>("week");
+    // Which preset is in force is derived from the dates, but "Свой" is a mode of
+    // its own: the custom dates can happen to equal a preset's, and the fields
+    // must not vanish underneath the person who just opened them.
+    const [custom, setCustom] = useState(false);
+
+    const presetDays = PERIOD_PRESETS.find((preset) => {
+        const presetRange = defaultRange(preset.days);
+        return presetRange.from === range.from && presetRange.to === range.to;
+    })?.days;
+
+    // The window in words, for when the fields are put away. A screen full of zeros
+    // is exactly when the reader asks which period produced them.
+    const periodDates = `${formatDay(range.from, localeOf(lang))} — ${formatDay(range.to, localeOf(lang))}`;
 
     const request: AnalyticsRequest = useMemo(() => ({
         boundary_id: boundaryId || undefined,
@@ -81,35 +95,45 @@ const Analytics = observer(function Analytics() {
             <PanelHeader openOnMount title={t("analytics.title")} subtitle={t("analytics.subtitle")} />
             <div className="panel__content">
                 <PanelControls>
-                    <BoundarySelect span label={t("analytics.district")} value={boundaryId} onChange={setBoundaryId} />
-                    <label>
-                        {t("analytics.from")}
-                        <input type="date" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
-                    </label>
-                    <label>
-                        {t("analytics.to")}
-                        <input type="date" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
-                    </label>
-                    {/* Which preset is in force was not shown at all, so a screen with
-                        nothing in it never said which window it was reporting on. */}
-                    <div className="analytics-controls__span period-presets">
-                        {PERIOD_PRESETS.map((preset) => {
-                            const presetRange = defaultRange(preset.days);
-                            const active = presetRange.from === range.from && presetRange.to === range.to;
-                            return (
+                    {/* The presets first, because they are what gets used: the two
+                        date fields took half the panel and the preset strip sat
+                        BELOW the dates it overwrites, so the screen offered the
+                        manual way first and mentioned the one-click way second.
+                        The dates now appear only under "Свой". */}
+                    <div className="analytics-controls__span">
+                        <span className="analytics-controls__label">{t("analytics.period")}</span>
+                        <div className="segmented" role="group" aria-label={t("analytics.period")}>
+                            {PERIOD_PRESETS.map((preset) => (
                                 <button
                                     key={preset.days}
                                     type="button"
-                                    className="btn-secondary mini"
-                                    aria-pressed={active}
-                                    onClick={() => setRange(presetRange)}
+                                    aria-pressed={!custom && preset.days === presetDays}
+                                    onClick={() => { setCustom(false); setRange(defaultRange(preset.days)); }}
                                 >
                                     {t(preset.label)}
                                 </button>
-                            );
-                        })}
+                            ))}
+                            <button type="button" aria-pressed={custom} onClick={() => setCustom(true)}>{t("analytics.preset.custom")}</button>
+                        </div>
                     </div>
-                    <SelectField label={t("analytics.step")} value={step} options={stepOptions} onChange={setStep} />
+                    {custom
+                        ? <div className="analytics-controls__span date-range">
+                            <label>
+                                <span className="visually-hidden">{t("analytics.from")}</span>
+                                <input type="date" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
+                            </label>
+                            <s aria-hidden="true">—</s>
+                            <label>
+                                <span className="visually-hidden">{t("analytics.to")}</span>
+                                <input type="date" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
+                            </label>
+                        </div>
+                        : <p className="analytics-controls__span date-range date-range--said">
+                            {periodDates}
+                        </p>
+                    }
+                    <BoundarySelect label={t("analytics.district")} value={boundaryId} onChange={setBoundaryId} />
+                    <SelectField label={t("analytics.stepShort")} value={step} options={stepOptions} onChange={setStep} />
                 </PanelControls>
                 <hr />
                 <h2 className="section-title">{t("analytics.kpi")}{isLoading && <span className="section-title__count">{t("common.loading")}</span>}</h2>

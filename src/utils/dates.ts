@@ -29,3 +29,19 @@ export function toRfc3339Range(from?: string, to?: string): { from?: string; to?
         to: to ? dayEndRfc3339(to) : undefined,
     };
 }
+
+/**
+ * A `YYYY-MM-DD` day, written the way the locale writes days.
+ *
+ * Built out of the three parts rather than `new Date(iso)`: that constructor reads
+ * a bare date as UTC midnight, so west of Greenwich `toLocaleDateString` hands back
+ * the previous day -- and this string is the answer to "which period am I looking
+ * at", where being a day off is the whole failure.
+ */
+export function formatDay(iso: string, locale: string): string {
+    const [year, month, day] = iso.split("-").map(Number);
+    if (!year || !month || !day) {
+        return iso;
+    }
+    return new Date(year, month - 1, day).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
+}

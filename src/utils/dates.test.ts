@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayEndRfc3339, dayStartRfc3339, toRfc3339Range } from "./dates";
+import { dayEndRfc3339, dayStartRfc3339, formatDay, toRfc3339Range } from "./dates";
 
 const RFC3339 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
@@ -24,5 +24,22 @@ describe("toRfc3339Range", () => {
         expect(toRfc3339Range(undefined, "")).toEqual({ from: undefined, to: undefined });
         expect(toRfc3339Range("2026-01-05")).toMatchObject({ to: undefined });
         expect(toRfc3339Range("2026-01-05").from).toMatch(RFC3339);
+    });
+});
+
+describe("formatDay", () => {
+    it("writes the day the locale's way", () => {
+        expect(formatDay("2026-06-01", "ru-RU")).toBe("01.06.2026");
+    });
+
+    it("keeps the day it was given, whatever the zone", () => {
+        // `new Date("2026-06-01")` is UTC midnight, which is 31 May in any zone west
+        // of Greenwich. The parts are read as local, so the day never shifts.
+        expect(formatDay("2026-06-01", "en-US")).toBe("06/01/2026");
+    });
+
+    it("gives back anything it cannot read", () => {
+        expect(formatDay("", "ru-RU")).toBe("");
+        expect(formatDay("сегодня", "ru-RU")).toBe("сегодня");
     });
 });

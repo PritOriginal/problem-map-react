@@ -1,7 +1,7 @@
 import { Outlet, useParams } from "react-router-dom";
 import { TypeIcon } from "../../../mark/mark";
 import { statusColors } from "../../../../styles/tokens";
-import { useTheme } from "../../../../theme";
+import { contrastOn } from "../../../../utils/mark-types";
 import { Suspense, useCallback, useEffect, useRef } from "react";
 import MarksService, { Mark, MarkStatus, MarkType } from "../../../../services/MarksService";
 import markTypesStore from "../../../../store/mark-types";
@@ -18,7 +18,6 @@ import { HiddenBadge, OrgLabel, SlaBadge } from "../../../badges/badges";
 
 
 const ProblemPanel = observer(() => {
-    const { resolved } = useTheme();
     const params = useParams();
     const { t } = useT();
 
@@ -67,6 +66,11 @@ const ProblemPanel = observer(() => {
     }
 
 
+    // The header ground is `--chrome` in both themes, so the status takes the dark
+    // scale in both: the light-theme values include a slate and two greys that are
+    // invisible on it. `?? [1]` covers the moment before the dictionary has loaded.
+    const statusColor = statusColors("dark")[markStatus.mark_status_id] ?? statusColors("dark")[1];
+
     return (
         <MarkContext.Provider value={mark}>
         <MarkReloadContext.Provider value={reload}>
@@ -75,6 +79,32 @@ const ProblemPanel = observer(() => {
                 className="panel__header"
                 onClick={() => panelStore.toggle()}
             >
+                {/* Number and status first, the way a work order is headed: those
+                    two are how a mark is named in moderation and in a conversation
+                    about it, and both used to sit below the title -- the id tacked
+                    onto the end of the coordinate line, unlabelled, and the status
+                    drawn as an outline, which threw away the one thing that already
+                    identifies it. The tag is FILLED with the status colour, so it is
+                    the same colour as the pin on the map behind the panel and doubles
+                    as that pin's legend.
+
+                    The dark scale, in both themes: the header ground is `--chrome`
+                    either way, and the light-theme values are a slate and two greys
+                    that vanish on it. The ink is computed per colour rather than
+                    fixed -- `#ffc93d` and `#6f7477` do not take the same one. */}
+                <div className="panel__header__labels">
+                    <span className="panel__header__ref">{t("mark.n", { id: mark.mark_id })}</span>
+                    <span
+                        className="status-tag"
+                        style={{ backgroundColor: statusColor, color: contrastOn(statusColor) }}
+                    >
+                        {markStatus.name}
+                    </span>
+                    <HiddenBadge hidden={mark.hidden} />
+                    <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
+                    <OrgLabel organizationId={mark.organization_id} />
+                </div>
+                <div className="panel__header__rule" aria-hidden="true" />
                 {/* Rows, not columns. A right-hand column only works while the title
                     is short enough to leave room for it, and category names come
                     from the backend: "Информационные и визуальные дефекты" pushed
@@ -84,23 +114,10 @@ const ProblemPanel = observer(() => {
                     <TypeIcon typeId={mark.mark_type_id} type={markType.mark_type_id !== 0 ? markType : undefined} color="var(--on-chrome)" />
                     <span>{markType.name}</span>
                 </h1>
-                {/* Coordinates and id together: both are machine-stamped references
-                    to the record, both monospaced, and pairing them costs no row. */}
-                <p className="panel__header__meta">
-                    <span className="panel__header__coords">
-                        <span className="visually-hidden">{t("common.coordinates")}: </span>
-                        {mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}
-                    </span>
-                    <span className="panel__header__ref">{t("mark.n", { id: mark.mark_id })}</span>
+                <p className="panel__header__coords">
+                    <span className="visually-hidden">{t("common.coordinates")}: </span>
+                    {mark.geom.coordinates[1].toFixed(6)}, {mark.geom.coordinates[0].toFixed(6)}
                 </p>
-                <div className="panel__header__labels">
-                    <div className="status-chip" style={{ borderColor: statusColors(resolved)[markStatus.mark_status_id] }}>
-                        {markStatus.name}
-                    </div>
-                    <HiddenBadge hidden={mark.hidden} />
-                    <SlaBadge slaDueAt={mark.sla_due_at} isOverdue={mark.is_overdue} />
-                    <OrgLabel organizationId={mark.organization_id} />
-                </div>
             </div>
             <div className="panel__content">
                 {/* Its own boundary: the children of /problem/:id are lazy too, and

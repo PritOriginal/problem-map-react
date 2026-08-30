@@ -145,13 +145,12 @@
             }
         }
 
-        // Where and which: the coordinates at the left edge, the id at the right,
-        // both monospaced because both are machine-stamped fact.
-        &__meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: var(--space-6);
+        // The rule under the order line. Not a border on the labels row: that row
+        // wraps when the badges pile up, and a border would then hug the last
+        // wrapped line instead of separating the two halves of the header.
+        &__rule {
+            height: 1px;
+            background-color: var(--rule-chrome);
         }
 
         // The category is the title: a person recognises a mark by what the problem
@@ -196,23 +195,25 @@
             letter-spacing: -0.02em;
         }
 
-        // The id: a reference you quote, not the name of the thing.
+        // The id, now the first thing on the header: this is what the mark is
+        // called in moderation and in a conversation about it, so it is set in
+        // full ink rather than the muted grey it wore as a trailing footnote.
         &__ref {
             font-family: var(--font-mono);
+            font-weight: 700;
             font-size: var(--fs-caption);
-            color: var(--on-chrome-muted);
+            color: var(--on-chrome);
             letter-spacing: 0.06em;
             white-space: nowrap;
         }
 
-        // The status chip and the badges are one family -- labels the record
-        // carries -- so they share a row and wrap together.
+        // The order line: id, status, and the badges the record carries. One
+        // family, one row, wrapping together.
         &__labels {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: var(--space-2);
-            margin-top: var(--space-1);
+            gap: var(--space-3);
         }
     }
 
@@ -541,5 +542,87 @@
     // Was `style={{ gridColumn: "1 / -1" }}` at every such call site.
     &__span {
         grid-column: 1 / -1;
+    }
+
+    // A label over a control that is not a single form element -- the segmented
+    // period switch. `<label>` would have nothing to point at.
+    &__label {
+        display: block;
+        margin-bottom: 2px;
+    }
+}
+
+// One choice out of a few, shown as one control rather than as loose buttons. The
+// period presets used to be three separate outline buttons sitting BELOW the two
+// date fields they overwrite, so the screen offered the manual way first and
+// mentioned the one-click way second.
+.segmented {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background-color: var(--surface-sunken);
+    border-radius: var(--radius-2);
+
+    button {
+        flex: 1;
+        padding: 5px var(--space-4);
+        font-family: var(--font-body);
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
+        white-space: nowrap;
+        background: none;
+        border: none;
+        border-radius: var(--radius-1);
+        cursor: pointer;
+
+        transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+
+        &:hover {
+            color: var(--ink);
+        }
+
+        // The chosen one is raised, not merely tinted: the switch has to read at a
+        // glance which window the figures below it are counting.
+        &[aria-pressed="true"] {
+            color: var(--ink);
+            font-weight: 600;
+            background-color: var(--paper);
+            box-shadow: var(--shadow-1);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -1px;
+        }
+    }
+}
+
+// The window itself. Under a preset it is a sentence -- a screen full of zeros is
+// exactly when the reader asks which period produced them -- and only under "Свой"
+// does it become two fields.
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+
+    label {
+        flex: 1;
+        min-width: 0;
+    }
+
+    input {
+        width: 100%;
+        font-family: var(--font-mono);
+    }
+
+    s {
+        text-decoration: none;
+        color: var(--ink-faint);
+    }
+
+    &--said {
+        font-family: var(--font-mono);
+        font-size: var(--fs-caption);
+        color: var(--ink-muted);
     }
 }

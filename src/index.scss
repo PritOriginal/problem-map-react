@@ -393,14 +393,16 @@ a {
   }
 }
 
-// A paper tag stamped with the status colour. The colour is the status; the tag
-// is always the same shape, so a queue of them scans as one column.
-.status-chip {
+// The status, stamped in the status's own colour -- the same colour the mark is
+// drawn in on the map, so the tag is also that pin's legend. Filled, not outlined:
+// an outline spends the colour on a 2px edge and leaves the tag reading as chrome.
+//
+// `background-color` and `color` are set inline per mark, because the colour is
+// data. The ink is `contrastOn()` of the fill, not a token: the fill is the same
+// in both themes, so its text has to be too.
+.status-tag {
   display: inline-block;
-  padding: var(--space-1) var(--space-3);
-  background-color: var(--paper);
-  color: var(--ink);
-  border: 2px solid var(--rule);
+  padding: var(--space-1) var(--space-4);
   border-radius: var(--radius-1);
   font-size: var(--fs-caption);
   font-weight: 600;
@@ -468,7 +470,13 @@ a {
 
 // Form controls were entirely unstyled browser defaults, so every panel with a
 // filter or a form fell out of the system. One rule brings all of them in.
-input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+//
+// The exclusions are wrapped in `:where()` so they cost no specificity. Written
+// plainly, the four `:not([type=...])` made this selector heavier than any single
+// class, so a component that gave one of its own inputs a width lost to this
+// `width: 100%` -- which is not what a default is for. At (0,0,1) it stays a
+// default: anything more specific simply wins.
+input:where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"])),
 select,
 textarea {
   width: 100%;

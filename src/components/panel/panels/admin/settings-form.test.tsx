@@ -33,8 +33,8 @@ function stubSettings(): void {
 }
 
 /**
- * The label markup is `<span>name</span><input><small>range</small>`, so the accessible
- * name of a field carries its hint too -- hence the substring match.
+ * The label markup is `<span>name</span><em>range</em><input>`, so the accessible
+ * name of a field carries its range too -- hence the substring match.
  */
 function field(key: TranslationKey): HTMLInputElement {
     return screen.getByLabelText(t(key), { exact: false }) as HTMLInputElement;
@@ -43,14 +43,17 @@ function field(key: TranslationKey): HTMLInputElement {
 const voteThreshold = () => field("admin.settings.vote_threshold");
 
 /** Renders the form and waits for its first load to land. */
-async function renderForm(): Promise<{ save: HTMLElement; reset: HTMLElement }> {
+async function renderForm(): Promise<{ save: HTMLElement }> {
     render(<SettingsForm />);
     await waitFor(() => expect(screen.getByRole("button", { name: t("common.save") })).toBeInTheDocument());
-    return {
-        save: screen.getByRole("button", { name: t("common.save") }),
-        reset: screen.getByRole("button", { name: t("admin.reset") }),
-    };
+    return { save: screen.getByRole("button", { name: t("common.save") }) };
 }
+
+/**
+ * Reset, which is only on screen while there is something to undo -- a query, not a
+ * handle taken once, because the button is unmounted when the form is clean.
+ */
+const resetButton = () => screen.queryByRole("button", { name: t("admin.reset") });
 
 describe("SettingsForm", () => {
     beforeEach(() => {
@@ -80,26 +83,29 @@ describe("SettingsForm", () => {
 
     it("is dirty only while the form differs from what was loaded", async () => {
         const user = userEvent.setup();
-        const { save, reset } = await renderForm();
+        const { save } = await renderForm();
 
         expect(save).toBeDisabled();
-        expect(reset).toBeDisabled();
+        expect(resetButton()).toBeNull();
+        expect(screen.getByText(t("admin.unchanged"))).toBeInTheDocument();
 
         await user.clear(voteThreshold());
         await user.type(voteThreshold(), "7");
         expect(save).toBeEnabled();
-        expect(reset).toBeEnabled();
+        expect(resetButton()).toBeEnabled();
+        // The bar says how much is unsaved, not merely that something is.
+        expect(screen.getByText(t("admin.changed", { n: 1 }))).toBeInTheDocument();
 
         // back to the loaded value -- nothing changed after all
         await user.clear(voteThreshold());
         await user.type(voteThreshold(), String(EMPTY_SETTINGS.vote_threshold));
         expect(save).toBeDisabled();
-        expect(reset).toBeDisabled();
+        expect(resetButton()).toBeNull();
     });
 
     it("puts the loaded values back when reset is pressed", async () => {
         const user = userEvent.setup();
-        const { reset } = await renderForm();
+        await renderForm();
         const ttl = field("admin.settings.tasker.task_ttl");
 
         await user.clear(voteThreshold());
@@ -109,11 +115,14 @@ describe("SettingsForm", () => {
         expect(voteThreshold()).toHaveValue(42);
         expect(ttl).toHaveValue("1h30m");
 
-        await user.click(reset);
+        // Two fields changed, so the bar counts two.
+        expect(screen.getByText(t("admin.changed", { n: 2 }))).toBeInTheDocument();
+
+        await user.click(resetButton()!);
 
         expect(voteThreshold()).toHaveValue(EMPTY_SETTINGS.vote_threshold);
         expect(ttl).toHaveValue(EMPTY_SETTINGS.tasker.task_ttl);
-        expect(reset).toBeDisabled();
+        expect(resetButton()).toBeNull();
     });
 
     it("cancels the success timer when it unmounts", async () => {
@@ -126,7 +135,9 @@ describe("SettingsForm", () => {
         await user.type(voteThreshold(), "7");
         await user.click(save);
 
-        await waitFor(() => expect(screen.getByRole("button", { name: t("admin.settingsSaved") })).toBeInTheDocument());
+        // "Сохранено" is now said by the save bar, not by the button: the button
+        // states the action, and the bar states what happened to the form.
+        await waitFor(() => expect(screen.getByText(t("admin.settingsSaved"))).toBeInTheDocument());
 
         const index = setTimeoutSpy.mock.calls.findIndex(([, delay]) => delay === OK_TIMEOUT_MS);
         expect(index).toBeGreaterThanOrEqual(0);

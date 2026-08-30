@@ -1,6 +1,19 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+import { ensureDict } from "../i18n";
+
+/**
+ * The English dictionary is loaded on demand in the browser (it is ~20 KB the Russian
+ * majority never reads), which makes the first `setLang("en")` of a session
+ * asynchronous. Tests are written against the old behaviour, where both dictionaries
+ * were linked statically and a switch was instant, so the chunk is warmed here, once,
+ * before any test module runs: `setLang` is then synchronous again for every test.
+ *
+ * A test that wants the cold path back gets it with `vi.resetModules()` and a fresh
+ * `import("../i18n")` -- see `src/i18n/i18n.test.tsx`.
+ */
+await ensureDict("en");
 
 /**
  * jsdom implements neither `matchMedia` nor `ResizeObserver`, and both are used at

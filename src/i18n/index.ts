@@ -1,6 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { ru, TranslationKey } from "./ru";
-import { en } from "./en";
 
 export type { TranslationKey } from "./ru";
 
@@ -9,7 +8,48 @@ export const LANGS: readonly Lang[] = ["ru", "en"];
 export const DEFAULT_LANG: Lang = "ru";
 export const LANG_STORAGE_KEY = "lang";
 
-const DICTS: Record<Lang, Partial<Record<TranslationKey, string>>> = { ru, en };
+type Dict = Partial<Record<TranslationKey, string>>;
+
+/**
+ * Russian is the default, the fallback and the reference dictionary, so it is linked
+ * statically. English is not: it is ~20 KB of the entry chunk that the Russian-reading
+ * majority downloads and never reads, so it is fetched on demand instead.
+ *
+ * Loaded once, then kept — `ensureDict` is cheap to call repeatedly, and the same
+ * in-flight promise is shared so a double switch does not fetch the chunk twice.
+ */
+let enDict: Dict | null = null;
+let enLoading: Promise<void> | null = null;
+
+/** Makes sure `t()` can answer in `lang`. Resolves immediately for anything already loaded. */
+export function ensureDict(lang: Lang): Promise<void> {
+    if (lang !== "en" || enDict) {
+        return Promise.resolve();
+    }
+    enLoading ??= import("./en").then(
+        (module) => {
+            enDict = module.en;
+            enLoading = null;
+        },
+        (error) => {
+            // the chunk is unreachable (offline, a stale deploy): stay on the Russian
+            // fallback rather than blocking the switch, and let the next call retry
+            enLoading = null;
+            console.error("i18n: failed to load the English dictionary", error);
+        },
+    );
+    return enLoading;
+}
+
+/** True when `lang` can be rendered right now, without waiting for a chunk. */
+function dictLoaded(lang: Lang): boolean {
+    return lang !== "en" || enDict !== null;
+}
+
+/** The dictionary to read `lang` from; Russian while English is still on its way. */
+function dictOf(lang: Lang): Dict {
+    return lang === "en" ? enDict ?? ru : ru;
+}
 
 export function parseLang(value: unknown): Lang | null {
     return typeof value === "string" && (LANGS as readonly string[]).includes(value) ? (value as Lang) : null;
@@ -40,6 +80,19 @@ class LangStore {
 
     get = (): Lang => this.lang;
 
+    /**
+     * Switches the language.
+     *
+     * The choice itself takes effect at once — `getLang()` answers the new language
+     * immediately, so the very next request already carries the right
+     * `Accept-Language`. What waits is the *notification*: subscribers are told only
+     * once the dictionary for that language is in memory, or the whole interface would
+     * re-render against the Russian fallback and then flip to English a tick later.
+     *
+     * Nothing re-reads `t()` without being notified, so the window between the two is
+     * invisible. The common case (Russian, or English already loaded) is fully
+     * synchronous, exactly as it was when both dictionaries were linked statically.
+     */
     set = (lang: Lang) => {
         if (lang === this.lang) {
             return;
@@ -51,7 +104,17 @@ class LangStore {
             // storage may be unavailable (private mode); the choice then lives for the session only
         }
         this.applyToDocument();
-        this.listeners.forEach((listener) => listener());
+
+        if (dictLoaded(lang)) {
+            this.notify();
+            return;
+        }
+        void ensureDict(lang).then(() => {
+            // a second switch may have overtaken this one; that switch did its own notify
+            if (this.lang === lang) {
+                this.notify();
+            }
+        });
     };
 
     subscribe = (listener: Listener): (() => void) => {
@@ -60,6 +123,10 @@ class LangStore {
             this.listeners.delete(listener);
         };
     };
+
+    private notify() {
+        this.listeners.forEach((listener) => listener());
+    }
 
     private applyToDocument() {
         if (typeof document !== "undefined") {
@@ -88,7 +155,7 @@ function interpolate(template: string, params?: TParams): string {
  * and to the key itself when it is unknown everywhere.
  */
 export function t(key: TranslationKey, params?: TParams, lang: Lang = langStore.get()): string {
-    const template = DICTS[lang][key] ?? ru[key];
+    const template = dictOf(lang)[key] ?? ru[key];
     if (template === undefined) {
         warnMissingOnce(key);
         return interpolate(key, params);
@@ -109,7 +176,7 @@ function warnMissingOnce(key: string): void {
 
 /** Translates a dynamic key (e.g. built from a status id); unknown keys yield `fallback`. */
 export function tOr(key: string, fallback: string, params?: TParams, lang: Lang = langStore.get()): string {
-    const template = DICTS[lang][key as TranslationKey] ?? ru[key as TranslationKey];
+    const template = dictOf(lang)[key as TranslationKey] ?? ru[key as TranslationKey];
     return template === undefined ? fallback : interpolate(template, params);
 }
 

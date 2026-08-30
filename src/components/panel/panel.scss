@@ -487,18 +487,35 @@
 .chart-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: var(--space-5);
     font-size: var(--fs-caption);
+    color: var(--ink-muted);
 
     &__item {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 5px;
 
         i {
             display: inline-block;
             width: 12px;
             height: 3px;
+            border-radius: 2px;
+        }
+
+        // The bar series gets a block, not a rule, so the key matches the mark.
+        .chart-legend__bar {
+            height: 9px;
+            border-radius: 1px;
+            opacity: 0.45;
+        }
+
+        // The latest value of each series. Four lines with nothing to hover left
+        // no way to read a number off the chart at all.
+        b {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            color: var(--ink);
         }
     }
 }

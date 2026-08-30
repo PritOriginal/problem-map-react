@@ -245,6 +245,7 @@ export const en: Partial<Dictionary> = {
     "analytics.preset.30": "30 days",
     "analytics.preset.90": "90 days",
     "analytics.preset.365": "Year",
+    "analytics.byStatus": "By status",
     "analytics.kpi": "Metrics",
     "analytics.dynamics": "Dynamics",
     "analytics.chartAria": "Problem dynamics chart",

@@ -157,6 +157,20 @@
     // rim that does the separating. Both are needed; neither works on its own.
     --marker-icon: #ffffff;
 
+    // ---- Chart ------------------------------------------------------------
+    // The analytics chart drew its own grid at #e5e5e5 and its axis labels at
+    // #555, both light-theme literals. On the dark theme that made the grid
+    // brighter than the data and the labels 1.66:1 against their own ground.
+    --chart-grid: #e9e7e1;
+    --chart-ink: #6b6f72;
+    // Series. "Created" was #1f77b4 -- matplotlib's default blue, the one colour
+    // in the app not derived from this system. "Refuted" was --ink, which made
+    // the least important series the most contrasty line on the chart.
+    --series-created: #3d7fb5;
+    --series-confirmed: #d92b2b;
+    --series-closed: #2fa55a;
+    --series-refuted: #8b8f91;
+
     // ---- Spacing --------------------------------------------------------
     --space-1: 2px;
     --space-2: 4px;
@@ -263,6 +277,13 @@
 
     --highlight-bg: #362c14;
     --highlight-rule: #ffc93d;
+
+    --chart-grid: #2a2e31;
+    --chart-ink: #9aa0a4;
+    --series-created: #66aee8;
+    --series-confirmed: #ff5c5c;
+    --series-closed: #55cc83;
+    --series-refuted: #9aa0a4;
 
     // ---- Accent ---------------------------------------------------------
     // On dark the base pink is already 5.1:1, so --accent-ink moves the OTHER

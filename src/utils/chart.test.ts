@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, yTicks } from "./chart";
+import { DEFAULT_CHART_LAYOUT, formatHours, formatShare, hoursFigure, linePoints, niceMax, periodLabel, shareFigure, yTicks } from "./chart";
+import { t } from "../i18n";
 
 describe("niceMax", () => {
     it("rounds up to 1/2/5 × 10^n and never below 1", () => {
@@ -44,5 +45,19 @@ describe("labels", () => {
         expect(formatHours(60)).toBe("2.5 дн");
         expect(formatShare(0.256)).toBe("26 %");
         expect(formatShare(null)).toBe("—");
+    });
+});
+
+describe("hoursFigure / shareFigure", () => {
+    it("keeps the number and the unit apart", () => {
+        expect(hoursFigure(7)).toEqual({ value: "7", unit: t("common.hours") });
+        expect(hoursFigure(72)).toEqual({ value: "3.0", unit: t("common.days") });
+        expect(shareFigure(0.083)).toEqual({ value: "8", unit: "%" });
+    });
+
+    it("returns an em dash and no unit when the value is unknown", () => {
+        expect(hoursFigure(null)).toEqual({ value: "—", unit: "" });
+        expect(hoursFigure(Number.NaN)).toEqual({ value: "—", unit: "" });
+        expect(shareFigure(undefined)).toEqual({ value: "—", unit: "" });
     });
 });

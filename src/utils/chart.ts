@@ -95,6 +95,32 @@ export function formatHours(hours: number | null | undefined): string {
     return `${(hours / 24).toFixed(1)} ${t("common.days")}`;
 }
 
+/**
+ * A figure and its unit, kept apart.
+ *
+ * `formatHours` and `formatShare` glue the two into one string, which reads as a
+ * single word -- "7,4 ч" at one size and weight -- and stops the numbers lining
+ * up in a column. Tiles that show a figure want them separate.
+ */
+export type Figure = { value: string; unit: string };
+
+export function hoursFigure(hours: number | null | undefined): Figure {
+    if (hours === null || hours === undefined || !Number.isFinite(hours)) {
+        return { value: "—", unit: "" };
+    }
+    if (hours < 48) {
+        return { value: String(Math.round(hours)), unit: t("common.hours") };
+    }
+    return { value: (hours / 24).toFixed(1), unit: t("common.days") };
+}
+
+export function shareFigure(share: number | null | undefined): Figure {
+    if (share === null || share === undefined || !Number.isFinite(share)) {
+        return { value: "—", unit: "" };
+    }
+    return { value: String(Math.round(share * 100)), unit: "%" };
+}
+
 /** Formats a 0..1 share as a percentage; `—` when unknown. */
 export function formatShare(share: number | null | undefined): string {
     if (share === null || share === undefined || !Number.isFinite(share)) {

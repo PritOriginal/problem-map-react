@@ -1,20 +1,24 @@
 import { memo, useEffect, useMemo, useState } from "react";
-import { StatTile } from "../../stat-tile/stat-tile";
 import { observer } from "mobx-react-lite";
 import markStatusesStore from "../../../store/mark-statuses";
 import AnalyticsService, { AnalyticsRequest, Kpi, TimeseriesPoint, TimeseriesStep } from "../../../services/AnalyticsService";
 import { TranslationKey, useT } from "../../../i18n";
-import { SERIES_COLORS } from "../../../styles/tokens";
-import { ChartSeries, DEFAULT_CHART_LAYOUT, formatHours, formatShare, linePoints, niceMax, periodLabel, pointX, pointY, toIsoDate, yTicks } from "../../../utils/chart";
+import { statusColors, STATUS_FALLBACK } from "../../../styles/tokens";
+import { useTheme } from "../../../theme";
+import { ChartSeries, DEFAULT_CHART_LAYOUT, hoursFigure, linePoints, niceMax, periodLabel, pointX, pointY, shareFigure, toIsoDate, yTicks } from "../../../utils/chart";
 import { useAsyncData } from "../../../utils/use-async-data";
 import PanelHeader from "../panel-header";
+import "./analytics.scss";
 import { BoundarySelect, PanelControls, SelectField } from "../panel-controls";
 
+// Colours come from the token layer through `var()`, applied as inline CSS rather
+// than as SVG presentation attributes: the chart used to carry its own literals,
+// which is why its grid and axis labels were unreadable under the dark theme.
 const SERIES_META: { key: keyof Omit<TimeseriesPoint, "period">; label: TranslationKey; color: string }[] = [
-    { key: "created", label: "analytics.series.created", color: SERIES_COLORS.created },
-    { key: "confirmed", label: "analytics.series.confirmed", color: SERIES_COLORS.confirmed },
-    { key: "closed", label: "analytics.series.closed", color: SERIES_COLORS.closed },
-    { key: "refuted", label: "analytics.series.refuted", color: SERIES_COLORS.refuted },
+    { key: "created", label: "analytics.series.created", color: "var(--series-created)" },
+    { key: "confirmed", label: "analytics.series.confirmed", color: "var(--series-confirmed)" },
+    { key: "closed", label: "analytics.series.closed", color: "var(--series-closed)" },
+    { key: "refuted", label: "analytics.series.refuted", color: "var(--series-refuted)" },
 ];
 
 const PERIOD_PRESETS: { label: TranslationKey; days: number }[] = [
@@ -106,31 +110,87 @@ const Analytics = observer(function Analytics() {
     );
 });
 
+/**
+ * The figures.
+ *
+ * One headline number and five supporting ones, rather than six tiles of equal
+ * weight -- "всего проблем" and "доля опровергнутых" were the same size, which
+ * says they matter equally. The unit is set apart from the figure so a column of
+ * numbers still lines up.
+ *
+ * The status breakdown is a share of one whole, not six independent values, so
+ * it is drawn as one bar in the colours the map already uses for those statuses.
+ */
 const StatTiles = observer(function StatTiles({ kpi }: { kpi: Kpi }) {
     const { t } = useT();
+    const { resolved } = useTheme();
+    const statuses = statusColors(resolved);
     const statusName = (id: string) => markStatusesStore.statuses.find((s) => String(s.mark_status_id) === id)?.name ?? t("common.statusN", { id });
     const byStatus = Object.entries(kpi.by_status ?? {}).sort(([a], [b]) => Number(a) - Number(b));
+    const statusTotal = byStatus.reduce((sum, [, count]) => sum + count, 0);
+
+    const figures = [
+        { label: t("analytics.olderThan30"), ...{ value: String(kpi.open_older_than_30d ?? 0), unit: "" } },
+        { label: t("analytics.avgConfirm"), ...hoursFigure(kpi.avg_confirm_hours) },
+        { label: t("analytics.medianConfirm"), ...hoursFigure(kpi.median_confirm_hours) },
+        { label: t("analytics.avgClose"), ...hoursFigure(kpi.avg_close_hours) },
+        { label: t("analytics.refutedShare"), ...shareFigure(kpi.refuted_share) },
+    ];
+
     return (
         <>
-            <div className="stat-grid">
-                <StatTile value={kpi.total} label={t("analytics.total")} />
-                <StatTile value={kpi.open_older_than_30d ?? 0} label={t("analytics.olderThan30")} />
-                <StatTile value={formatHours(kpi.avg_confirm_hours)} label={t("analytics.avgConfirm")} />
-                <StatTile value={formatHours(kpi.median_confirm_hours)} label={t("analytics.medianConfirm")} />
-                <StatTile value={formatHours(kpi.avg_close_hours)} label={t("analytics.avgClose")} />
-                <StatTile value={formatShare(kpi.refuted_share)} label={t("analytics.refutedShare")} />
+            <div className="kpi-hero">
+                <b>{kpi.total}</b>
+                <span>{t("analytics.total")}</span>
             </div>
-            {byStatus.length > 0 &&
-                <div className="stat-grid">
-                    {byStatus.map(([id, count]) => <StatTile key={id} value={count} label={statusName(id)} />)}
-                </div>
+            <div className="kpi-figures">
+                {figures.map((figure) => (
+                    <div key={figure.label} className="kpi-figure">
+                        <b>{figure.value}{figure.unit && <em>{figure.unit}</em>}</b>
+                        <span>{figure.label}</span>
+                    </div>
+                ))}
+            </div>
+            {statusTotal > 0 &&
+                <>
+                    <h2 className="section-title">{t("analytics.byStatus")}</h2>
+                    <div className="kpi-share" role="img" aria-label={t("analytics.byStatus")}>
+                        {byStatus.map(([id, count]) => (
+                            <i
+                                key={id}
+                                style={{ flexGrow: count, backgroundColor: statuses[Number(id)] ?? STATUS_FALLBACK }}
+                            />
+                        ))}
+                    </div>
+                    <ul className="kpi-share__list">
+                        {byStatus.map(([id, count]) => (
+                            <li key={id}>
+                                <i style={{ backgroundColor: statuses[Number(id)] ?? STATUS_FALLBACK }} aria-hidden="true" />
+                                <span>{statusName(id)}</span>
+                                <b>{count}</b>
+                                <em>{Math.round((count / statusTotal) * 100)}%</em>
+                            </li>
+                        ))}
+                    </ul>
+                </>
             }
         </>
     );
 });
 
 
-/** Plain-SVG multi-series line chart (no chart libraries). */
+/**
+ * The dynamics chart: plain SVG, no chart library.
+ *
+ * "Created" is drawn as bars, the rest as lines. That is not decoration -- a
+ * count of events inside an interval is discrete, and a line between two such
+ * points draws an interpolation that never happened. It also separates the one
+ * series that is a rate of arrival from the three that track what became of them.
+ *
+ * Every colour resolves through `var()` from the token layer. The chart used to
+ * hold its own literals -- #e5e5e5 for the grid, #555 for the axis labels -- so
+ * on the dark theme the grid outshone the data and the labels sat at 1.66:1.
+ */
 export const LineChart = memo(function LineChart({ points }: { points: TimeseriesPoint[] }) {
     const { t } = useT();
     const layout = DEFAULT_CHART_LAYOUT;
@@ -148,16 +208,20 @@ export const LineChart = memo(function LineChart({ points }: { points: Timeserie
     }
 
     const labelEvery = Math.max(1, Math.ceil(points.length / 6));
+    const [bars, ...lines] = series;
+    const plotWidth = width - padding.left - padding.right;
+    const barWidth = Math.max(2, (plotWidth / Math.max(points.length, 1)) * 0.55);
+    const baseY = height - padding.bottom;
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={t("analytics.chartAria")} style={{ background: "var(--paper)", border: "1px solid var(--rule)" }}>
-                {ticks.map((t) => {
-                    const y = pointY(t, yMax, layout);
+        <div className="chart">
+            <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={t("analytics.chartAria")} className="chart__canvas">
+                {ticks.map((tick) => {
+                    const y = pointY(tick, yMax, layout);
                     return (
-                        <g key={t}>
-                            <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#e5e5e5" strokeWidth={1} />
-                            <text x={padding.left - 4} y={y + 3} fontSize={8} textAnchor="end" fill="#555">{Math.round(t)}</text>
+                        <g key={tick}>
+                            <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} className="chart__grid" />
+                            <text x={padding.left - 4} y={y + 3} fontSize={8} textAnchor="end" className="chart__label">{Math.round(tick)}</text>
                         </g>
                     );
                 })}
@@ -167,22 +231,49 @@ export const LineChart = memo(function LineChart({ points }: { points: Timeserie
                     }
                     const x = pointX(i, points.length, layout);
                     return (
-                        <text key={p.period} x={x} y={height - 6} fontSize={8} textAnchor="middle" fill="#555">{periodLabel(p.period)}</text>
+                        <text key={p.period} x={x} y={height - 6} fontSize={8} textAnchor="middle" className="chart__label">{periodLabel(p.period)}</text>
                     );
                 })}
-                {series.map((s) => (
-                    <polyline key={s.key} points={linePoints(s.values, yMax, layout)} fill="none" stroke={s.color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+                {bars.values.map((value, i) => {
+                    const x = pointX(i, points.length, layout);
+                    const y = pointY(value, yMax, layout);
+                    return (
+                        <rect
+                            key={points[i].period}
+                            x={x - barWidth / 2}
+                            y={y}
+                            width={barWidth}
+                            height={Math.max(0, baseY - y)}
+                            rx={1}
+                            className="chart__bar"
+                            style={{ fill: bars.color }}
+                        />
+                    );
+                })}
+                {lines.map((s) => (
+                    <polyline
+                        key={s.key}
+                        points={linePoints(s.values, yMax, layout)}
+                        fill="none"
+                        strokeWidth={1.6}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                        style={{ stroke: s.color }}
+                    />
                 ))}
                 {/* a polyline with a single point is invisible: draw a dot per series instead */}
-                {points.length === 1 && series.map((s) => (
-                    <circle key={s.key} cx={pointX(0, 1, layout)} cy={pointY(s.values[0], yMax, layout)} r={3} fill={s.color} />
+                {points.length === 1 && lines.map((s) => (
+                    <circle key={s.key} cx={pointX(0, 1, layout)} cy={pointY(s.values[0], yMax, layout)} r={3} style={{ fill: s.color }} />
                 ))}
             </svg>
+            {/* The legend carries each series' latest value: four lines with nothing
+                to hover gave the reader no way to read one off the chart. */}
             <div className="chart-legend">
                 {series.map((s) => (
                     <div key={s.key} className="chart-legend__item">
-                        <i style={{ backgroundColor: s.color }} aria-hidden="true" />
+                        <i className={s.key === "created" ? "chart-legend__bar" : undefined} style={{ backgroundColor: s.color }} aria-hidden="true" />
                         {t(s.label as TranslationKey)}
+                        <b>{s.values[s.values.length - 1] ?? 0}</b>
                     </div>
                 ))}
             </div>

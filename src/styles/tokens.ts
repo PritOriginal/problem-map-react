@@ -105,10 +105,7 @@ export function statusColors(theme: "light" | "dark"): Readonly<Record<number, s
 /** Fallback when a status has no colour of its own. */
 export const STATUS_FALLBACK = STATUS_COLORS[1];
 
-/** Analytics chart series, in the order they are drawn. */
-export const SERIES_COLORS = {
-    created: "#1f77b4",
-    confirmed: CSS_MIRROR["--alert"],
-    closed: CSS_MIRROR["--success-ink"],
-    refuted: CSS_MIRROR["--ink"],
-} as const;
+// The analytics chart's series colours are NOT here: that chart is inline SVG in
+// the document, so it resolves `var()` like anything else and reads them from
+// `--series-*` in `src/tokens.scss` directly. Only renderers that cannot see the
+// cascade -- the WebGL map -- need a mirror.

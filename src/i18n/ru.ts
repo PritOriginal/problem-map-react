@@ -259,6 +259,7 @@ export const ru = {
     "analytics.preset.30": "30 дней",
     "analytics.preset.90": "90 дней",
     "analytics.preset.365": "Год",
+    "analytics.byStatus": "По статусам",
     "analytics.kpi": "Показатели",
     "analytics.dynamics": "Динамика",
     "analytics.chartAria": "График динамики проблем",

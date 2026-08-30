@@ -181,6 +181,20 @@ describe("wave-5 services", () => {
         expect(types.payload[0]).toMatchObject({ mark_type_id: 1, name_en: "Trash", sla_hours: 48, active: false });
         expect(normalizeAdminMarkTypes([{ mark_type_id: 2, name: "x" }])[0]).toMatchObject({ code: "", name_ru: "x", active: true, sla_hours: 0 });
 
+        // Rows arriving out of `sort_order` used to come back as chimeras: the
+        // normalizer sorted, then read the untouched-order array by the SAME index,
+        // so a row's name_ru/name_en/sla_hours/active came from whichever row now
+        // sat in its old slot. On screen a type was shown under one name with
+        // another type's code.
+        const scrambled = normalizeAdminMarkTypes([
+            { mark_type_id: 4, code: "garbage", name: "Мусор", name_ru: "Мусор", name_en: "Garbage", sla_hours: 24, active: false, sort_order: 3 },
+            { mark_type_id: 1, code: "roads", name: "Дорога", name_ru: "Дорога", name_en: "Roads", sla_hours: 72, active: true, sort_order: 1 },
+        ]);
+        expect(scrambled.map((type) => [type.code, type.name_ru, type.name_en, type.sla_hours, type.active])).toEqual([
+            ["roads", "Дорога", "Roads", 72, true],
+            ["garbage", "Мусор", "Garbage", 24, false],
+        ]);
+
         fetchMock.mockImplementation(async () => jsonResponse({ success: true, payload: { mark_type_id: 9 } }));
         await AdminService.addMarkType({ code: "c", name_ru: "r", name_en: "e", icon: "i", color: "#000000", sla_hours: 1 });
         expect(lastCall(fetchMock)).toMatchObject({ url: "/api/admin/mark-types", init: { method: "POST" } });

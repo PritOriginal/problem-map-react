@@ -124,7 +124,17 @@ export function normalizeMarkTypes(payload: unknown): MarkType[] {
             color: typeof item.color === "string" && item.color !== "" ? item.color : undefined,
             sort_order: typeof item.sort_order === "number" ? item.sort_order : undefined,
         }))
-        .sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) || a.mark_type_id - b.mark_type_id);
+        .sort(byMarkTypeOrder);
+}
+
+/**
+ * Dictionary order: `sort_order` first, id as the tie-break, types without an order
+ * last. Exported because the admin normalizer sorts the same list again, and the two
+ * orders drifting apart is what produced rows that mixed one type's name with
+ * another's code.
+ */
+export function byMarkTypeOrder(a: MarkType, b: MarkType): number {
+    return (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) || a.mark_type_id - b.mark_type_id;
 }
 
 export function normalizeMarkStatuses(payload: unknown): MarkStatus[] {

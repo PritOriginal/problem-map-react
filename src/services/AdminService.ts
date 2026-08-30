@@ -1,6 +1,6 @@
 import BaseService, { IResponse, unwrapList, unwrapOne } from "./BaseService";
 import { isRecord } from "./http";
-import { MarkType, normalizeMarkTypes } from "./MarksService";
+import { byMarkTypeOrder, MarkType, normalizeMarkTypes } from "./MarksService";
 
 /** `GET/PUT /admin/settings` (backend integration/wave-5). */
 export interface AdminSettings {
@@ -128,23 +128,34 @@ export function normalizeCreatedApiKey(payload: unknown): CreatedApiKey | null {
     return { ...base, key: typeof payload.key === "string" ? payload.key : "" };
 }
 
-/** Accepts `{ id | mark_type_id, ... }` rows and fills defaults for the admin table. */
+/**
+ * Accepts `{ id | mark_type_id, ... }` rows and fills defaults for the admin table.
+ *
+ * Each row is normalized on its own and the list is ordered afterwards. Mapping over
+ * the ALREADY SORTED result while reading the unsorted input by the same index --
+ * which is what this did -- pairs every row with whichever row happened to land in
+ * its old slot, so a type was listed under its own name with another type's code,
+ * SLA and active flag. It only looked right because the dictionary usually arrives
+ * in `sort_order` already.
+ */
 export function normalizeAdminMarkTypes(payload: unknown): AdminMarkType[] {
-    const list = unwrapList<unknown>(payload, "mark_types");
-    return normalizeMarkTypes(list).map((base, index) => {
-        const raw = list[index] as Record<string, unknown>;
-        return {
-            ...base,
-            code: base.code ?? "",
-            name_ru: typeof raw.name_ru === "string" ? raw.name_ru : base.name,
-            name_en: typeof raw.name_en === "string" ? raw.name_en : "",
-            icon: base.icon ?? "",
-            color: base.color ?? "",
-            sla_hours: typeof raw.sla_hours === "number" ? raw.sla_hours : 0,
-            active: raw.active !== false,
-            sort_order: base.sort_order ?? 0,
-        };
-    });
+    return unwrapList<unknown>(payload, "mark_types")
+        .map((row) => {
+            const raw = (isRecord(row) ? row : {}) as Record<string, unknown>;
+            const base = normalizeMarkTypes([row])[0];
+            return {
+                ...base,
+                code: base.code ?? "",
+                name_ru: typeof raw.name_ru === "string" ? raw.name_ru : base.name,
+                name_en: typeof raw.name_en === "string" ? raw.name_en : "",
+                icon: base.icon ?? "",
+                color: base.color ?? "",
+                sla_hours: typeof raw.sla_hours === "number" ? raw.sla_hours : 0,
+                active: raw.active !== false,
+                sort_order: base.sort_order ?? 0,
+            };
+        })
+        .sort(byMarkTypeOrder);
 }
 
 const JSON_HEADERS = { "Content-Type": "application/json;charset=utf-8" };

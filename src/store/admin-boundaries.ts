@@ -80,29 +80,36 @@ class AdminBoundariesStore {
     /**
      * Two steps rather than one request, because the one request was a megabyte.
      *
-     * `GET /map/admin-boundaries` serializes every polygon: 61 boundaries, 1 080 153 bytes, of
+     * `GET /map/admin-boundaries` serializes every polygon: 62 boundaries, 1 175 510 bytes, of
      * which 99.2% is `geom`. That is past `ETAG_MAX_ENTRY_CHARS`, so the ETag cache refuses to
      * keep it and the whole megabyte is downloaded again on every single start -- for a screen
      * whose two other consumers (analytics, the leaderboard) only ever wanted `id` and `name`.
      *
-     * So: a geometry-less index first (~9.6 KB, see `getAdminBoundaryIndex`), then one
-     * `.geojson` per boundary. Those carry `Cache-Control: max-age=86400`, which puts them in
-     * the browser's own HTTP cache -- the same bytes on a cold start, and none at all on a warm
-     * one. They are fetched level by level, so the districts the map draws when zoomed out are
-     * on screen before the neighbourhoods it only draws up close.
+     * So: a geometry-less index first (9 624 bytes in one request, see `getAdminBoundaryIndex`),
+     * then one `.geojson` per boundary that has no geometry yet. Those carry `Cache-Control:
+     * max-age=86400`, which puts them in the browser's own HTTP cache -- the same bytes on a
+     * cold start, and none at all on a warm one. They are fetched level by level, so the
+     * districts the map draws when zoomed out are on screen before the neighbourhoods it only
+     * draws up close.
      *
-     * If the `.geojson` route is not there (an older backend), nothing at all would be drawn --
-     * hence the fallback to the old bulk request.
+     * A backend that does not know `geometry=false` sends the polygons with the index; those go
+     * into `geomById` and the `.geojson` step then has nothing left to ask for. If the
+     * `.geojson` route is not there either (an older backend still), nothing at all would be
+     * drawn -- hence the fallback to the old bulk request.
      */
     private loadBoundaries = async (): Promise<void> => {
         this.isLoadingBoundaries = true;
         this.errorBoundaries = null;
         try {
             const levels = this.filtersBoundaries.admin_levels;
-            const index = await MapService.getAdminBoundaryIndex(levels);
+            const { boundaries: index, geometry } = await MapService.getAdminBoundaryIndex(levels);
             runInAction(() => {
                 this.index = index;
             });
+            // non-empty only against a backend that ignored `geometry=false` and sent the
+            // polygons anyway: keeping them is what turns that one heavy answer into a
+            // complete load, with no `.geojson` request left to make
+            geometry.forEach((geom, id) => this.geomById.set(id, geom));
 
             const drawn: AdminBoundary[] = [];
             for (const level of levels) {

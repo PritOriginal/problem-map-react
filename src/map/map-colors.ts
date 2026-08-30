@@ -1,4 +1,3 @@
-import convert from "color-convert";
 import type { Feature } from "@yandex/ymaps3-clusterer";
 
 import type { AdminBoundaryMarksCount } from "../services/MapService";
@@ -10,9 +9,47 @@ import { markOf } from "./mark-feature";
  * reading of the same three counts: a hue swept from red (nothing dealt with) to
  * green (everything closed), with a mark under review counting as half-closed.
  *
- * Both return a hex string WITHOUT the leading "#" — that is what `color-convert`
- * gives back, and the callers prepend it.
+ * Both return a hex string WITHOUT the leading "#" — that is what the callers
+ * prepend.
  */
+
+/**
+ * HSV (h in degrees, s and v in percent) to an uppercase six-digit hex string,
+ * without a leading "#".
+ *
+ * This is the whole of what `color-convert` was imported for — two calls into a
+ * ~25 KB package that shipped its entire conversion graph to every visitor of the
+ * map. A line-for-line port of its `hsv -> rgb -> hex` route: the same sector split,
+ * the same single rounding at the very end (the route does not round the
+ * intermediate rgb), and the same uppercase output, so the colours on the map are
+ * byte-identical to the ones the package produced.
+ */
+export function hsvToHex(h: number, s: number, v: number): string {
+    const sector = h / 60;
+    const saturation = s / 100;
+    const value = v / 100;
+    const hi = Math.floor(sector) % 6;
+    const f = sector - Math.floor(sector);
+
+    const p = 255 * value * (1 - saturation);
+    const q = 255 * value * (1 - saturation * f);
+    const t = 255 * value * (1 - saturation * (1 - f));
+    const max = 255 * value;
+
+    let rgb: [number, number, number];
+    switch (hi) {
+        case 0: rgb = [max, t, p]; break;
+        case 1: rgb = [q, max, p]; break;
+        case 2: rgb = [p, max, t]; break;
+        case 3: rgb = [p, q, max]; break;
+        case 4: rgb = [t, p, max]; break;
+        default: rgb = [max, p, q]; break;
+    }
+
+    return rgb
+        .map((channel) => (Math.round(channel) & 0xFF).toString(16).toUpperCase().padStart(2, "0"))
+        .join("");
+}
 
 /**
  * Hue in the red -> green sweep for a set of counts.
@@ -49,7 +86,7 @@ export const getColorByFeatures = (features: readonly Feature[]) => {
     if (allNums === 0) {
         return "d3d3d3";
     }
-    return convert.hsv.hex(hueFor(numsClosed, numsUnderReview, allNums), 100, 80);
+    return hsvToHex(hueFor(numsClosed, numsUnderReview, allNums), 100, 80);
 };
 
 /** Administrative boundary: green both when nothing is known and when nothing is open. */
@@ -62,5 +99,5 @@ export const getColorPolygon = (count: AdminBoundaryMarksCount | undefined) => {
     if (allCount === 0) {
         return "00cc00";
     }
-    return convert.hsv.hex(hueFor(count.closed_count, count.under_review_count, allCount), 100, 80);
+    return hsvToHex(hueFor(count.closed_count, count.under_review_count, allCount), 100, 80);
 };

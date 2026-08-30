@@ -140,7 +140,33 @@ export class OfflineQueueStore {
         }
     }
 
-    /** Sends pending items one by one; stops at the first network failure. */
+    /**
+     * Sends pending items one by one; stops at the first network failure.
+     *
+     * The sequence is deliberate, and it is not a `Promise.all` waiting to happen -- the
+     * backend's own de-duplication is defined in terms of send order:
+     *
+     * - `POST /marks` answers 409 "similar marks nearby" when an active mark of the same type
+     *   already sits inside the dedup radius. Two nearby marks recorded offline are exactly
+     *   the case that produces: sent one after the other, the first is created and the second
+     *   is refused and dropped here (`isFinalFailure`); sent together, neither exists yet when
+     *   the other is checked, and the user ends up with the duplicate the backend was there
+     *   to prevent.
+     * - The same 409 is also what the backend answers while a request with the same
+     *   `Idempotency-Key` is still in progress. Every 409 is read here as "already applied,
+     *   drop it", so overlapping sends are precisely where a spurious conflict would silently
+     *   delete a queued item instead of retrying it.
+     * - Comments in a thread are ordered by the `created_at` the backend stamps on arrival.
+     *   Racing them reorders what the author wrote in order.
+     * - "Stop at the first network failure" cannot be honoured by requests already in flight:
+     *   coming back online on a flaky connection would fire the whole queue at a network about
+     *   to drop again, and burn an attempt on every item.
+     *
+     * The prize is smaller than it looks, too: the wall time of a queue of photo uploads is
+     * its bytes over the uplink that has only just come back, and issuing them at once merely
+     * makes them share that uplink. What would be worth having is a batch endpoint, not
+     * overlapped singles.
+     */
     flush = async (): Promise<void> => {
         if (this.isFlushing || user.id === 0) {
             return;

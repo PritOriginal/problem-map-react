@@ -25,8 +25,13 @@ function stubBackend(entries: unknown[]): Call[] {
             calls.push({ period: url.searchParams.get("period"), boundary: url.searchParams.get("boundary_id") });
             return jsonResponse(envelope({ leaderboard: entries }));
         }
-        if (url.pathname === "/api/map/admin-boundaries") {
-            return jsonResponse(envelope({ admin_boundaries: [{ id: 4, name: "Центральный", admin_level: 9 }] }));
+        // the district filter warms the store: a geometry-less index, then one .geojson each
+        if (url.pathname === "/api/map/admin-boundaries/marks/count") {
+            const level = url.searchParams.get("admin_levels");
+            return jsonResponse(envelope({ admin_boundaries: level === "9" ? [{ id: 4, name: "Центральный" }] : [] }));
+        }
+        if (url.pathname === "/api/map/admin-boundaries/4.geojson") {
+            return jsonResponse({ type: "Feature", id: 4, geometry: { type: "MultiPolygon", coordinates: [] }, properties: { name: "Центральный", admin_level: 9 } });
         }
         throw new Error(`No mock for ${url.pathname}`);
     }));

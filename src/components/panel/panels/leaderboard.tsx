@@ -4,12 +4,14 @@ import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
 import user from "../../../store/user";
 import UsersService, { LEADERBOARD_PERIODS, LeaderboardEntry, LeaderboardPeriod } from "../../../services/UsersService";
-import { useAsyncData } from "../../../utils/use-async-data";
+import { usePagedData } from "../../../utils/use-paged-data";
 import { useToKeepSearch } from "../../../utils/navigation";
 import PanelHeader from "../panel-header";
 import { AsyncState } from "../async-state";
+import { ShowMore } from "../show-more";
 import { BoundarySelect, PanelControls, SelectField } from "../panel-controls";
 
+/** One page of the board; `meta.total` says whether the reader is seeing all of it. */
 export const LEADERBOARD_LIMIT = 50;
 
 const PERIOD_LABELS: Record<LeaderboardPeriod, TranslationKey> = {
@@ -25,14 +27,14 @@ const Leaderboard = observer(function Leaderboard() {
 
     const [boundaryId, setBoundaryId] = useState(0);
     const [period, setPeriod] = useState<LeaderboardPeriod>("all");
-    const { data, isLoading } = useAsyncData(
-        (signal) => UsersService
-            .getLeaderboard({ boundary_id: boundaryId || undefined, period, limit: LEADERBOARD_LIMIT, offset: 0 }, { signal })
-            .then((res) => res.payload),
+    const { items, isLoading, isLoadingMore, remaining, loadMore } = usePagedData<LeaderboardEntry>(
+        (offset, signal) => UsersService
+            .getLeaderboard({ boundary_id: boundaryId || undefined, period, limit: LEADERBOARD_LIMIT, offset }, { signal })
+            .then((res) => ({ items: res.payload, meta: res.meta })),
         [boundaryId, period],
         { errorMessage: t("leaderboard.loadFailed") },
     );
-    const entries: LeaderboardEntry[] = data ?? [];
+    const entries: LeaderboardEntry[] = items;
 
     const periodOptions = useMemo(
         () => LEADERBOARD_PERIODS.map((p) => ({ value: p, label: t(PERIOD_LABELS[p]) })),
@@ -41,13 +43,14 @@ const Leaderboard = observer(function Leaderboard() {
 
     return (
         <>
-            <PanelHeader openOnMount title={t("leaderboard.title")} subtitle={t("leaderboard.top", { n: LEADERBOARD_LIMIT })} />
+            <PanelHeader openOnMount title={t("leaderboard.title")} subtitle={t("leaderboard.top", { n: entries.length })} />
             <div className="panel__content">
                 <PanelControls>
                     <BoundarySelect label={t("leaderboard.district")} value={boundaryId} onChange={setBoundaryId} />
                     <SelectField label={t("leaderboard.period")} value={period} options={periodOptions} onChange={setPeriod} />
                 </PanelControls>
-                <AsyncState isLoading={isLoading} isEmpty={entries.length === 0} empty={t("leaderboard.empty")}>
+                {/* keepPrevious: a further page must not blank the rows already read */}
+                <AsyncState keepPrevious isLoading={isLoading} isEmpty={entries.length === 0} empty={t("leaderboard.empty")}>
                     <ol className="leaderboard">
                         {entries.map((entry, index) => (
                             <li key={entry.user_id} className={`leaderboard__row${entry.user_id === user.id ? " leaderboard__row--me" : ""}`}>
@@ -69,6 +72,7 @@ const Leaderboard = observer(function Leaderboard() {
                         ))}
                     </ol>
                 </AsyncState>
+                <ShowMore remaining={remaining} isLoading={isLoadingMore} onClick={loadMore} />
             </div>
         </>
     );

@@ -61,6 +61,8 @@ export const en: Partial<Dictionary> = {
     "common.justNow": "just now",
     "common.meters": "m",
     "common.kilometers": "km",
+    // appended: paginated lists ("show more")
+    "common.showMore": "Show {n} more",
 
     // confirmation dialog
     "confirm.ok": "Confirm",

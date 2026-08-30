@@ -15,11 +15,14 @@ import { TypeIcon } from "../../mark/mark";
 import SelectFiles from "../../SelectFiles";
 import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { useAsyncData } from "../../../utils/use-async-data";
+import { usePagedData } from "../../../utils/use-paged-data";
 import { useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import PanelHeader from "../panel-header";
 import { AsyncState } from "../async-state";
+import { ShowMore } from "../show-more";
 
+/** One page of the queue; `meta.total` says how much of it is still unseen. */
 const ORG_QUEUE_LIMIT = 100;
 
 /** Statuses shown in the organization queue: confirmed (to take) and in work (to report). */
@@ -42,14 +45,14 @@ const OrgPanel = observer(function OrgPanel() {
     const orgId = org?.organization_id ?? 0;
     // `reload` is what a card calls after taking or resolving a mark; it replaces the
     // version counter this panel used to bump for the same purpose.
-    const { data, isLoading, reload } = useAsyncData(
-        (signal) => OrganizationsService
-            .getMarks(orgId, { status_ids: ORG_QUEUE_STATUSES, overdue: onlyOverdue, limit: ORG_QUEUE_LIMIT, offset: 0 }, { signal })
-            .then((res) => res.payload ?? []),
+    const { items, isLoading, isLoadingMore, total, remaining, loadMore, reload } = usePagedData<Mark>(
+        (offset, signal) => OrganizationsService
+            .getMarks(orgId, { status_ids: ORG_QUEUE_STATUSES, overdue: onlyOverdue, limit: ORG_QUEUE_LIMIT, offset }, { signal })
+            .then((res) => ({ items: res.payload ?? [], meta: res.meta })),
         [orgId, onlyOverdue],
         { enabled: orgId !== 0, errorMessage: t("org.queueFailed") },
     );
-    const marks: Mark[] = data ?? [];
+    const marks: Mark[] = items;
 
     return (
         <>
@@ -60,7 +63,7 @@ const OrgPanel = observer(function OrgPanel() {
                     :
                     <>
                         <div className="section-title-row">
-                            <h2 className="section-title">{t("org.queue")}<span className="section-title__count">{!isLoading && `(${marks.length})`}</span></h2>
+                            <h2 className="section-title">{t("org.queue")}<span className="section-title__count">{!isLoading && `(${total ?? marks.length})`}</span></h2>
                             <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 13, cursor: "pointer" }}>
                                 <input type="checkbox" checked={onlyOverdue} onChange={(e) => setOnlyOverdue(e.target.checked)} />
                                 {t("org.onlyOverdue")}
@@ -71,6 +74,7 @@ const OrgPanel = observer(function OrgPanel() {
                                 {marks.map((mark) => <QueueCard key={mark.mark_id} mark={mark} onDone={reload} />)}
                             </div>
                         </AsyncState>
+                        <ShowMore remaining={remaining} isLoading={isLoadingMore} onClick={loadMore} />
                     </>
                 }
             </div>

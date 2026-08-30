@@ -81,14 +81,26 @@ describe("SelectField", () => {
 describe("BoundarySelect", () => {
     beforeEach(() => {
         resetStores();
+        // The select reads the geometry-less index, which the store assembles from one
+        // marks-count request per admin level (the counter does not report the level itself).
+        const byLevel: Record<string, { id: number; name: string }[]> = {
+            "6": [{ id: 1, name: "Тамбов" }],
+            "9": [{ id: 2, name: "Советский" }, { id: 3, name: "Ленинский" }],
+            "10": [],
+        };
+        const feature = (id: number) => ({
+            type: "Feature",
+            id,
+            geometry: { type: "MultiPolygon", coordinates: [] },
+            properties: { name: String(id), admin_level: 9 },
+        });
         mockFetchRoutes({
-            "GET /api/map/admin-boundaries": {
-                admin_boundaries: [
-                    { id: 2, name: "Советский", admin_level: 9 },
-                    { id: 1, name: "Тамбов", admin_level: 6 },
-                    { id: 3, name: "Ленинский", admin_level: 9 },
-                ],
-            },
+            "GET /api/map/admin-boundaries/marks/count": (req: Request) => ({
+                admin_boundaries: byLevel[new URL(req.url).searchParams.get("admin_levels") ?? ""] ?? [],
+            }),
+            "GET /api/map/admin-boundaries/1.geojson": feature(1),
+            "GET /api/map/admin-boundaries/2.geojson": feature(2),
+            "GET /api/map/admin-boundaries/3.geojson": feature(3),
         });
     });
 

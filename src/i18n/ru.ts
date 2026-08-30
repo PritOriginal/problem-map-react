@@ -65,6 +65,8 @@ export const ru = {
     "common.justNow": "только что",
     "common.meters": "м",
     "common.kilometers": "км",
+    // appended: paginated lists ("show more")
+    "common.showMore": "Показать ещё {n}",
 
     // confirmation dialog
     "confirm.ok": "Подтвердить",

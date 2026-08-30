@@ -491,4 +491,6 @@ export const en: Partial<Dictionary> = {
     "offline.markQueued": "Offline: the mark is queued and will be sent later",
     "offline.checkQueued": "Offline: the check is queued and will be sent later",
     "offline.attempts": "attempts: {n}",
+    "offline.batchNoResult": "The server sent no result for this batch item",
+    "offline.keyReused": "Removed from the queue: its key was already used with different data",
 };

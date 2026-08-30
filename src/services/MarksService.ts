@@ -3,6 +3,8 @@ import BaseService, { IResponse, withIdempotencyKey } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
 import { Check } from "./ChecksService";
 import { isRecord, unwrapList } from "./http";
+import type { ErrorInfo } from "./http";
+import { t } from "../i18n";
 import type { BBox } from "./MapService";
 import { parseSimilarMarks } from "../utils/similar";
 import { mapWithLimit } from "../utils/concurrency";
@@ -174,6 +176,96 @@ export interface AddMarkResponsePayload {
 export interface Point {
     longitude: number
     latitude: number
+}
+
+/** Max elements `POST /marks/batch` accepts in one request; longer lists are split. */
+export const MARKS_BATCH_MAX = 20;
+
+/** Max photos the batch route accepts per element. */
+export const MARKS_BATCH_MAX_PHOTOS = 5;
+
+/** One element of `POST /marks/batch`; `key` is the `Idempotency-Key` of that single mark. */
+export interface BatchMarkItem {
+    key?: string;
+    longitude: number;
+    latitude: number;
+    mark_type_id: number;
+    description?: string;
+    force?: boolean;
+    photos: Blob[];
+}
+
+/**
+ * Outcome of one element: `created` — new mark, `replayed` — the same `key` had already been
+ * applied, `duplicate` — collapsed into a mark that was already there, `failed` — see `error`.
+ */
+export type BatchMarkStatus = "created" | "replayed" | "duplicate" | "failed";
+
+export interface BatchMarkResult {
+    /** Index in the request, so results can be paired up without relying on the array order. */
+    index: number;
+    key?: string;
+    status: BatchMarkStatus;
+    mark_id?: number;
+    error?: ErrorInfo;
+    similar_marks?: SimilarMark[];
+}
+
+/** Builds the multipart body: `items` as JSON, files as `photos.<index>`. */
+function batchFormData(items: BatchMarkItem[]): FormData {
+    const form = new FormData();
+    const photos = items.map((item) => item.photos.slice(0, MARKS_BATCH_MAX_PHOTOS));
+    form.append("items", JSON.stringify(items.map((item, i) => ({
+        key: item.key,
+        longitude: item.longitude,
+        latitude: item.latitude,
+        mark_type_id: item.mark_type_id,
+        description: item.description ?? "",
+        force: item.force ?? false,
+        // the count the backend uses to slice `photos.<i>` back apart, hence the same cap
+        photos: photos[i].length,
+    }))));
+    photos.forEach((files, i) => {
+        files.forEach((file) => {
+            form.append(`photos.${i}`, file);
+        });
+    });
+    return form;
+}
+
+/**
+ * Normalizes the batch answer. The results come keyed (`{ results: [...] }`) or bare; an element
+ * the backend did not answer for is reported as `failed` rather than silently treated as sent —
+ * the queue must never drop a record it has no confirmation for.
+ */
+export function normalizeBatchResults(payload: unknown, items: BatchMarkItem[]): BatchMarkResult[] {
+    const raw = unwrapList<unknown>(payload, "results").filter(isRecord);
+    const byIndex = new Map<number, Record<string, unknown>>();
+    raw.forEach((entry, i) => {
+        const index = typeof entry.index === "number" ? entry.index : i;
+        byIndex.set(index, entry);
+    });
+    return items.map((item, index) => {
+        const entry = byIndex.get(index);
+        if (!entry) {
+            return { index, key: item.key, status: "failed" as const, error: { message: t("offline.batchNoResult") } };
+        }
+        const status = entry.status;
+        return {
+            index,
+            key: typeof entry.key === "string" ? entry.key : item.key,
+            status: isBatchStatus(status) ? status : "failed",
+            mark_id: typeof entry.mark_id === "number" ? entry.mark_id : undefined,
+            error: isRecord(entry.error)
+                ? { message: String(entry.error.message ?? ""), code: typeof entry.error.code === "string" ? entry.error.code : undefined }
+                : undefined,
+            similar_marks: entry.similar_marks === undefined ? undefined : parseSimilarMarks(entry.similar_marks),
+        };
+    });
+}
+
+function isBatchStatus(value: unknown): value is BatchMarkStatus {
+    return value === "created" || value === "replayed" || value === "duplicate" || value === "failed";
 }
 
 /**
@@ -362,6 +454,37 @@ class MarksService extends BaseService {
             method: "POST",
             body: form
         }, idempotencyKey))
+    }
+
+    /**
+     * `POST /marks/batch` (multipart, backend integration/wave-6): creates several marks in one
+     * request, applied server-side **in the order they are listed**. That order is the whole point
+     * — it is what lets the backend's own de-duplication collapse two nearby marks recorded
+     * offline, which a set of parallel single requests could not (see `OfflineQueueStore.flush`).
+     *
+     * The list is split into chunks of `MARKS_BATCH_MAX` sent **sequentially**, for the same
+     * reason. The returned results keep the request order and their `index` is rewritten to the
+     * index in `items`, so the caller can pair them up without tracking chunk offsets.
+     *
+     * A chunk that fails rejects the whole call and the results of earlier chunks are lost — but
+     * not their effect: every element carries its own `key` (the queued item's
+     * `Idempotency-Key`), so re-sending it, by batch or one by one, answers `replayed` instead of
+     * creating a second mark. This is also what makes the 404 fallback on an old backend safe.
+     *
+     * Throws `ApiError` 404 when the route does not exist (backend without wave-6), 400
+     * (`invalid_items` / `too_many_items`) and 413 (body over the limit).
+     */
+    public async addMarksBatch(items: BatchMarkItem[]): Promise<BatchMarkResult[]> {
+        const results: BatchMarkResult[] = [];
+        for (let start = 0; start < items.length; start += MARKS_BATCH_MAX) {
+            const chunk = items.slice(start, start + MARKS_BATCH_MAX);
+            const res = await this.requestWithAuth<IResponse>("/api/marks/batch", {
+                method: "POST",
+                body: batchFormData(chunk),
+            });
+            results.push(...normalizeBatchResults(res.payload, chunk).map((r) => ({ ...r, index: start + r.index })));
+        }
+        return results;
     }
 
     /** Marks changed since `since` (ISO date-time), plus deleted / hidden ids (`GET /marks/changes`). */

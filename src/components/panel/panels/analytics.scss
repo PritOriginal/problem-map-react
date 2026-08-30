@@ -74,9 +74,19 @@
     border-radius: 999px;
     overflow: hidden;
 
+    // `flex: none`, because this is a flex ITEM of `.panel__content`, which is a
+    // column flex container with a definite height. A fixed-height item there is
+    // still shrinkable by default, and its `min-height: auto` resolves to the
+    // height of its contents -- and the contents are six empty <i>. So the bar
+    // can be squeezed to nothing the moment the column overflows, which is the
+    // one state where the reader most wants to see it.
+    flex: none;
+
     i {
         display: block;
-        min-width: 2px;
+        // Never let a segment vanish: 1 of 114 is 0.9% and rounds to under a
+        // pixel, but "one mark in this status" is not the same as "none".
+        min-width: 3px;
     }
 
     &__list {

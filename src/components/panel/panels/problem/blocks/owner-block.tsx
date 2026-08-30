@@ -1,5 +1,4 @@
 import { useContext, useState } from "react";
-import Select from "react-select";
 import { observer } from "mobx-react-lite";
 import MarksService, { MarkType } from "../../../../../services/MarksService";
 import { useT } from "../../../../../i18n";
@@ -80,12 +79,18 @@ export const OwnerBlock = observer(function OwnerBlock({ onDone }: { onDone: () 
             {editing ?
                 <>
                     <p><b>{t("common.category")}</b></p>
-                    <Select
-                        options={options}
-                        value={options.find((o) => o.value === typeId) ?? null}
-                        onChange={(val) => { if (val) { setTypeId(val.value); } }}
-                        isDisabled={options.length === 0}
-                    />
+                    {/* Native <select> rather than react-select -- see the note in
+                        assign-block: a single choice out of the handful of mark types
+                        needs none of what the library adds, and dropping both call
+                        sites takes it out of the bundle entirely. */}
+                    <select
+                        aria-label={t("common.category")}
+                        value={typeId}
+                        disabled={options.length === 0}
+                        onChange={(e) => setTypeId(Number(e.target.value))}
+                    >
+                        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
                     <p><b>{t("common.description")}</b></p>
                     <textarea
                         className="edit-multiline-text"

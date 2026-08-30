@@ -407,4 +407,52 @@ describe("service payloads match the backend contract", () => {
             .mockImplementationOnce(async () => jsonResponse({ success: false, error: { message: "boom" } }, 500));
         expect((await MarksService.getMarksByIds(ids)).map((m) => m.mark_id)).toEqual([1]);
     });
+
+    // Pagination (`listquery`): every list endpoint takes `limit` (1..500, default 100) and
+    // `offset`, and the envelope carries `meta: { limit, offset, total }`. The services
+    // already spread the parsed body (`{ ...res, payload: unwrapped }`), so `meta` reaches
+    // the caller untouched -- that is what `usePagedData` reads to decide whether a
+    // "show more" button has anything to offer.
+    it("list endpoints: limit/offset reach the URL and `meta` survives the unwrapping", async () => {
+        const meta = { limit: 50, offset: 50, total: 137 };
+
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ leaderboard: [{ user_id: 4, username: "u", rating: 10 }] }, meta));
+        const board = await UsersService.getLeaderboard({ boundary_id: 3, period: "month", limit: 50, offset: 50 });
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/leaderboard?boundary_id=3&period=month&limit=50&offset=50");
+        expect(board.payload).toHaveLength(1);
+        expect(board.meta).toEqual(meta);
+
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ comments: [{ comment_id: 2, mark_id: 1, body: "b" }] }, meta));
+        const comments = await CommentsService.getComments(1, 50, 50);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks/1/comments?limit=50&offset=50");
+        expect(comments.payload[0].comment_id).toBe(2);
+        expect(comments.meta).toEqual(meta);
+
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ marks: [{ mark_id: 1 }] }, meta));
+        const queue = await OrganizationsService.getMarks(5, { status_ids: [2, 3], limit: 50, offset: 50 });
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/organizations/5/marks?status_ids=2%2C3&limit=50&offset=50");
+        expect(queue.payload[0].mark_id).toBe(1);
+        expect(queue.meta).toEqual(meta);
+
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ notifications: [{ id: 3, title: "t" }] }, meta));
+        const inbox = await NotificationsService.getNotifications({ limit: 50, offset: 50 });
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/notifications?limit=50&offset=50");
+        expect(inbox.payload[0].id).toBe(3);
+        expect(inbox.meta).toEqual(meta);
+
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ reports: [{ report_id: 9 }] }, meta));
+        const reports = await ReportsService.getQueue({ status: "open", limit: 50, offset: 50 });
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/moderation/queue?status=open&limit=50&offset=50");
+        expect(reports.payload[0].report_id).toBe(9);
+        expect(reports.meta).toEqual(meta);
+
+        // a backend that sends no `meta` leaves it undefined rather than inventing a total
+        fetchMock.mockImplementation(ok({ comments: [] }));
+        expect((await CommentsService.getComments(1)).meta).toBeUndefined();
+    });
 });

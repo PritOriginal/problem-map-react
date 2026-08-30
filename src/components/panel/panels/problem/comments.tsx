@@ -10,13 +10,15 @@ import { Button } from "../../../button/button";
 import { useConfirm } from "../../../confirm/use-confirm";
 import ReportButton from "../../../report/report-button";
 import { useNow } from "../../../../utils/hooks";
-import { useAsyncData } from "../../../../utils/use-async-data";
+import { usePagedData } from "../../../../utils/use-paged-data";
+import { ShowMore } from "../../show-more";
 import { relativeTime } from "../../../../utils/relative-time";
 import { TranslationKey, localeOf, useT } from "../../../../i18n";
 import { Link } from "react-router-dom";
 import { useToKeepSearch } from "../../../../utils/navigation";
 import "./comments.scss";
 
+/** One page of the thread; `meta.total` says how many are still unread. */
 const COMMENTS_LIMIT = 100;
 
 /** Comments of the mark shown in the panel (backend integration/wave-5). */
@@ -28,15 +30,19 @@ const CommentsBlock = observer(function CommentsBlock() {
 
     // `reload` is what the form and every item call after writing; it replaces the
     // version counter this block used to bump for the same purpose.
-    const { data, isLoading, reload } = useAsyncData(
-        (signal) => CommentsService.getComments(mark.mark_id, COMMENTS_LIMIT, 0, { signal }).then((res) => res.payload),
+    const { items, isLoading, isLoadingMore, total, remaining, loadMore, reload } = usePagedData<Comment>(
+        (offset, signal) => CommentsService.getComments(mark.mark_id, COMMENTS_LIMIT, offset, { signal })
+            .then((res) => ({ items: res.payload, meta: res.meta })),
         [mark.mark_id, flushedAt],
         { enabled: mark.mark_id !== 0, errorMessage: t("comments.loadFailed") },
     );
-    const comments: Comment[] = data ?? [];
+    const comments: Comment[] = items;
 
     const threads = threadComments(comments);
-    const count = comments.filter((c) => !c.deleted).length;
+    // The heading counts the whole thread, not the page of it that happens to be loaded;
+    // the deleted ones are subtracted from what is on screen, which is all we can see.
+    const loadedCount = comments.filter((c) => !c.deleted).length;
+    const count = total === undefined ? loadedCount : total - (comments.length - loadedCount);
 
     return (
         <>
@@ -57,6 +63,7 @@ const CommentsBlock = observer(function CommentsBlock() {
                     </div>
                 ))}
             </div>
+            <ShowMore remaining={remaining} isLoading={isLoadingMore} onClick={loadMore} />
             {user.id !== 0
                 ? <CommentForm markId={mark.mark_id} onDone={reload} />
                 : <p className="comments__signin">{t("comments.signIn")}</p>

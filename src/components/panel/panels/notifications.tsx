@@ -11,6 +11,7 @@ import UnauthorizedBlock from "../../unauthorized-block/unauthorized-block";
 import { useToKeepSearch } from "../../../utils/navigation";
 import PanelHeader from "../panel-header";
 import { AsyncState } from "../async-state";
+import { ShowMore } from "../show-more";
 
 const NotificationsPanel = observer(function NotificationsPanel() {
     const { t } = useT();
@@ -22,7 +23,7 @@ const NotificationsPanel = observer(function NotificationsPanel() {
         }
     }, [userId]);
 
-    const { items, isLoading, unreadCount } = inboxStore;
+    const { items, isLoading, isLoadingMore, remaining, unreadCount } = inboxStore;
 
     return (
         <>
@@ -45,11 +46,14 @@ const NotificationsPanel = observer(function NotificationsPanel() {
                 {userId === 0 ?
                     <UnauthorizedBlock text={t("unauth.notifications")} />
                     :
-                    <AsyncState keepPrevious isLoading={isLoading} isEmpty={items.length === 0} empty={t("notifications.empty")}>
-                        <div className="list-rows">
-                            {items.map((n) => <NotificationRow key={n.id} item={n} />)}
-                        </div>
-                    </AsyncState>
+                    <>
+                        <AsyncState keepPrevious isLoading={isLoading} isEmpty={items.length === 0} empty={t("notifications.empty")}>
+                            <div className="list-rows">
+                                {items.map((n) => <NotificationRow key={n.id} item={n} />)}
+                            </div>
+                        </AsyncState>
+                        <ShowMore remaining={remaining} isLoading={isLoadingMore} onClick={inboxStore.loadMore} />
+                    </>
                 }
             </div>
         </>

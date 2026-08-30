@@ -7,11 +7,18 @@ import user from "./user";
 /** Poll interval for the unread counter while the user is signed in. */
 export const UNREAD_POLL_MS = 60_000;
 
+/** One page of the inbox. The backend caps `limit` at 500 and defaults to 100. */
+export const INBOX_PAGE_SIZE = 50;
+
 /** User notifications (bell in the header, `/notifications` panel). */
 class InboxStore {
     items: Notification[] = [];
     unreadCount: number = 0;
     isLoading: boolean = false;
+    /** A further page is on its way; `items` keeps what is on screen. */
+    isLoadingMore: boolean = false;
+    /** `meta.total` of the last page: how many notifications the backend holds in all. */
+    total: number = 0;
 
     private pollTimer: number | null = null;
     private visibilityListener: (() => void) | null = null;
@@ -41,19 +48,33 @@ class InboxStore {
         }
     }
 
-    fetch = async (limit: number = 50, offset: number = 0) => {
+    /**
+     * Reads one page. `offset > 0` appends (that is what `loadMore` does) instead of
+     * replacing, so "show more" grows the list rather than swapping it; the first page
+     * always replaces, which is what the refresh button wants.
+     */
+    fetch = async (limit: number = INBOX_PAGE_SIZE, offset: number = 0) => {
         if (user.id === 0) {
             return;
         }
-        this.isLoading = true;
+        const more = offset > 0;
+        runInAction(() => {
+            this.isLoading = !more;
+            this.isLoadingMore = more;
+        });
         try {
             const response = await NotificationsService.getNotifications({ limit, offset });
             if (user.id === 0) {
                 return; // signed out while the request was in flight (state was reset by stopPolling)
             }
             runInAction(() => {
-                this.items = Array.isArray(response.payload) ? response.payload : [];
+                const page = Array.isArray(response.payload) ? response.payload : [];
+                this.items = more ? [...this.items, ...page] : page;
+                // No `meta` from an older backend: assume what arrived is all there is,
+                // so the button simply never appears.
+                this.total = response.meta?.total ?? this.items.length;
                 this.isLoading = false;
+                this.isLoadingMore = false;
             });
             // the list is paginated: the badge is authoritative from the counter endpoint
             this.fetchUnreadCount();
@@ -65,8 +86,25 @@ class InboxStore {
             runInAction(() => {
                 notificationsStore.showError(error, t("notifications.loadFailed"));
                 this.isLoading = false;
+                this.isLoadingMore = false;
             });
         }
+    }
+
+    /** How many the backend still has beyond what was read. */
+    get remaining(): number {
+        return Math.max(0, this.total - this.items.length);
+    }
+
+    /**
+     * Next page. Ignored while a request is already in flight, so a fast double press
+     * cannot ask for the same offset twice and duplicate a page.
+     */
+    loadMore = async () => {
+        if (this.isLoading || this.isLoadingMore || this.remaining === 0) {
+            return;
+        }
+        await this.fetch(INBOX_PAGE_SIZE, this.items.length);
     }
 
     markRead = async (id: number) => {
@@ -148,7 +186,9 @@ class InboxStore {
     reset = () => {
         this.items = [];
         this.unreadCount = 0;
+        this.total = 0;
         this.isLoading = false;
+        this.isLoadingMore = false;
     }
 }
 

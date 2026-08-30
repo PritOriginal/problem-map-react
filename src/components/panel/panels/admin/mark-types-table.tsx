@@ -31,6 +31,7 @@ export const MarkTypesTable = function MarkTypesTable() {
     // size and weight as "Редактировать" on all five rows, and they are used about
     // once a year -- when a type is added.
     const [reordering, setReordering] = useState(false);
+    const [moving, setMoving] = useState(false);
 
     const { data, isLoading, reload: reloadTypes } = useAsyncData(
         (signal) => AdminService.getMarkTypes({ signal }).then((res) => res.payload),
@@ -46,6 +47,51 @@ export const MarkTypesTable = function MarkTypesTable() {
         markTypesStore.fetch(true);
     };
 
+    /**
+     * Moves one type up or down and renumbers the list.
+     *
+     * Not `sort_order ± 1` per row, which is what the arrows used to send. Every type
+     * in the dictionary currently carries `sort_order: 0`, so a step of one expressed
+     * no order at all -- and on a row already at 0, "up" sent -1, which the backend
+     * rejects outright (`sort_order` is `min=0`). Renumbering the whole list to its
+     * positions states the order the person actually arranged, and can never go
+     * negative. Only the rows whose number really changes are written.
+     */
+    const move = (index: number, delta: number) => {
+        const next = [...types];
+        const target = index + delta;
+        if (target < 0 || target >= next.length) {
+            return;
+        }
+        [next[index], next[target]] = [next[target], next[index]];
+
+        const writes = next
+            .map((type, position) => ({ type, position }))
+            .filter(({ type, position }) => type.sort_order !== position);
+        if (writes.length === 0) {
+            return;
+        }
+
+        setMoving(true);
+        // Sequentially: the rows are renumbered as a set, and a half-applied set is
+        // an order nobody chose.
+        writes
+            .reduce(
+                (chain, { type, position }) => chain.then(() => AdminService.updateMarkType(type.mark_type_id, { sort_order: position }).then(() => undefined)),
+                Promise.resolve(),
+            )
+            .then(() => {
+                notificationsStore.clear();
+                reload();
+            })
+            .catch((error) => {
+                console.error(error);
+                notificationsStore.showError(error, t("admin.types.saveFailed"));
+                reload();
+            })
+            .finally(() => setMoving(false));
+    };
+
     return (
         <div className="admin-form">
             {isLoading && types.length === 0 && <p className="empty-state">{t("common.loading")}</p>}
@@ -54,7 +100,18 @@ export const MarkTypesTable = function MarkTypesTable() {
                 "SLA, ч: 72 · Порядок: 0 · Активен: ✓" -- three key-value pairs in
                 a row, which reads as a log line, not as a reference table. */}
             <div className="type-list">
-                {types.map((type) => <MarkTypeRow key={type.mark_type_id} type={type} reordering={reordering} onDone={reload} />)}
+                {types.map((type, index) => (
+                    <MarkTypeRow
+                        key={type.mark_type_id}
+                        type={type}
+                        reordering={reordering}
+                        moving={moving}
+                        canMoveUp={index > 0}
+                        canMoveDown={index < types.length - 1}
+                        onMove={(delta) => move(index, delta)}
+                        onDone={reload}
+                    />
+                ))}
             </div>
             {adding
                 ? <MarkTypeEditor initial={EMPTY_TYPE} isNew onCancel={() => setAdding(false)} onDone={() => { setAdding(false); reload(); }} />
@@ -71,24 +128,19 @@ export const MarkTypesTable = function MarkTypesTable() {
     );
 };
 
-function MarkTypeRow({ type, reordering, onDone }: { type: AdminMarkType; reordering: boolean; onDone: () => void }) {
+interface MarkTypeRowProps {
+    type: AdminMarkType;
+    reordering: boolean;
+    moving: boolean;
+    canMoveUp: boolean;
+    canMoveDown: boolean;
+    onMove: (delta: number) => void;
+    onDone: () => void;
+}
+
+function MarkTypeRow({ type, reordering, moving, canMoveUp, canMoveDown, onMove, onDone }: MarkTypeRowProps) {
     const { t } = useT();
     const [editing, setEditing] = useState(false);
-    const [pending, setPending] = useState(false);
-
-    const patch = (req: UpdateMarkTypeRequest) => {
-        setPending(true);
-        AdminService.updateMarkType(type.mark_type_id, req)
-            .then(() => {
-                notificationsStore.clear();
-                onDone();
-            })
-            .catch((error) => {
-                console.error(error);
-                notificationsStore.showError(error, t("admin.types.saveFailed"));
-            })
-            .finally(() => setPending(false));
-    };
 
     if (editing) {
         return (
@@ -122,8 +174,8 @@ function MarkTypeRow({ type, reordering, onDone }: { type: AdminMarkType; reorde
             </span>
             {reordering
                 ? <span className="type-row__side">
-                    <button type="button" className="type-row__arrow" disabled={pending} onClick={() => patch({ sort_order: type.sort_order - 1 })} aria-label={t("admin.types.moveUp")}>↑</button>
-                    <button type="button" className="type-row__arrow" disabled={pending} onClick={() => patch({ sort_order: type.sort_order + 1 })} aria-label={t("admin.types.moveDown")}>↓</button>
+                    <button type="button" className="type-row__arrow" disabled={moving || !canMoveUp} onClick={() => onMove(-1)} aria-label={t("admin.types.moveUp")}>↑</button>
+                    <button type="button" className="type-row__arrow" disabled={moving || !canMoveDown} onClick={() => onMove(1)} aria-label={t("admin.types.moveDown")}>↓</button>
                 </span>
                 : <span className="type-row__side">
                     {/* "Активен" is no longer written out on every active row: being

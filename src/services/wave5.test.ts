@@ -116,6 +116,19 @@ describe("wave-5 services", () => {
         expect(types.map((x) => x.mark_type_id)).toEqual([2, 1, 3]);
     });
 
+    it("leaves types that share a sort_order in the order the backend sent them", () => {
+        // The backend orders the dictionary by `sort_order, name, type_mark_id`, and
+        // every type currently carries sort_order 0 -- so its answer is sorted by
+        // NAME. A tie-break on id here re-sorted that into id order and threw the
+        // collation away.
+        const types = normalizeMarkTypes([
+            { id: 3, name: "Дорога", sort_order: 0 },
+            { id: 2, name: "Зелёные зоны и парки", sort_order: 0 },
+            { id: 1, name: "Мусор", sort_order: 0 },
+        ]);
+        expect(types.map((x) => x.name)).toEqual(["Дорога", "Зелёные зоны и парки", "Мусор"]);
+    });
+
     it("reports and the moderation queue", async () => {
         fetchMock.mockImplementation(async () => jsonResponse({ success: true }));
         await ReportsService.addReport({ target_type: "mark", target_id: 5, reason: "spam" });

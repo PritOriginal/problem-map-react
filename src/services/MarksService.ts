@@ -130,13 +130,23 @@ export function normalizeMarkTypes(payload: unknown): MarkType[] {
 }
 
 /**
- * Dictionary order: `sort_order` first, id as the tie-break, types without an order
- * last. Exported because the admin normalizer sorts the same list again, and the two
- * orders drifting apart is what produced rows that mixed one type's name with
- * another's code.
+ * Dictionary order: `sort_order` only, types without one last.
+ *
+ * No tie-break on id, on purpose. The backend orders the dictionary by
+ * `sort_order, name, type_mark_id`, and every type currently carries `sort_order: 0`,
+ * so its answer is sorted by NAME. Breaking the tie on id here re-sorted that answer
+ * into id order and threw the naming away -- the list came back
+ * Дорога, Зелёные зоны, Информационные…, Мусор, Освещение and was shown as
+ * Мусор, Зелёные зоны, Дорога, Освещение, Информационные…
+ *
+ * `Array.prototype.sort` is stable, so ties keep the order the backend sent, which
+ * is the one place that knows how to collate the translated names.
+ *
+ * Exported because the admin normalizer sorts the same list again, and the two orders
+ * drifting apart is what produced rows that mixed one type's name with another's code.
  */
 export function byMarkTypeOrder(a: MarkType, b: MarkType): number {
-    return (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) || a.mark_type_id - b.mark_type_id;
+    return (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER);
 }
 
 export function normalizeMarkStatuses(payload: unknown): MarkStatus[] {

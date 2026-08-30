@@ -15,9 +15,16 @@ export function typeIcon(type: MarkType | undefined): string | undefined {
     return Array.from(icon).length <= 2 ? icon : undefined;
 }
 
-/** `#rgb`/`#rrggbb`/`#rrggbbaa` check for the admin form. */
+/**
+ * `#rrggbb` check for the admin form.
+ *
+ * Exactly six digits, because that is what the backend accepts: `color` is
+ * validated as `len=7` when a type is created and `max=7` when it is updated.
+ * Accepting `#rgb` and `#rrggbbaa` here only moved the rejection to the server,
+ * where it arrives as a bare 400 after the form has already said the value is fine.
+ */
 export function isHexColor(value: string): boolean {
-    return /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value.trim());
+    return /^#[0-9a-f]{6}$/i.test(value.trim());
 }
 
 /**

@@ -25,10 +25,17 @@ describe("typeIcon", () => {
 });
 
 describe("isHexColor", () => {
-    it("accepts the three notations the admin form allows", () => {
-        expect(isHexColor("#abc")).toBe(true);
+    it("accepts #rrggbb in either case", () => {
+        expect(isHexColor("#aabbcc")).toBe(true);
         expect(isHexColor("#AABBCC")).toBe(true);
-        expect(isHexColor("#aabbccdd")).toBe(true);
+        expect(isHexColor(" #f07316 ")).toBe(true);
+    });
+
+    it("rejects the notations the backend would refuse", () => {
+        // `color` is `len=7` on create and `max=7` on update, so the short and the
+        // alpha forms are a 400 from the server, not a colour.
+        expect(isHexColor("#abc")).toBe(false);
+        expect(isHexColor("#aabbccdd")).toBe(false);
     });
 
     it("rejects everything else", () => {

@@ -10,7 +10,7 @@ import AnalyticsService from "./AnalyticsService";
 import OrganizationsService, { normalizeOrganization } from "./OrganizationsService";
 import UsersService, { normalizeLeaderboard } from "./UsersService";
 import AdminService, { normalizeCreatedApiKey } from "./AdminService";
-import MarksService from "./MarksService";
+import MarksService, { MARKS_IDS_BATCH, MARKS_MAX_LIMIT } from "./MarksService";
 import ChecksService from "./ChecksService";
 import MapService from "./MapService";
 import { setLang } from "../i18n";
@@ -353,5 +353,58 @@ describe("service payloads match the backend contract", () => {
         expect(new Headers(statusesInit.headers).get("Authorization")).toBeNull();
         expect(new Headers(statusesInit.headers).get("Accept-Language")).toBe("ru");
         expect(localStorage.getItem("etag:v2:ru:/api/tasks/statuses")).not.toBeNull();
+    });
+
+    // `GET /marks` without `limit` is not "everything": the backend answers with its own
+    // default of 100, which is why the map used to stop there. `meta.total` is what tells the
+    // caller whether the page it got is the whole set.
+    it("GET /marks carries limit/offset/bbox and hands `meta` back untouched", async () => {
+        fetchMock.mockImplementation(ok({ marks: [] }, { limit: 500, offset: 0, total: 114 }));
+        const res = await MarksService.getMarks({ mark_type_ids: [], mark_status_ids: [], limit: MARKS_MAX_LIMIT, offset: 0 });
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks?limit=500&offset=0");
+        expect(res.meta).toEqual({ limit: 500, offset: 0, total: 114 });
+
+        fetchMock.mockClear();
+        await MarksService.getMarks({ mark_type_ids: [1], mark_status_ids: [2], bbox: [41.3, 52.6, 41.5, 52.8], limit: 500 });
+        expect(fetchMock.mock.calls[0][0])
+            .toBe("/api/marks?mark_type_ids=1&mark_status_ids=2&bbox=41.3%2C52.6%2C41.5%2C52.8&limit=500");
+
+        // the export link shares `filterParams`, and carries only what it was given
+        expect(MarksService.exportUrl({ mark_type_ids: [1], mark_status_ids: [] }, "csv"))
+            .toBe("/api/marks/export?mark_type_ids=1&format=csv");
+    });
+
+    it("GET /marks?ids= reads a page of marks in one request, split at 100 ids", async () => {
+        const mark = (id: number) => ({ mark_id: id, name: "", geom: { type: "Point", coordinates: [1, 2] }, mark_type_id: 1, description: "", user_id: 1, mark_status_id: 1, created_at: "", updated_at: "" });
+
+        // an empty list is answered without a request at all
+        expect(await MarksService.getMarksByIds([])).toEqual([]);
+        expect(fetchMock).not.toHaveBeenCalled();
+
+        fetchMock.mockImplementation(ok({ marks: [mark(3), mark(1)] }));
+        const controller = new AbortController();
+        expect((await MarksService.getMarksByIds([3, 1], { signal: controller.signal })).map((m) => m.mark_id)).toEqual([3, 1]);
+        // the ids keep the caller's order, unencoded commas and all
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/marks?ids=3,1");
+        expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(controller.signal);
+
+        // MARKS_IDS_BATCH is the backend's cap: 150 ids are two requests, concatenated
+        fetchMock.mockClear();
+        const ids = Array.from({ length: MARKS_IDS_BATCH + 50 }, (_, i) => i + 1);
+        fetchMock.mockImplementation(async (input: string) => {
+            const batch = String(input).slice("/api/marks?ids=".length).split(",").map(Number);
+            return jsonResponse({ success: true, payload: { marks: batch.map(mark) } });
+        });
+        expect((await MarksService.getMarksByIds(ids)).map((m) => m.mark_id)).toEqual(ids);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock.mock.calls[0][0]).toBe(`/api/marks?ids=${ids.slice(0, MARKS_IDS_BATCH).join(",")}`);
+        expect(fetchMock.mock.calls[1][0]).toBe(`/api/marks?ids=${ids.slice(MARKS_IDS_BATCH).join(",")}`);
+
+        // a failed batch drops its marks instead of the whole read
+        fetchMock.mockClear();
+        fetchMock
+            .mockImplementationOnce(ok({ marks: [mark(1)] }))
+            .mockImplementationOnce(async () => jsonResponse({ success: false, error: { message: "boom" } }, 500));
+        expect((await MarksService.getMarksByIds(ids)).map((m) => m.mark_id)).toEqual([1]);
     });
 });

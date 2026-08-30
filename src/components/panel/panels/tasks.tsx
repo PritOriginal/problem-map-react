@@ -15,15 +15,12 @@ import { useNavigateKeepSearch } from "../../../utils/navigation";
 import { deadlineState, formatDateTime, formatDeadline } from "../../../utils/deadline";
 import { useNow } from "../../../utils/hooks";
 import { useAsyncData } from "../../../utils/use-async-data";
-import { mapWithLimit } from "../../../utils/concurrency";
 import { TranslationKey, localeOf, useT } from "../../../i18n";
 import "../../badges/badges.scss";
 import PanelHeader from "../panel-header";
 import { AsyncState } from "../async-state";
 
 export const TASKS_LIMIT = 100;
-/** How many `GET /marks/{id}` requests run at once while filling the task cards. */
-const MARKS_CONCURRENCY = 6;
 
 type TabKey = "current" | "done" | "overdue";
 
@@ -52,25 +49,22 @@ const TasksPanel = observer(function TasksPanel() {
     );
     const tasks: Task[] = useMemo(() => data ?? [], [data]);
 
-    // Marks are loaded per task (there is no batch endpoint) in a second pass, so the
-    // cards appear with the tasks and fill in as their marks arrive. A failure leaves a
-    // single card without its mark block, and the banner stays for the tasks request.
-    // The key is the id list itself: a re-read that returns the same tasks must not
-    // re-request every mark.
+    // The marks are loaded in a second pass, so the cards appear with the tasks and fill in
+    // when their marks arrive; a failure leaves a card without its mark block, and the banner
+    // stays for the tasks request -- hence `silent`. One batch read (`GET /marks?ids=`) covers
+    // the whole page instead of the up-to-TASKS_LIMIT per-mark requests this used to make.
+    // The key is the id list itself: a re-read that returns the same tasks must not re-request.
     const markIds = useMemo(
         () => Array.from(new Set(tasks.map((task) => task.mark_id))).join(","),
         [tasks],
     );
     const { data: marks } = useAsyncData(
         async (signal) => {
-            const ids = markIds.split(",").map(Number);
-            const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id, { signal }));
+            const loaded = await MarksService.getMarksByIds(markIds.split(",").map(Number), { signal });
             const byId: Record<number, Mark> = {};
-            loaded.forEach((res, index) => {
-                if (res.status === "fulfilled") {
-                    byId[ids[index]] = res.value.payload.mark;
-                }
-            });
+            for (const mark of loaded) {
+                byId[mark.mark_id] = mark;
+            }
             return byId;
         },
         [markIds],

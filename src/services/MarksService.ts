@@ -3,7 +3,9 @@ import BaseService, { IResponse, withIdempotencyKey } from "./BaseService"
 import { PointGeometry } from "@yandex/ymaps3-types";
 import { Check } from "./ChecksService";
 import { isRecord, unwrapList } from "./http";
+import type { BBox } from "./MapService";
 import { parseSimilarMarks } from "../utils/similar";
+import { mapWithLimit } from "../utils/concurrency";
 
 
 export interface Mark {
@@ -164,9 +166,28 @@ export interface Point {
     latitude: number
 }
 
+/**
+ * Backend cap on `limit` for `GET /marks`. Omitting `limit` altogether does **not** mean
+ * "everything": the backend then falls back to its own default of 100, which is how the map
+ * used to silently drop every mark past the hundredth.
+ */
+export const MARKS_MAX_LIMIT = 500;
+
+/** Max ids `GET /marks?ids=` accepts in one request; longer lists have to be split. */
+export const MARKS_IDS_BATCH = 100;
+
+/** How many `?ids=` batches run at once when the list is longer than one batch. */
+const MARKS_IDS_CONCURRENCY = 4;
+
 export interface GetMarksRequest {
     mark_type_ids: number[];
     mark_status_ids: number[];
+    /** Page size, 1..`MARKS_MAX_LIMIT`. Omitted -> the backend's own default of 100. */
+    limit?: number;
+    /** Index of the first mark of the page; pairs with `limit`. */
+    offset?: number;
+    /** Viewport filter `[minLon, minLat, maxLon, maxLat]` in WGS84 (same shape as the heatmap's). */
+    bbox?: BBox;
 }
 
 export interface GetMarksResponse extends IResponse {
@@ -252,11 +273,43 @@ export interface GetMarkStatusHistoryByMarkIdResponsePayload {
 /** Reads take an optional trailing `init` whose `signal` cancels a superseded request (`useAsyncData`). */
 class MarksService extends BaseService {
     /**
-     * `GET /marks?mark_type_ids=&mark_status_ids=` returns `{ marks: Mark[] }`.
+     * `GET /marks?mark_type_ids=&mark_status_ids=&limit=&offset=&bbox=` returns `{ marks: Mark[] }`
+     * plus `meta: { limit, offset, total }` — `total` is the number of marks matching the filters,
+     * regardless of the page, so the caller can tell a full answer from a truncated one.
      * `init.signal` lets the caller cancel a superseded request (see `src/store/marks.ts`).
      */
     public getMarks(req: GetMarksRequest, init?: Pick<RequestInit, "signal">): Promise<GetMarksResponse> {
         return this.request<GetMarksResponse>(`/api/marks?${this.filterParams(req)}`, init)
+    }
+
+    /**
+     * `GET /marks?ids=1,2,3` — the batch read behind the task and moderation lists, which used to
+     * issue one `GET /marks/{id}` per card. The backend accepts at most `MARKS_IDS_BATCH` ids, so
+     * longer lists are split into batches (a few in flight at a time) and the pages concatenated;
+     * an empty list resolves to `[]` without touching the network.
+     *
+     * Returns the marks themselves rather than an envelope: a split list has no single envelope,
+     * and every caller wants the flat list. Ids the backend does not know are simply absent, and a
+     * failed batch is dropped — the caller renders the cards it could fill, exactly as the
+     * per-card load did.
+     */
+    public async getMarksByIds(ids: number[], init?: Pick<RequestInit, "signal">): Promise<Mark[]> {
+        if (ids.length === 0) {
+            return [];
+        }
+        const batches: number[][] = [];
+        for (let i = 0; i < ids.length; i += MARKS_IDS_BATCH) {
+            batches.push(ids.slice(i, i + MARKS_IDS_BATCH));
+        }
+        const settled = await mapWithLimit(batches, MARKS_IDS_CONCURRENCY, (batch) =>
+            this.request<IResponse>(`/api/marks?ids=${batch.join(",")}`, init));
+        const marks: Mark[] = [];
+        for (const result of settled) {
+            if (result.status === "fulfilled") {
+                marks.push(...unwrapList<Mark>(result.value.payload, "marks"));
+            }
+        }
+        return marks;
     }
 
     public getMarkById(id: number, init?: Pick<RequestInit, "signal">): Promise<GetMarkByIdResponse> {
@@ -406,6 +459,15 @@ class MarksService extends BaseService {
         }
         if (req.mark_status_ids.length > 0) {
             params.append("mark_status_ids", req.mark_status_ids.join(","));
+        }
+        if (req.bbox) {
+            params.append("bbox", req.bbox.join(","));
+        }
+        if (req.limit !== undefined) {
+            params.append("limit", String(req.limit));
+        }
+        if (req.offset !== undefined) {
+            params.append("offset", String(req.offset));
         }
         return params;
     }

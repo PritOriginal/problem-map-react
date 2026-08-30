@@ -48,6 +48,7 @@ import SelectedPoint from "./map/layers/selected-point";
 import HeatmapLayer from "./map/layers/heatmap-layer";
 import BoundaryItem from "./map/layers/boundary-item";
 import HeatmapLegend from "./map/controls/heatmap-legend";
+import MarksTruncatedNotice from "./map/controls/marks-truncated-notice";
 import { AddMarkButton, LocateButton, OpenPanelButton } from "./map/controls/map-buttons";
 import Filters from "./map/filters/filters";
 import { useUrlFilters } from "./map/hooks/use-url-filters";
@@ -243,6 +244,7 @@ const Map = observer(() => {
             {showNewMarkButton && isMobile && <OpenPanelButton />}
             <Filters />
             {heatmapEnabled && <HeatmapLegend />}
+            {!heatmapEnabled && <MarksTruncatedNotice />}
             <LocateButton onClick={() => locate(true)} />
             <div className={`map ${panelIsOpen && "panel-open"}`}>
                 <YMapComponentsProvider apiKey={YMAPS_API_KEY}>

@@ -3,7 +3,6 @@ import { observer } from "mobx-react-lite";
 import user from "../../../../store/user";
 import ReportsService, { REPORT_STATUSES, REPORT_TARGET_TYPES, Report, ReportStatus, ReportTargetType } from "../../../../services/ReportsService";
 import MarksService, { Mark } from "../../../../services/MarksService";
-import { mapWithLimit } from "../../../../utils/concurrency";
 import { useAsyncData } from "../../../../utils/use-async-data";
 import { useT } from "../../../../i18n";
 import { STATUS_LABELS, TARGET_LABELS } from "./labels";
@@ -12,7 +11,6 @@ import "../../../badges/badges.scss";
 import PanelHeader from "../../panel-header";
 
 const QUEUE_LIMIT = 100;
-const MARKS_CONCURRENCY = 6;
 
 /** `/moderation`: the report queue with mark actions (moderator/admin, backend integration/wave-5). */
 const ModerationPanel = observer(function ModerationPanel() {
@@ -34,23 +32,19 @@ const ModerationPanel = observer(function ModerationPanel() {
     );
     const reports: Report[] = useMemo(() => data ?? [], [data]);
 
-    // A queue of QUEUE_LIMIT reports used to mean that many parallel `getMarkById`
-    // calls, one per card; the browser queued them six at a time and the panel froze.
-    // They are loaded here instead, throttled, and handed to the cards as a prop.
-    // Failures leave a single card without its mark block, exactly as the per-card load
-    // did -- hence `silent`. The key is the id list itself, so a reload that returns the
-    // same reports does not re-request every mark.
+    // A queue of QUEUE_LIMIT reports used to mean that many parallel `getMarkById` calls, one
+    // per card, and the panel froze behind them. They are loaded here instead, as a single
+    // batch read (`GET /marks?ids=`), and handed to the cards as a prop. A failed batch leaves
+    // those cards without their mark block, exactly as the per-card load did -- hence `silent`.
+    // The key is the id list itself, so a reload that returns the same reports re-requests nothing.
     const missingIds = useMemo(() => missingMarkIds(reports).join(","), [reports]);
     const { data: fetched } = useAsyncData(
         async (signal) => {
-            const ids = missingIds.split(",").map(Number);
-            const loaded = await mapWithLimit(ids, MARKS_CONCURRENCY, (id) => MarksService.getMarkById(id, { signal }));
+            const loaded = await MarksService.getMarksByIds(missingIds.split(",").map(Number), { signal });
             const byId: Record<number, Mark> = {};
-            loaded.forEach((res, index) => {
-                if (res.status === "fulfilled") {
-                    byId[ids[index]] = res.value.payload.mark;
-                }
-            });
+            for (const mark of loaded) {
+                byId[mark.mark_id] = mark;
+            }
             return byId;
         },
         [missingIds],

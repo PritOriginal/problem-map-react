@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { MockInstance } from "vitest";
 import NotificationsService from "../services/NotificationsService";
 import inbox, { INBOX_PAGE_SIZE, UNREAD_POLL_MS } from "./inbox";
 import user from "./user";
@@ -90,7 +91,7 @@ describe("inbox unread polling", () => {
 });
 
 describe("inbox pagination", () => {
-    let getNotifications: ReturnType<typeof vi.spyOn>;
+    let getNotifications: MockInstance<typeof NotificationsService.getNotifications>;
 
     /** A backend holding `total` notifications, answering `limit` of them from `offset`. */
     function page(total: number, limit: number, offset: number) {
@@ -135,7 +136,7 @@ describe("inbox pagination", () => {
         await inbox.fetch();
         await inbox.loadMore();
 
-        expect(getNotifications.mock.calls.map(([req]) => (req as { offset?: number } | undefined)?.offset))
+        expect(getNotifications.mock.calls.map(([req]) => req?.offset))
             .toEqual([0, INBOX_PAGE_SIZE]);
         expect(inbox.items).toHaveLength(INBOX_PAGE_SIZE * 2);
         expect(inbox.items[0].id).toBe(0);

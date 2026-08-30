@@ -132,6 +132,43 @@ describe("OfflineQueueStore", () => {
         vi.restoreAllMocks();
     });
 
+    /**
+     * The order is not an implementation detail to be optimised away: the backend's
+     * de-duplication is defined in terms of it. `POST /marks` refuses a mark whose twin is
+     * already inside the dedup radius with a 409, which `isFinalFailure` reads as "already
+     * applied" and drops -- so two nearby marks recorded offline collapse into one only
+     * because the second is sent after the first exists. Sent together they would both be
+     * created. See the note on `OfflineQueueStore.flush`.
+     */
+    it("sends strictly in order, so the backend's 409 can still collapse a duplicate", async () => {
+        const first = await store.enqueue({ kind: "mark", longitude: 41.4, latitude: 52.7, mark_type_id: 1, description: "яма", force: false, photos: [] });
+        const twin = await store.enqueue({ kind: "mark", longitude: 41.4, latitude: 52.7, mark_type_id: 1, description: "та же яма", force: false, photos: [] });
+
+        const inFlight = new Set<string>();
+        const created: { lon: number; lat: number; type: number }[] = [];
+        (sender.send as ReturnType<typeof vi.fn>).mockImplementation(async (item: QueuedItem) => {
+            // a second request opened before this one closed would mean the dedup check below
+            // runs against a backend that has not seen the first mark yet
+            expect(inFlight.size).toBe(0);
+            inFlight.add(item.id);
+            sent.push(item);
+            await Promise.resolve();
+            const p = item.payload as { kind: string; longitude: number; latitude: number; mark_type_id: number };
+            const similar = created.some((m) => m.lon === p.longitude && m.lat === p.latitude && m.type === p.mark_type_id);
+            inFlight.delete(item.id);
+            if (similar) {
+                throw new ApiError("similar marks nearby", 409);
+            }
+            created.push({ lon: p.longitude, lat: p.latitude, type: p.mark_type_id });
+        });
+
+        await store.flush();
+
+        expect(sent.map((x) => x.id)).toEqual([first.id, twin.id]);
+        expect(created).toHaveLength(1); // the twin was refused and dropped, not created twice
+        expect(store.count).toBe(0);
+    });
+
     it("load restores persisted items and ignores other users' items when flushing", async () => {
         await storage.put(createQueuedItem(7, { kind: "comment", mark_id: 1, body: "mine" }, "mine"));
         await storage.put(createQueuedItem(8, { kind: "comment", mark_id: 1, body: "theirs" }, "theirs"));

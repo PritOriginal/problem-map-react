@@ -513,6 +513,8 @@ export const ru = {
     "offline.markQueued": "Нет сети: метка сохранена в очереди и будет отправлена позже",
     "offline.checkQueued": "Нет сети: проверка сохранена в очереди и будет отправлена позже",
     "offline.attempts": "попыток: {n}",
+    "offline.batchNoResult": "Сервер не ответил по этому элементу пачки",
+    "offline.keyReused": "Элемент убран из очереди: его ключ уже использован с другими данными",
 };
 
 export type TranslationKey = keyof typeof ru;

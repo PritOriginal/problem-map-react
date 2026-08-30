@@ -10,7 +10,7 @@ import AnalyticsService from "./AnalyticsService";
 import OrganizationsService, { normalizeOrganization } from "./OrganizationsService";
 import UsersService, { normalizeLeaderboard } from "./UsersService";
 import AdminService, { normalizeCreatedApiKey } from "./AdminService";
-import MarksService, { MARKS_IDS_BATCH, MARKS_MAX_LIMIT } from "./MarksService";
+import MarksService, { MARKS_BATCH_MAX, MARKS_IDS_BATCH, MARKS_MAX_LIMIT } from "./MarksService";
 import ChecksService from "./ChecksService";
 import MapService from "./MapService";
 import { setLang } from "../i18n";
@@ -498,5 +498,90 @@ describe("service payloads match the backend contract", () => {
         const bulk = await MapService.getAdminBoundaries({ admin_levels: [6, 9, 10] });
         expect(fetchMock.mock.calls[0][0]).toBe("/api/map/admin-boundaries?admin_levels=6%2C9%2C10");
         expect(bulk.payload.admin_boundaries[0].id).toBe(1);
+    });
+
+    // POST /marks/batch (backend integration/wave-6): multipart `items` + `photos.<index>`,
+    // at most MARKS_BATCH_MAX elements per request, results in request order.
+    it("POST /marks/batch sends chunks of 20 in order and pairs results with their element", async () => {
+        const items = Array.from({ length: 25 }, (_, i) => ({
+            key: `k${i}`,
+            longitude: 41 + i,
+            latitude: 52,
+            mark_type_id: 1,
+            description: `d${i}`,
+            photos: i === 0 ? [new Blob(["a"], { type: "image/png" }), new Blob(["b"], { type: "image/png" })] : [],
+        }));
+        const bodies: FormData[] = [];
+        fetchMock.mockImplementation(async (_input: string, init: RequestInit) => {
+            const form = init.body as FormData;
+            bodies.push(form);
+            const parsed = JSON.parse(String(form.get("items"))) as { key: string }[];
+            return jsonResponse({
+                success: true,
+                payload: { results: parsed.map((el, index) => ({ index, key: el.key, status: "created", mark_id: index + 1 })) },
+            });
+        });
+
+        const results = await MarksService.addMarksBatch(items);
+
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(["/api/marks/batch", "/api/marks/batch"]);
+        expect((fetchMock.mock.calls[0][1] as RequestInit).method).toBe("POST");
+        // 25 elements, one round trip per MARKS_BATCH_MAX, sequentially: 20 then 5
+        const first = JSON.parse(String(bodies[0].get("items"))) as { key: string; description: string; photos: number; force: boolean }[];
+        const second = JSON.parse(String(bodies[1].get("items"))) as { key: string }[];
+        expect(first).toHaveLength(MARKS_BATCH_MAX);
+        expect(second).toHaveLength(5);
+        expect(first.map((x) => x.key)).toEqual(items.slice(0, 20).map((x) => x.key));
+        expect(second.map((x) => x.key)).toEqual(["k20", "k21", "k22", "k23", "k24"]);
+        // `photos` is the file count of that element; the files themselves go under `photos.<index>`
+        expect(first[0].photos).toBe(2);
+        expect(first[1].photos).toBe(0);
+        expect(first[0].force).toBe(false);
+        expect(bodies[0].getAll("photos.0")).toHaveLength(2);
+        expect(bodies[0].getAll("photos.1")).toHaveLength(0);
+        // the second chunk's indexes are rewritten to the index in the original list
+        expect(results).toHaveLength(25);
+        expect(results.map((r) => r.index)).toEqual(items.map((_, i) => i));
+        expect(results[24]).toMatchObject({ key: "k24", status: "created" });
+    });
+
+    it("POST /marks/batch: per-element failures carry error.code, and a missing result is not a success", async () => {
+        fetchMock.mockImplementation(ok([
+            { index: 0, key: "a", status: "duplicate", mark_id: 7 },
+            { index: 1, key: "b", status: "failed", error: { message: "similar", code: "similar_marks" }, similar_marks: [{ mark_id: 3, geom: { type: "Point", coordinates: [1, 2] }, distance_m: 12 }] },
+            // the backend answered for two of the three elements
+        ]));
+        const res = await MarksService.addMarksBatch([
+            { key: "a", longitude: 1, latitude: 2, mark_type_id: 1, photos: [] },
+            { key: "b", longitude: 1, latitude: 2, mark_type_id: 1, photos: [] },
+            { key: "c", longitude: 1, latitude: 2, mark_type_id: 1, photos: [] },
+        ]);
+        expect(res[0]).toMatchObject({ status: "duplicate", mark_id: 7 });
+        expect(res[1]).toMatchObject({ status: "failed", error: { message: "similar", code: "similar_marks" } });
+        expect(res[1].similar_marks?.[0].distance_m).toBe(12);
+        expect(res[2]).toMatchObject({ index: 2, key: "c", status: "failed" });
+
+        // a backend without the route: the caller falls back to POST /marks per mark
+        fetchMock.mockImplementation(async () => jsonResponse({ success: false, error: { message: "not found" } }, 404));
+        await expect(MarksService.addMarksBatch([{ key: "a", longitude: 1, latitude: 2, mark_type_id: 1, photos: [] }]))
+            .rejects.toMatchObject({ status: 404 });
+    });
+
+    // The envelope grew a machine-readable `error.code` (wave-6); `Retry-After` rides along on 425.
+    it("error envelope: code and Retry-After reach ApiError, and stay undefined on an old backend", async () => {
+        fetchMock.mockImplementation(async () => jsonResponse(
+            { success: false, error: { message: "уже выполняется", code: "idempotency_in_flight" } },
+            425,
+            { "Retry-After": "2" },
+        ));
+        await expect(MarksService.addMark({ point: { longitude: 1, latitude: 2 }, mark_type_id: 1, description: "" }, [], false, "key-1"))
+            .rejects.toMatchObject({ status: 425, code: "idempotency_in_flight", retryAfter: 2, message: "уже выполняется" });
+
+        fetchMock.mockImplementation(async () => jsonResponse({ success: false, error: { message: "similar marks" } }, 409));
+        const old = await MarksService.addMark({ point: { longitude: 1, latitude: 2 }, mark_type_id: 1, description: "" }, [], false)
+            .catch((e: unknown) => e);
+        expect(old).toMatchObject({ status: 409, message: "similar marks" });
+        expect((old as { code?: string }).code).toBeUndefined();
+        expect((old as { retryAfter?: number }).retryAfter).toBeUndefined();
     });
 });

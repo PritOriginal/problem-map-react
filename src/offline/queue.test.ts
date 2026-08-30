@@ -1,10 +1,24 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryQueueStorage } from "./storage";
-import { createQueuedItem, isFinalFailure, isNetworkFailure, markFailed, newIdempotencyKey, selectPending } from "./queue";
+import {
+    classifyFailure,
+    createQueuedItem,
+    dispositionOf,
+    groupForBatch,
+    isFinalFailure,
+    isNetworkFailure,
+    markFailed,
+    MAX_RETRY_AFTER_MS,
+    newIdempotencyKey,
+    retryDelayMs,
+    selectPending,
+} from "./queue";
 import { OfflineQueueStore, QueueSender } from "../store/offline-queue";
-import { ApiError } from "../services/http";
+import { ApiError, parseRetryAfter } from "../services/http";
+import type { BatchMarkResult } from "../services/MarksService";
+import notificationsStore from "../store/notifications";
 import user from "../store/user";
-import type { QueuedItem } from "./types";
+import type { QueuedItem, QueuedPayload } from "./types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -178,5 +192,197 @@ describe("OfflineQueueStore", () => {
         await store.flush();
         expect(sent.map((x) => x.id)).toEqual(["mine"]);
         expect((await storage.getAll()).map((x) => x.id)).toEqual(["theirs"]);
+    });
+});
+
+describe("failure classification (backend integration/wave-6 error codes)", () => {
+    it("keeps 409 final only for de-duplication; in-flight and reused keys get their own fate", () => {
+        // old backend: no codes at all -- a bare 409 keeps meaning "already applied"
+        expect(classifyFailure(409, undefined)).toBe("applied");
+        expect(dispositionOf(new ApiError("dup", 409))).toBe("applied");
+        expect(isFinalFailure(new ApiError("dup", 409))).toBe(true);
+
+        // new backend: the same de-duplication, now named
+        expect(dispositionOf(new ApiError("similar", 409, undefined, { code: "similar_marks" }))).toBe("applied");
+
+        // the bug: a conflict that only means "your own request is still running"
+        expect(dispositionOf(new ApiError("in flight", 425, undefined, { code: "idempotency_in_flight" }))).toBe("retry");
+        expect(dispositionOf(new ApiError("in flight", 409, undefined, { code: "idempotency_in_flight" }))).toBe("retry");
+        expect(isFinalFailure(new ApiError("in flight", 425))).toBe(false);
+
+        // spent key: dropped, but never as a success
+        expect(dispositionOf(new ApiError("reused", 422, undefined, { code: "idempotency_key_reused" }))).toBe("discard");
+        // a bare 422 from an old backend is not a discard -- dropping a record on a plain
+        // validation error is the very failure this change undoes
+        expect(dispositionOf(new ApiError("bad", 422))).toBe("retry");
+
+        expect(dispositionOf(new ApiError("boom", 500))).toBe("retry");
+        expect(dispositionOf(new TypeError("Failed to fetch"))).toBe("retry");
+    });
+
+    it("reads Retry-After as seconds or a date, capped and never negative", () => {
+        expect(parseRetryAfter(null)).toBeUndefined();
+        expect(parseRetryAfter("3")).toBe(3);
+        expect(parseRetryAfter("-1")).toBeUndefined();
+        expect(parseRetryAfter("nonsense")).toBeUndefined();
+        // an HTTP date has no milliseconds, so the "now" it is measured against is pinned
+        const at = new Date("2026-08-30T10:00:05Z");
+        expect(parseRetryAfter(at.toUTCString(), Date.parse("2026-08-30T10:00:00Z"))).toBe(5);
+        expect(parseRetryAfter(at.toUTCString(), Date.parse("2026-08-30T10:01:00Z"))).toBe(0);
+
+        expect(retryDelayMs(new ApiError("x", 425, undefined, { retryAfter: 3 }))).toBe(3000);
+        expect(retryDelayMs(new ApiError("x", 425))).toBe(0);
+        expect(retryDelayMs(new ApiError("x", 425, undefined, { retryAfter: 9999 }))).toBe(MAX_RETRY_AFTER_MS);
+        expect(retryDelayMs(new TypeError("nope"))).toBe(0);
+    });
+
+    it("groups only adjacent marks, so nothing overtakes the item it depends on", () => {
+        const mk = (id: string) => createQueuedItem(1, { kind: "mark", longitude: 1, latitude: 2, mark_type_id: 1, description: id, force: false, photos: [] }, id);
+        const ck = (id: string) => createQueuedItem(1, { kind: "check", mark_id: 1, result: true, comment: "", photos: [] }, id);
+        const groups = groupForBatch([mk("m1"), mk("m2"), ck("c1"), mk("m3")]);
+        expect(groups.map((g) => g.map((x) => x.id))).toEqual([["m1", "m2"], ["c1"], ["m3"]]);
+        expect(groupForBatch([])).toEqual([]);
+    });
+});
+
+describe("OfflineQueueStore with a batch-capable sender", () => {
+    let storage: MemoryQueueStorage;
+    let calls: string[];
+    let sender: QueueSender;
+    let store: OfflineQueueStore;
+    let batchAnswer: (items: QueuedItem[]) => BatchMarkResult[];
+
+    const mark = (description: string): QueuedPayload => ({ kind: "mark", longitude: 41.4, latitude: 52.7, mark_type_id: 1, description, force: false, photos: [] });
+
+    beforeEach(() => {
+        localStorage.clear();
+        notificationsStore.clear();
+        user.setUser("u", 7, "user");
+        storage = new MemoryQueueStorage();
+        calls = [];
+        batchAnswer = (items) => items.map((_, index) => ({ index, status: "created" as const, mark_id: index + 1 }));
+        sender = {
+            send: vi.fn(async (item: QueuedItem) => { calls.push(`single:${item.id}`); }),
+            sendMarks: vi.fn(async (items: QueuedItem[]) => {
+                calls.push(`batch:${items.map((x) => x.id).join(",")}`);
+                return batchAnswer(items);
+            }),
+        };
+        store = new OfflineQueueStore(storage, sender);
+    });
+
+    afterEach(() => {
+        store.stop(); // cancels a Retry-After timer a test may have armed
+        notificationsStore.clear();
+    });
+
+    it("sends adjacent marks as one batch and keeps a mixed queue in order", async () => {
+        await store.enqueue(mark("first"), "m1");
+        await store.enqueue(mark("second"), "m2");
+        await store.enqueue({ kind: "check", mark_id: 5, result: true, comment: "", photos: [] }, "c1");
+        await store.enqueue({ kind: "comment", mark_id: 5, body: "hi" }, "k1");
+        await store.enqueue(mark("third"), "m3");
+        await store.enqueue({ kind: "check", mark_id: 6, result: false, comment: "", photos: [] }, "c2");
+
+        await store.flush();
+
+        // the batch covers m1+m2 only: the check that follows may well be the check *of* m2, and
+        // a lone mark is cheaper to send the old way
+        expect(calls).toEqual(["batch:m1,m2", "single:c1", "single:k1", "single:m3", "single:c2"]);
+        const firstBatch = (sender.sendMarks as ReturnType<typeof vi.fn>).mock.calls[0][0] as QueuedItem[];
+        expect(firstBatch.map((x) => x.id)).toEqual(["m1", "m2"]);
+        expect(store.count).toBe(0);
+        expect(await storage.getAll()).toEqual([]);
+    });
+
+    it("removes created/replayed/duplicate results and keeps an in-flight failure queued", async () => {
+        await store.enqueue(mark("a"), "a");
+        await store.enqueue(mark("b"), "b");
+        await store.enqueue(mark("c"), "c");
+        await store.enqueue(mark("d"), "d");
+        batchAnswer = () => [
+            { index: 0, status: "created", mark_id: 1 },
+            { index: 1, status: "replayed", mark_id: 2 },
+            { index: 2, status: "duplicate", mark_id: 3 },
+            { index: 3, status: "failed", error: { message: "still running", code: "idempotency_in_flight" } },
+        ];
+
+        await store.flush();
+
+        expect(store.pending.map((x) => x.id)).toEqual(["d"]);
+        expect(store.pending[0]).toMatchObject({ attempts: 1, last_error: "still running" });
+        expect(store.lastFlushedAt).toBeGreaterThan(0);
+    });
+
+    it("drops a spent idempotency key without calling it sent", async () => {
+        await store.enqueue(mark("a"), "a");
+        await store.enqueue(mark("b"), "b");
+        batchAnswer = () => [
+            { index: 0, status: "failed", error: { message: "key reused", code: "idempotency_key_reused" } },
+            { index: 1, status: "created", mark_id: 2 },
+        ];
+
+        await store.flush();
+
+        expect(store.count).toBe(0);
+        expect(notificationsStore.error).toBe("key reused");
+    });
+
+    it("falls back to one-by-one sending when the backend has no batch route (404), once per session", async () => {
+        await store.enqueue(mark("a"), "a");
+        await store.enqueue(mark("b"), "b");
+        await store.enqueue(mark("c"), "c");
+        (sender.sendMarks as ReturnType<typeof vi.fn>).mockImplementationOnce(async (items: QueuedItem[]) => {
+            calls.push(`batch:${items.map((x) => x.id).join(",")}`);
+            throw new ApiError("not found", 404);
+        });
+
+        await store.flush();
+
+        expect(calls).toEqual(["batch:a,b,c", "single:a", "single:b", "single:c"]);
+        expect(store.count).toBe(0);
+
+        // the 404 is remembered: the next flush does not probe the route again
+        await store.enqueue(mark("d"), "d");
+        await store.enqueue(mark("e"), "e");
+        await store.flush();
+        expect(calls.slice(4)).toEqual(["single:d", "single:e"]);
+        expect(sender.sendMarks).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the item queued on a 425 and honours Retry-After before trying again", async () => {
+        vi.useFakeTimers();
+        await store.enqueue(mark("a"), "a");
+        (sender.send as ReturnType<typeof vi.fn>).mockImplementation(async (item: QueuedItem) => {
+            calls.push(`single:${item.id}`);
+            throw new ApiError("still running", 425, undefined, { code: "idempotency_in_flight", retryAfter: 2 });
+        });
+
+        await store.flush(); // a lone mark takes the per-item path
+
+        expect(store.pending.map((x) => x.id)).toEqual(["a"]);
+        expect(store.pending[0]).toMatchObject({ attempts: 1, last_error: "still running" });
+        expect(store.lastFlushedAt).toBe(0);
+        expect(notificationsStore.error).toBeNull(); // waiting for our own request is not a user-facing error
+        expect(calls).toEqual(["single:a"]);
+
+        await vi.advanceTimersByTimeAsync(1999);
+        expect(calls).toEqual(["single:a"]); // Retry-After is honoured, not ignored
+        await vi.advanceTimersByTimeAsync(1);
+        expect(calls).toEqual(["single:a", "single:a"]);
+        vi.useRealTimers();
+    });
+
+    it("marks the whole group failed and stops when the batch request never reaches the backend", async () => {
+        await store.enqueue(mark("a"), "a");
+        await store.enqueue(mark("b"), "b");
+        await store.enqueue({ kind: "comment", mark_id: 1, body: "after" }, "k1");
+        (sender.sendMarks as ReturnType<typeof vi.fn>).mockImplementation(async () => { throw new TypeError("Failed to fetch"); });
+
+        await store.flush();
+
+        expect(store.pending.map((x) => x.id)).toEqual(["a", "b", "k1"]);
+        expect(store.pending.slice(0, 2).every((x) => x.attempts === 1)).toBe(true);
+        expect(calls).toEqual([]); // nothing after the failed group was sent
     });
 });

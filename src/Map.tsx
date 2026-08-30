@@ -11,7 +11,10 @@ import {
 } from "ymap3-components";
 
 import { type ResolvedTheme, useTheme } from "./theme";
-
+import { BASEMAP } from "./map/basemap/basemap";
+import { recolorSheet } from "./map/basemap/palette";
+import { suppressLabels } from "./map/basemap/labels";
+import type { CustomizationEntry } from "./map/basemap/roles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LngLat, MapEventUpdateHandler, VectorCustomization, YMap as YMapInstance } from "@yandex/ymaps3-types";
 import type { Feature } from "@yandex/ymaps3-clusterer";
@@ -83,7 +86,18 @@ function useMapCustomization(resolvedTheme: ResolvedTheme): VectorCustomization 
         { silent: true },
     );
 
-    return data;
+    // Both sheets are then repainted from one colour per role and thinned of the type
+    // this product does not need -- see `src/map/basemap/basemap.ts`. Doing it here,
+    // rather than shipping two more edited JSON files, keeps the decisions in 27 hex
+    // values that can be read and argued with. Memoized on the sheet and the theme,
+    // because it walks 128 entries and the map rerenders on every pan.
+    const { palette, labels } = BASEMAP[resolvedTheme];
+    return useMemo(() => {
+        if (!data) {
+            return data;
+        }
+        return suppressLabels(recolorSheet(data as CustomizationEntry[], palette), labels) as VectorCustomization;
+    }, [data, palette, labels]);
 }
 
 const Map = observer(() => {
@@ -185,17 +199,20 @@ const Map = observer(() => {
         }
     }, [pendingCenter, map, flyTo]);
 
+    // The cluster bubble is drawn at the theme's own strength: the sweep that reads
+    // as data over the light map glows over a near-black one.
+    const clusterTone = BASEMAP[resolvedTheme].cluster;
     const cluster = useCallback((coordinates: LngLat, features: Feature[]) => (
         <YMapMarker source="markerSource" coordinates={coordinates}>
             <div className="circle">
-                <div className="circle-content" style={{ backgroundColor: "#" + getColorByFeatures(features) }}>
+                <div className="circle-content" style={{ backgroundColor: "#" + getColorByFeatures(features, clusterTone) }}>
                     <span className="circle-text">
                         {features.length}
                     </span>
                 </div>
             </div>
         </YMapMarker>
-    ), []);
+    ), [clusterTone]);
 
     const assignedMarkIds = tasksStore.assignedMarkIds;
     // Selection and assignment are NOT read here: `MarkItem` is an observer and

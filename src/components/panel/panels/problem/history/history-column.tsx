@@ -6,7 +6,8 @@ import { TranslationKey, localeOf, tOr, useT } from "../../../../../i18n";
 import user from "../../../../../store/user";
 import DoubleProgressBar from "../../../../double-progress-bar/double-progress-bar";
 import ReportButton from "../../../../report/report-button";
-import { STATUS_COLORS, STATUS_FALLBACK } from "../../../../../styles/tokens";
+import { statusColors, STATUS_FALLBACK } from "../../../../../styles/tokens";
+import { useTheme } from "../../../../../theme";
 import { spanLabel } from "../../../../../utils/history-column";
 import "../history-column.scss";
 import "../checks.scss";
@@ -57,7 +58,9 @@ export function HistoryGroup({ group, depth, spanMs, isLast }: {
 
     const question = getQuestion(group[group.length - 1].new_mark_status_id);
 
-    // The stratum takes the colour of the status that opened this layer.
+    // The stratum takes the colour of the status that opened this layer -- from the
+    // scale of the live theme, not the light one: the light greys vanish on a dark panel.
+    const statuses = statusColors(useTheme().resolved);
     const statusId = group[0].new_mark_status_id;
     const span = spanLabel(spanMs);
     const duration = `${span.value} ${t(`common.${span.unit}` as TranslationKey)}`;
@@ -67,7 +70,7 @@ export function HistoryGroup({ group, depth, spanMs, isLast }: {
             <div className="core__spine" aria-hidden="true">
                 <div
                     className="core__stratum"
-                    style={{ height: `${depth}px`, backgroundColor: STATUS_COLORS[statusId] ?? STATUS_FALLBACK }}
+                    style={{ height: `${depth}px`, backgroundColor: statuses[statusId] ?? STATUS_FALLBACK }}
                 />
             </div>
             <div className="core__body">

@@ -2,12 +2,12 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import { observer } from "mobx-react-lite";
 
 import { useT } from "../../i18n";
-import { useTheme } from "../../theme";
 import { MARKER_ICON, statusColors, STATUS_FALLBACK } from "../../styles/tokens";
+import { useTheme } from "../../theme";
+import { heatColors } from "../../utils/heatmap";
 import { TypeIcon } from "../../components/mark/mark";
 import { typeColor } from "../../utils/mark-types";
 import { filtersEqual } from "../../utils/filters";
-import { HEAT_COLORS } from "../../utils/heatmap";
 import marksStore, { DEFAULT_FILTERS } from "../../store/marks";
 import markStatusesStore from "../../store/mark-statuses";
 import markTypesStore from "../../store/mark-types";
@@ -39,6 +39,7 @@ const Filters = observer(() => {
     const { t } = useT();
     const { resolved } = useTheme();
     const statuses = statusColors(resolved);
+    const heat = heatColors(resolved);
     const [showFilters, setShowFilters] = useState(false);
     // The panel does not appear beside the round button, it IS the button: it is
     // clipped back to a 56px circle at the button's exact position and unclipped
@@ -133,7 +134,7 @@ const Filters = observer(() => {
                     <div className="filters__body">
                         <div>
                             <FilterMode
-                                swatch={<i className="filter-mode__swatch" style={{ background: `linear-gradient(90deg, ${HEAT_COLORS[0]}, ${HEAT_COLORS[HEAT_COLORS.length - 1]})` }} />}
+                                swatch={<i className="filter-mode__swatch" style={{ background: `linear-gradient(90deg, ${heat[0]}, ${heat[heat.length - 1]})` }} />}
                                 name={t("map.heatmap")}
                                 checked={heatmapStore.enabled}
                                 onClick={() => heatmapStore.toggle()}

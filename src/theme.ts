@@ -17,7 +17,7 @@ export const DEFAULT_THEME: Theme = "auto";
 export const THEME_STORAGE_KEY = "theme";
 
 /** The browser-tab colour, matching --chrome in each theme. */
-const THEME_COLOR: Record<ResolvedTheme, string> = { light: "#1b1d1c", dark: "#0f1112" };
+const THEME_COLOR: Record<ResolvedTheme, string> = { light: "#1b1d1c", dark: "#101214" };
 
 export function parseTheme(value: unknown): Theme | null {
     return typeof value === "string" && (THEMES as readonly string[]).includes(value) ? (value as Theme) : null;
@@ -160,6 +160,14 @@ const themeStore = new ThemeStore();
 
 export const getTheme = (): Theme => themeStore.get();
 export const setTheme = (theme: Theme) => themeStore.set(theme);
+
+/**
+ * The resolved theme, and a subscription to it, for code outside React that has to
+ * follow it. Nothing in the app needs the subscription today -- `useTheme` covers the
+ * components -- but the map's colour is chosen from plain JS, so the pair is kept.
+ */
+export const getResolvedTheme = (): ResolvedTheme => themeStore.getResolved();
+export const subscribeTheme = (listener: () => void): (() => void) => themeStore.subscribe(listener);
 
 /** Current theme choice plus what it resolves to, re-rendering on change. */
 export function useTheme(): { theme: Theme; resolved: ResolvedTheme } {

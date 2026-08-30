@@ -37,11 +37,11 @@ export const CSS_MIRROR = {
  * these, and a black stroke is invisible on a dark basemap.
  */
 export const CSS_MIRROR_DARK = {
-    "--ink": "#e6e8e9",
+    "--ink": "#e4e7e9",
     "--ink-muted": "#9aa0a4",
-    "--paper": "#1f2225",
+    "--paper": "#1e2225",
     "--placeholder": "#2a2e31",
-    "--rule": "#31363a",
+    "--rule": "#31373b",
     "--rule-faint": "#5c6266",
     "--alert": "#ff5c5c",
     "--success-ink": "#55cc83",
@@ -71,30 +71,35 @@ export const MARKER_ICON = "#ffffff";
  * be confused with the interface's own marks.
  */
 export const STATUS_COLORS: Readonly<Record<number, string>> = {
-    1: "#b9b6ae", // unconfirmed -- neutral, recedes into the basemap
-    2: "#d92b2b", // confirmed
-    3: "#f4b71a", // under review
-    4: "#d92b2b", // rediscovered -- deliberately the same red as confirmed
-    5: "#2fa55a", // closed
-    6: "#43474a", // refuted -- a dark slate, not pure black, so it survives a dark basemap
-    7: "#f07316", // in progress
-    8: "#8b8f91", // duplicate
+    1: "#a5a29a", // unconfirmed -- neutral, recedes into the basemap
+    2: "#d32020", // confirmed
+    3: "#d09400", // under review -- was #f4b71a, which measured 1.65:1 on the light ground
+    4: "#d32020", // rediscovered -- deliberately the same red as confirmed
+    5: "#2aa85c", // closed -- kept clear of confirmed in LIGHTNESS, not only in hue
+    6: "#5b6266", // refuted -- was #43474a, the darkest thing on the map for the least important state
+    7: "#e0630c", // in progress
+    8: "#8b9095", // duplicate
 };
 
 /**
  * The same scale for a dark basemap. Every value is lifted: on the dark ground
- * the light-theme greys disappear and the deep red reads as brown. Refuted (6)
- * moves furthest -- a dark slate is invisible against a dark map.
+ * the light-theme greys disappear and the deep red reads as brown.
+ *
+ * The three that matter most are 2, 7 and 3 -- confirmed, in progress, under
+ * review. Red, orange and amber collapse onto a single axis under deuteranopia,
+ * so what has to hold them apart is LIGHTNESS, and here it does: 29, 45 and 74
+ * out of 100. The scale this replaced managed 29, 44 and 62, and squeezed the
+ * first pair into a fifth of the room. `src/map/basemap/basemap.test.ts` holds it.
  */
 export const STATUS_COLORS_DARK: Readonly<Record<number, string>> = {
-    1: "#8a8782", // unconfirmed
-    2: "#ff5c5c", // confirmed
-    3: "#ffc93d", // under review
-    4: "#ff5c5c", // rediscovered
-    5: "#55cc83", // closed
-    6: "#aab0b4", // refuted
-    7: "#ff9440", // in progress
-    8: "#6f7477", // duplicate
+    1: "#8d8a85", // unconfirmed
+    2: "#ff5a5f", // confirmed
+    3: "#f0e442", // under review
+    4: "#ff5a5f", // rediscovered
+    5: "#00c39a", // closed
+    6: "#9aa4a9", // refuted -- mid grey: visible on a night ground without shouting
+    7: "#ff9d1e", // in progress
+    8: "#7f8d98", // duplicate
 };
 
 /** The status scale for a theme. Takes a plain string so this module stays pure. */

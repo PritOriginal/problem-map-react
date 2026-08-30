@@ -65,8 +65,27 @@ function hueFor(closed: number, underReview: number, all: number): number {
     return (closed + underReview / 2) / all * 120;
 }
 
-/** Cluster bubble: grey when the cluster holds nothing with a status we colour. */
-export const getColorByFeatures = (features: readonly Feature[]) => {
+/**
+ * How saturated and how light the red->green sweep is drawn, and what a cluster with
+ * nothing to weigh looks like. It is a property of the basemap underneath: the same
+ * 100/80 sweep that reads as data over the light map is a set of glowing lozenges
+ * over Carbon, and the default grey `d3d3d3` is brighter there than any real status.
+ * `src/map/basemap/basemap.ts` supplies one per theme.
+ */
+export interface ColorSweep {
+    saturation: number;
+    value: number;
+}
+
+export interface ClusterTone extends ColorSweep {
+    /** Six hex digits, no leading "#", like everything else this module returns. */
+    neutral: string;
+}
+
+export const DEFAULT_CLUSTER_TONE: ClusterTone = { saturation: 100, value: 80, neutral: "d3d3d3" };
+
+/** Cluster bubble: neutral when the cluster holds nothing with a status we colour. */
+export const getColorByFeatures = (features: readonly Feature[], tone: ClusterTone = DEFAULT_CLUSTER_TONE) => {
     let numsConfirmed = 0;
     let numsUnderReview = 0;
     let numsClosed = 0;
@@ -84,20 +103,18 @@ export const getColorByFeatures = (features: readonly Feature[]) => {
 
     const allNums = numsConfirmed + numsUnderReview + numsClosed;
     if (allNums === 0) {
-        return "d3d3d3";
+        return tone.neutral;
     }
-    return hsvToHex(hueFor(numsClosed, numsUnderReview, allNums), 100, 80);
+    return hsvToHex(hueFor(numsClosed, numsUnderReview, allNums), tone.saturation, tone.value);
 };
 
 /** Administrative boundary: green both when nothing is known and when nothing is open. */
-export const getColorPolygon = (count: AdminBoundaryMarksCount | undefined) => {
-    if (!count) {
-        return "00cc00";
-    }
-
-    const allCount = count.confirmed_count + count.under_review_count + count.closed_count;
+export const getColorPolygon = (count: AdminBoundaryMarksCount | undefined, tone: ColorSweep = DEFAULT_CLUSTER_TONE) => {
+    const allCount = count ? count.confirmed_count + count.under_review_count + count.closed_count : 0;
     if (allCount === 0) {
-        return "00cc00";
+        // "Everything here is dealt with", drawn at the arm's own strength rather than
+        // at a literal, so a district wash cannot be the brightest thing on a night map.
+        return hsvToHex(120, tone.saturation, tone.value).toLowerCase();
     }
-    return hsvToHex(hueFor(count.closed_count, count.under_review_count, allCount), 100, 80);
+    return hsvToHex(hueFor(count!.closed_count, count!.under_review_count, allCount), tone.saturation, tone.value);
 };

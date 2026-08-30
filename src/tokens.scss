@@ -222,8 +222,10 @@
     color-scheme: dark;
 
     // ---- Chrome ---------------------------------------------------------
-    --chrome: #0f1112;
-    --chrome-2: #0f1112;
+    // Tied to the dark basemap's own ground (see src/map/basemap/basemap.ts): chrome
+    // a shade off the map it frames reads as a seam down the middle of the screen.
+    --chrome: #101214;
+    --chrome-2: #101214;
     --on-chrome: #e6e8e9;
     --on-chrome-muted: #9aa0a4;
     --on-chrome-faint: #82888c;
@@ -232,8 +234,8 @@
     // ---- Surfaces -------------------------------------------------------
     // Paper is LIGHTER than the surface behind it, so a card still reads as
     // raised. Inverting that (a darker card) makes every panel look punched out.
-    --surface: #16181a;
-    --paper: #1f2225;
+    --surface: #15181a;
+    --paper: #1e2225;
     --surface-sunken: #121415;
     --neutral-bg: #2a2e31;
     --placeholder: #2a2e31;
@@ -244,13 +246,13 @@
     // ---- Ink ------------------------------------------------------------
     // Not pure white: #e6e8e9 on --paper is 12.4:1, enough contrast without the
     // halation pure white causes on a dark ground.
-    --ink: #e6e8e9;
+    --ink: #e4e7e9;
     --ink-soft: #c3c8cb;
     --ink-muted: #9aa0a4;
     --ink-faint: #7c8286;
 
     // ---- Rules ----------------------------------------------------------
-    --rule: #31363a;
+    --rule: #31373b;
     --rule-soft: #26292c;
     --rule-hover: #4a5054;
     --rule-faint: #5c6266;

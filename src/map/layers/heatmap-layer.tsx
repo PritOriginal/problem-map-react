@@ -2,9 +2,9 @@ import { memo } from "react";
 import { observer } from "mobx-react-lite";
 import { YMapFeature } from "ymap3-components";
 
-import { useTheme } from "../../theme";
+import { heatColor, heatColors } from "../../utils/heatmap";
 import { themeColors } from "../../styles/tokens";
-import { heatColor } from "../../utils/heatmap";
+import { useTheme } from "../../theme";
 import type { HeatmapFeature } from "../../services/MapService";
 import heatmapStore from "../../store/heatmap";
 
@@ -16,7 +16,7 @@ const HeatmapCell = memo(function ({ feature, max }: { feature: HeatmapFeature, 
         <YMapFeature
             style={{
                 stroke: [{ color: themeColors(resolved)["--paper"], width: 0.5, opacity: 0.6 }],
-                fill: heatColor(count, max),
+                fill: heatColor(count, max, heatColors(resolved)),
                 fillOpacity: 0.55,
             }}
             geometry={feature.geometry}

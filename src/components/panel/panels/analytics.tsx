@@ -90,18 +90,38 @@ const Analytics = observer(function Analytics() {
                         {t("analytics.to")}
                         <input type="date" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
                     </label>
-                    <div className="analytics-controls__span" style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                        {PERIOD_PRESETS.map((preset) => (
-                            <button key={preset.days} type="button" className="btn-secondary mini" onClick={() => setRange(defaultRange(preset.days))}>
-                                {t(preset.label)}
-                            </button>
-                        ))}
+                    {/* Which preset is in force was not shown at all, so a screen with
+                        nothing in it never said which window it was reporting on. */}
+                    <div className="analytics-controls__span period-presets">
+                        {PERIOD_PRESETS.map((preset) => {
+                            const presetRange = defaultRange(preset.days);
+                            const active = presetRange.from === range.from && presetRange.to === range.to;
+                            return (
+                                <button
+                                    key={preset.days}
+                                    type="button"
+                                    className="btn-secondary mini"
+                                    aria-pressed={active}
+                                    onClick={() => setRange(presetRange)}
+                                >
+                                    {t(preset.label)}
+                                </button>
+                            );
+                        })}
                     </div>
                     <SelectField label={t("analytics.step")} value={step} options={stepOptions} onChange={setStep} />
                 </PanelControls>
                 <hr />
-                <h2 className="section-title">{t("analytics.kpi")}<span className="section-title__count">{isLoading && <span style={{ fontSize: 12 }}>{t("common.loading")}</span>}</span></h2>
-                {kpi ? <StatTiles kpi={kpi} /> : !isLoading && <p className="empty-state">{t("common.noData")}</p>}
+                <h2 className="section-title">{t("analytics.kpi")}{isLoading && <span className="section-title__count">{t("common.loading")}</span>}</h2>
+                {/* An empty period is not the same as a failed read, and the screen used
+                    to show neither: a zero and five dashes, with the status bar simply
+                    absent because there was nothing to divide. Say which it is. */}
+                {kpi === null
+                    ? !isLoading && <p className="empty-state">{t("common.noData")}</p>
+                    : kpi.total === 0
+                        ? <p className="empty-state">{t("analytics.noDataPeriod")}</p>
+                        : <StatTiles kpi={kpi} />
+                }
                 <hr />
                 <h2 className="section-title">{t("analytics.dynamics")}</h2>
                 <LineChart points={series} />

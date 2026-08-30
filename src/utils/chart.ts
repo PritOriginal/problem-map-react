@@ -108,6 +108,12 @@ export function hoursFigure(hours: number | null | undefined): Figure {
     if (hours === null || hours === undefined || !Number.isFinite(hours)) {
         return { value: "—", unit: "" };
     }
+    // Under an hour, rounding to whole hours prints "0 ч" for a real duration --
+    // the backend answered 0.078 h for a median confirmation and the screen said
+    // it took no time at all. Minutes carry it.
+    if (hours < 1) {
+        return { value: String(Math.max(1, Math.round(hours * 60))), unit: t("common.minutes") };
+    }
     if (hours < 48) {
         return { value: String(Math.round(hours)), unit: t("common.hours") };
     }

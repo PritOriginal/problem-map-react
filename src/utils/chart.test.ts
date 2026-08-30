@@ -55,6 +55,12 @@ describe("hoursFigure / shareFigure", () => {
         expect(shareFigure(0.083)).toEqual({ value: "8", unit: "%" });
     });
 
+    it("falls back to minutes under an hour, so a real duration never prints as 0", () => {
+        expect(hoursFigure(0.078)).toEqual({ value: "5", unit: t("common.minutes") });
+        // rounds to 0 minutes, but the event did happen: never say zero
+        expect(hoursFigure(0.001)).toEqual({ value: "1", unit: t("common.minutes") });
+    });
+
     it("returns an em dash and no unit when the value is unknown", () => {
         expect(hoursFigure(null)).toEqual({ value: "—", unit: "" });
         expect(hoursFigure(Number.NaN)).toEqual({ value: "—", unit: "" });

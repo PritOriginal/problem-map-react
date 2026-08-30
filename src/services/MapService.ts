@@ -12,6 +12,48 @@ export interface AdminBoundary {
 /** A boundary without its geometry: everything a district `<select>` needs, and 0.8% of the bytes. */
 export type AdminBoundaryRef = Omit<AdminBoundary, "geom">;
 
+/** What `getAdminBoundaryIndex` answers with. */
+export interface AdminBoundaryIndex {
+    /** id + name + admin_level of every boundary at the requested levels. */
+    boundaries: AdminBoundaryRef[];
+    /**
+     * Geometry that came down together with the index, by boundary id. Empty against a backend
+     * that honours `geometry=false`; against an older one it holds every polygon of the full
+     * response, so the caller need not ask for them a second time.
+     */
+    geometry: Map<number, MultiPolygonGeometry>;
+}
+
+/**
+ * Where the "this backend ignores `geometry=false`" verdict is kept, and for how long.
+ *
+ * In localStorage rather than in memory because the cost it avoids is paid per page load: the
+ * ignored parameter yields the full megabyte, and that body is past `ETAG_MAX_ENTRY_CHARS`, so
+ * nothing else caches it. The day-long expiry is what lets a client notice that the backend was
+ * upgraded meanwhile; being wrong for a day only costs the three marks-counter requests that
+ * were the status quo anyway.
+ */
+const GEOMETRY_PARAM_KEY = "map:geometry-param-unsupported:v1";
+const GEOMETRY_PARAM_TTL_MS = 24 * 60 * 60 * 1000;
+
+function isGeometryParamUnsupported(): boolean {
+    try {
+        const raw = localStorage.getItem(GEOMETRY_PARAM_KEY);
+        return raw !== null && Date.now() - Number(raw) < GEOMETRY_PARAM_TTL_MS;
+    } catch {
+        // storage unavailable: probe the parameter again, which is the safe direction
+        return false;
+    }
+}
+
+function rememberGeometryParamUnsupported(): void {
+    try {
+        localStorage.setItem(GEOMETRY_PARAM_KEY, String(Date.now()));
+    } catch {
+        // ignore
+    }
+}
+
 /** One boundary as `GET /map/admin-boundaries/{id}.geojson` serves it (a bare GeoJSON Feature). */
 export interface AdminBoundaryFeature {
     type: "Feature";
@@ -122,12 +164,11 @@ class MapService extends BaseService {
     /**
      * Every boundary at `admin_levels`, geometry included (`GET /map/admin-boundaries`).
      *
-     * This is the heaviest response in the app: 61 boundaries, 1 080 153 bytes, of which the
+     * This is the heaviest response in the app: 62 boundaries, 1 175 510 bytes, of which the
      * `geom` fields are 99.2%. It is also past `ETAG_MAX_ENTRY_CHARS`, so `requestCached` cannot
-     * keep the body and the whole megabyte comes down again on every start. `admin_levels` is
-     * the only knob the handler has (internal/handler/map/map.go): there is no way to ask it to
-     * leave the geometry out. Prefer `getAdminBoundaryIndex` + `getAdminBoundaryGeoJSON`; this
-     * stays as the fallback for a backend without the `.geojson` route.
+     * keep the body and the whole megabyte comes down again on every start. Prefer
+     * `getAdminBoundaryIndex` + `getAdminBoundaryGeoJSON`; this stays as the fallback for a
+     * backend without the `.geojson` route.
      */
     public getAdminBoundaries(req: GetAdminBoundariesRequest): Promise<GetAdminBoundariesResponse> {
         const params = new URLSearchParams();
@@ -151,18 +192,58 @@ class MapService extends BaseService {
     }
 
     /**
-     * id + name + admin_level of every boundary at the given levels, without any geometry.
+     * id + name + admin_level of every boundary at the given levels, without any geometry:
+     * one `GET /map/admin-boundaries?admin_levels=...&geometry=false` (9 624 bytes for all 62,
+     * against 1 175 510 with the polygons, and small enough for `requestCached` to keep).
      *
-     * There is no endpoint for exactly this, and one should be asked for -- see the note on
-     * `getAdminBoundaries`. What the backend does have is the marks counter, which lists the
-     * same boundaries and carries no geometry at all (9 595 bytes for all 61 against
-     * 1 080 153). It LEFT JOINs the marks, so the set of boundaries it answers with does not
-     * depend on the mark filter; it does not report `admin_level`, which is why this asks one
-     * level at a time and takes the level from the request. Three requests, ~9.6 KB in all.
-     *
-     * `GET /map/admin-boundaries?geometry=false` would collapse this back into one call.
+     * The parameter only exists from backend `integration/wave-6` on. An older one does not
+     * fail on it, it ignores it and answers with the full list -- so support is decided by the
+     * body, not by the status: geometry in the first element means the parameter went nowhere.
+     * The polygons that arrived are handed back rather than thrown away (`geometry`), which
+     * makes that one request enough on its own, and the verdict is remembered for a day so the
+     * next start takes the marks-counter path instead of paying the megabyte again.
      */
-    public getAdminBoundaryIndex(adminLevels: number[]): Promise<AdminBoundaryRef[]> {
+    public async getAdminBoundaryIndex(adminLevels: number[]): Promise<AdminBoundaryIndex> {
+        if (isGeometryParamUnsupported()) {
+            return { boundaries: await this.getAdminBoundaryIndexFromMarksCount(adminLevels), geometry: new Map() };
+        }
+
+        const params = new URLSearchParams();
+        if (adminLevels.length > 0) {
+            params.append("admin_levels", adminLevels.join(","));
+        }
+        params.append("geometry", "false");
+
+        const response = await this.requestCached<GetAdminBoundariesResponse>(`/api/map/admin-boundaries?${params}`);
+        const boundaries = unwrapList<AdminBoundary>(response.payload, "admin_boundaries");
+        const geometry = new Map<number, MultiPolygonGeometry>();
+
+        // `geom` is `omitempty`: present only on a backend that did not understand the parameter
+        if (boundaries.length > 0 && boundaries[0].geom) {
+            rememberGeometryParamUnsupported();
+            boundaries.forEach((boundary) => {
+                if (boundary.geom) {
+                    geometry.set(boundary.id, boundary.geom);
+                }
+            });
+        }
+
+        return {
+            boundaries: boundaries.map(({ id, name, admin_level }): AdminBoundaryRef => ({ id, name, admin_level })),
+            geometry,
+        };
+    }
+
+    /**
+     * The index as it was read before `geometry=false` existed, kept as the fallback for a
+     * backend that ignores the parameter.
+     *
+     * The marks counter lists the same boundaries and carries no geometry at all. It LEFT JOINs
+     * the marks, so the set of boundaries it answers with does not depend on the mark filter;
+     * it does not report `admin_level`, which is why this asks one level at a time and takes
+     * the level from the request. Three requests, ~9.6 KB in all.
+     */
+    private getAdminBoundaryIndexFromMarksCount(adminLevels: number[]): Promise<AdminBoundaryRef[]> {
         return Promise.all(adminLevels.map((level) => this
             .getAdminBoundariesMarksCount({ admin_levels: [level], mark_type_ids: [] })
             .then((res) => unwrapList<AdminBoundaryMarksCount>(res.payload, "admin_boundaries")

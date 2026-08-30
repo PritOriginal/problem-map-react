@@ -456,27 +456,25 @@ describe("service payloads match the backend contract", () => {
         expect((await CommentsService.getComments(1)).meta).toBeUndefined();
     });
 
-    // The boundary list is the heaviest response in the app -- 61 boundaries, 1 080 153 bytes,
-    // 99.2% of it `geom`, and past `ETAG_MAX_ENTRY_CHARS`. `admin_levels` is the only knob the
-    // handler has, so the geometry is read one boundary at a time instead (`Cache-Control:
-    // public, max-age=86400`), and the list for the district `<select>` comes from the one
-    // endpoint that answers for the same boundaries without any geometry.
+    // The boundary list is the heaviest response in the app -- 62 boundaries, 1 175 510 bytes,
+    // 99.2% of it `geom`, and past `ETAG_MAX_ENTRY_CHARS`. The geometry is read one boundary at
+    // a time instead (`Cache-Control: public, max-age=86400`), and the list for the district
+    // `<select>` comes from the same endpoint asked to leave the polygons out.
     it("map: the boundary index has no geometry, and .geojson answers a bare Feature", async () => {
         fetchMock.mockClear();
-        fetchMock.mockImplementation(async (input: string) => {
-            const level = new URL(input, "http://localhost").searchParams.get("admin_levels");
-            return jsonResponse({ success: true, payload: { admin_boundaries: [{ id: Number(level), name: `l${level}`, total_count: 0 }] } });
-        });
+        fetchMock.mockImplementation(ok({
+            admin_boundaries: [{ id: 6, name: "l6", admin_level: 6 }, { id: 9, name: "l9", admin_level: 9 }],
+        }));
         const index = await MapService.getAdminBoundaryIndex([6, 9]);
+        // one request for every level, and `admin_level` is now the backend's own answer
         expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-            "/api/map/admin-boundaries/marks/count?admin_levels=6",
-            "/api/map/admin-boundaries/marks/count?admin_levels=9",
+            "/api/map/admin-boundaries?admin_levels=6%2C9&geometry=false",
         ]);
-        // the level is not in the response: it is taken from the request that asked for it
-        expect(index).toEqual([
+        expect(index.boundaries).toEqual([
             { id: 6, name: "l6", admin_level: 6 },
             { id: 9, name: "l9", admin_level: 9 },
         ]);
+        expect(index.geometry.size).toBe(0);
 
         // the .geojson route answers with the Feature itself, not with the envelope
         fetchMock.mockClear();
@@ -498,5 +496,54 @@ describe("service payloads match the backend contract", () => {
         const bulk = await MapService.getAdminBoundaries({ admin_levels: [6, 9, 10] });
         expect(fetchMock.mock.calls[0][0]).toBe("/api/map/admin-boundaries?admin_levels=6%2C9%2C10");
         expect(bulk.payload.admin_boundaries[0].id).toBe(1);
+    });
+
+    // `geometry=false` only exists from backend integration/wave-6 on. An older one does not
+    // reject it, it ignores it -- so the answer is a normal 200 carrying the full geometry, and
+    // only the body says the parameter went nowhere.
+    it("map: a backend that ignores geometry=false is recognised by the body, and its polygons are kept", async () => {
+        const geom = { type: "MultiPolygon", coordinates: [[[[41, 52], [41, 53], [42, 53], [41, 52]]]] };
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({
+            admin_boundaries: [{ id: 6, name: "l6", admin_level: 6, geom }, { id: 9, name: "l9", admin_level: 9, geom }],
+        }));
+
+        const index = await MapService.getAdminBoundaryIndex([6, 9]);
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+            "/api/map/admin-boundaries?admin_levels=6%2C9&geometry=false",
+        ]);
+        // the refs are still geometry-free, but the polygons that came anyway are handed back
+        expect(index.boundaries).toEqual([
+            { id: 6, name: "l6", admin_level: 6 },
+            { id: 9, name: "l9", admin_level: 9 },
+        ]);
+        expect([...index.geometry.keys()]).toEqual([6, 9]);
+        expect(index.geometry.get(6)).toEqual(geom);
+
+        // and the verdict is remembered, so the next start does not pay the megabyte again:
+        // it takes the marks-counter path, one request per level
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(async (input: string) => {
+            const level = new URL(input, "http://localhost").searchParams.get("admin_levels");
+            return jsonResponse({ success: true, payload: { admin_boundaries: [{ id: Number(level), name: `l${level}`, total_count: 0 }] } });
+        });
+        const again = await MapService.getAdminBoundaryIndex([6, 9]);
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+            "/api/map/admin-boundaries/marks/count?admin_levels=6",
+            "/api/map/admin-boundaries/marks/count?admin_levels=9",
+        ]);
+        // the counter does not report the level: it is taken from the request that asked for it
+        expect(again.boundaries).toEqual([
+            { id: 6, name: "l6", admin_level: 6 },
+            { id: 9, name: "l9", admin_level: 9 },
+        ]);
+        expect(again.geometry.size).toBe(0);
+
+        // the verdict expires, so a client notices a backend upgraded meanwhile
+        localStorage.setItem("map:geometry-param-unsupported:v1", String(Date.now() - 25 * 60 * 60 * 1000));
+        fetchMock.mockClear();
+        fetchMock.mockImplementation(ok({ admin_boundaries: [{ id: 6, name: "l6", admin_level: 6 }] }));
+        await MapService.getAdminBoundaryIndex([6]);
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/map/admin-boundaries?admin_levels=6&geometry=false");
     });
 });

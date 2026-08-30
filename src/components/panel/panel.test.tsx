@@ -21,6 +21,7 @@ describe("PanelRoute lazy panels", () => {
         resetStores();
         mockFetchRoutes({
             "GET /api/leaderboard": { leaderboard: [] },
+            "GET /api/map/admin-boundaries": { admin_boundaries: [] },
             "GET /api/map/admin-boundaries/marks/count": { admin_boundaries: [] },
         });
     });

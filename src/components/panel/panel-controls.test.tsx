@@ -95,9 +95,10 @@ describe("BoundarySelect", () => {
             properties: { name: String(id), admin_level: 9 },
         });
         mockFetchRoutes({
-            "GET /api/map/admin-boundaries/marks/count": (req: Request) => ({
-                admin_boundaries: byLevel[new URL(req.url).searchParams.get("admin_levels") ?? ""] ?? [],
-            }),
+            "GET /api/map/admin-boundaries": {
+                admin_boundaries: Object.entries(byLevel).flatMap(([level, refs]) =>
+                    refs.map((ref) => ({ ...ref, admin_level: Number(level) }))),
+            },
             "GET /api/map/admin-boundaries/1.geojson": feature(1),
             "GET /api/map/admin-boundaries/2.geojson": feature(2),
             "GET /api/map/admin-boundaries/3.geojson": feature(3),

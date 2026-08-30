@@ -43,38 +43,34 @@ function mark(id: number) {
 
 interface Counters {
     queueCalls: number;
-    markCalls: number;
-    maxInFlight: number;
+    /** One entry per `GET /api/marks?ids=`, holding the ids that request asked for. */
+    markBatches: number[][];
 }
 
 /**
- * Stubs `fetch` for the queue and for `GET /api/marks/{id}`, counting how many mark
- * requests are in flight at the same time. `failIds` answer with a 500.
+ * Stubs `fetch` for the queue and for the batch read `GET /api/marks?ids=`, recording the
+ * batches it was asked for. Ids in `failIds` are answered with a 500 for their whole batch,
+ * the way a real failed request would be.
  */
 function stubQueue(reports: Report[], failIds: number[] = []): Counters {
-    const counters: Counters = { queueCalls: 0, markCalls: 0, maxInFlight: 0 };
-    let inFlight = 0;
+    const counters: Counters = { queueCalls: 0, markBatches: [] };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
         const url = new URL(String(input instanceof Request ? input.url : input), "http://localhost");
         if (url.pathname === "/api/moderation/queue") {
             counters.queueCalls++;
             return jsonResponse(envelope({ reports }));
         }
-        const markMatch = /^\/api\/marks\/(\d+)$/.exec(url.pathname);
-        if (markMatch) {
-            counters.markCalls++;
-            inFlight++;
-            counters.maxInFlight = Math.max(counters.maxInFlight, inFlight);
-            // a real tick, so requests that overlap are actually seen to overlap
+        const ids = url.searchParams.get("ids");
+        if (url.pathname === "/api/marks" && ids !== null) {
+            const batch = ids.split(",").map(Number);
+            counters.markBatches.push(batch);
             await new Promise((resolve) => setTimeout(resolve, 1));
-            inFlight--;
-            const id = Number(markMatch[1]);
-            if (failIds.includes(id)) {
+            if (batch.some((id) => failIds.includes(id))) {
                 return jsonResponse({ success: false, error: { message: "boom" } }, { status: 500 });
             }
-            return jsonResponse(envelope({ mark: mark(id) }));
+            return jsonResponse(envelope({ marks: batch.map(mark) }));
         }
-        throw new Error(`No mock for ${url.pathname}`);
+        throw new Error(`No mock for ${url.pathname}${url.search}`);
     }));
     return counters;
 }
@@ -92,34 +88,33 @@ describe("ModerationPanel", () => {
         localStorage.clear();
     });
 
-    it("loads the queue once and the marks behind it with a bounded concurrency", async () => {
+    // This used to be one `GET /marks/{id}` per card, throttled to six in flight; the batch
+    // endpoint reads the whole queue in a single request instead.
+    it("loads the queue once and every mark behind it in one batch request", async () => {
         const reports = Array.from({ length: 20 }, (_, i) => report(i + 1));
         const counters = stubQueue(reports);
 
         renderPanel(<ModerationPanel />);
 
-        // 20 marks at concurrency 6, each with a real tick: the default 1s waitFor is
-        // tight once this file runs alongside the rest of the suite.
         await waitFor(() => expect(screen.getByText("mark-desc-20")).toBeInTheDocument(), { timeout: 5000 });
 
         expect(counters.queueCalls).toBe(1);
-        expect(counters.markCalls).toBe(20);
-        // one request per card would have put all 20 in flight at once
-        expect(counters.maxInFlight).toBeLessThanOrEqual(6);
+        expect(counters.markBatches).toHaveLength(1);
+        expect(counters.markBatches[0]).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
     });
 
-    it("keeps the other cards when one mark fails to load", async () => {
+    // (a queue longer than the backend's 100-id limit is split into batches by the service;
+    // QUEUE_LIMIT keeps this panel under it, and the split itself is covered in contracts.test.ts)
+
+    it("keeps the other cards when the marks fail to load", async () => {
         const reports = Array.from({ length: 5 }, (_, i) => report(i + 1));
         stubQueue(reports, [3]);
 
         renderPanel(<ModerationPanel />);
 
-        await waitFor(() => expect(screen.getByText("mark-desc-5")).toBeInTheDocument());
-
-        expect(screen.getByText("mark-desc-1")).toBeInTheDocument();
+        // the batch that fails takes its marks with it -- the cards stay, without mark blocks
+        await waitFor(() => expect(document.querySelectorAll(".task-card")).toHaveLength(5));
         expect(screen.queryByText("mark-desc-3")).not.toBeInTheDocument();
-        // the card itself is still there, just without its mark block
-        expect(document.querySelectorAll(".task-card")).toHaveLength(5);
     });
 
     it("does not request marks the queue already expanded", async () => {
@@ -131,6 +126,6 @@ describe("ModerationPanel", () => {
         await waitFor(() => expect(screen.getByText("mark-desc-2")).toBeInTheDocument());
 
         expect(screen.getByText("mark-desc-1")).toBeInTheDocument();
-        expect(counters.markCalls).toBe(1);
+        expect(counters.markBatches).toEqual([[2]]);
     });
 });

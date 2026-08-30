@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { t } from "../i18n";
-import MarksService, { GetMarksRequest, Mark, MarkChanges, MarkStatusType } from '../services/MarksService';
+import MarksService, { GetMarksRequest, MARKS_MAX_LIMIT, Mark, MarkChanges, MarkStatusType } from '../services/MarksService';
 import notificationsStore from './notifications';
 import { unwrapList } from '../services/http';
 import { applyMarkChanges } from '../utils/mark-changes';
@@ -21,8 +21,24 @@ export const DEFAULT_FILTERS: Readonly<GetMarksRequest> = {
     ],
 };
 
+/**
+ * Page size the map asks for. `GET /marks` without a `limit` gets the backend's own default of
+ * 100, which is why the map used to stop at a hundred marks; `MARKS_MAX_LIMIT` is as much as the
+ * backend will hand out in one go.
+ *
+ * One request, not a paging loop: the whole city currently holds ~114 marks, so the cap is five
+ * times the data and paging on startup would only add round trips. When `total` does outgrow it
+ * the map says so (`truncated`) instead of lying — and that notice is the signal that the map
+ * should start loading by viewport instead: `GetMarksRequest.bbox` is already wired through the
+ * service for exactly that, and `src/utils/heatmap.ts#bboxFromBounds` already turns the map's
+ * bounds into one.
+ */
+export const MARKS_FETCH_LIMIT = MARKS_MAX_LIMIT;
+
 class MarksStore {
     marks: Mark[] = [];
+    /** `meta.total` of the last full load: how many marks match the filters server-side. */
+    total: number = 0;
     filters: GetMarksRequest = {
         mark_type_ids: [...DEFAULT_FILTERS.mark_type_ids],
         mark_status_ids: [...DEFAULT_FILTERS.mark_status_ids],
@@ -54,12 +70,18 @@ class MarksStore {
         this.error = null;
         const startedAt = new Date().toISOString();
         try {
-            const response = await MarksService.getMarks(this.filters, { signal: controller.signal });
+            const response = await MarksService.getMarks(
+                { ...this.filters, limit: MARKS_FETCH_LIMIT },
+                { signal: controller.signal },
+            );
             if (id !== this.requestId) {
                 return;
             }
+            const marks = unwrapList<Mark>(response.payload, "marks");
             runInAction(() => {
-                this.marks = unwrapList<Mark>(response.payload, "marks");
+                this.marks = marks;
+                // an older backend may answer without `meta`; then what arrived is all there is
+                this.total = response.meta?.total ?? marks.length;
                 this.isLoading = false;
             });
             // only the winning response may move the incremental-sync bookmark forward
@@ -97,8 +119,17 @@ class MarksStore {
         }
     }
 
+    /** True when the backend holds more marks for these filters than the map was given. */
+    get truncated(): boolean {
+        return this.total > this.marks.length;
+    }
+
     applyChanges = (changes: MarkChanges) => {
+        // the sync moves `total` by as much as it moved the loaded set, so a page that was
+        // truncated stays truncated by the same amount instead of the notice going stale
+        const before = this.marks.length;
         this.marks = applyMarkChanges(this.marks, changes, this.filters);
+        this.total = Math.max(0, this.total + (this.marks.length - before));
         writeSince(changes.server_time);
     }
 

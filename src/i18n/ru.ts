@@ -121,6 +121,7 @@ export const ru = {
     "map.heatLegendTitle": "Проблем в ячейке",
     "map.heatLegendEmpty": "Нет данных в этой области",
     "map.myTasks": "Мои задания",
+    "map.marksTruncated": "Показано {shown} меток из {total}. Сузьте фильтры, чтобы увидеть остальные.",
 
     // mark / problem card
     "mark.n": "№{id}",

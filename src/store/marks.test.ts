@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MarksService, { GetMarksResponse, Mark } from "../services/MarksService";
-import marksStore, { DEFAULT_FILTERS, MARKS_SINCE_KEY } from "./marks";
+import marksStore, { DEFAULT_FILTERS, MARKS_FETCH_LIMIT, MARKS_SINCE_KEY } from "./marks";
 import notificationsStore from "./notifications";
 
 function mark(id: number): Mark {
@@ -38,6 +38,7 @@ describe("marksStore.fetch", () => {
     beforeEach(() => {
         localStorage.clear();
         marksStore.marks = [];
+        marksStore.total = 0;
         marksStore.error = null;
         marksStore.isLoading = false;
         marksStore.setFilters(DEFAULT_FILTERS);
@@ -112,6 +113,42 @@ describe("marksStore.fetch", () => {
         slow.resolve([mark(1)]);
         await first;
         expect(localStorage.getItem(MARKS_SINCE_KEY)).toBe(since);
+    });
+
+    // `GET /marks` without a `limit` gets the backend's default of 100, which is exactly how
+    // the map used to lose every mark past the hundredth.
+    it("asks for a full page and reports a set the backend truncated", async () => {
+        const getMarks = vi.spyOn(MarksService, "getMarks")
+            .mockResolvedValue({ success: true, payload: { marks: [mark(1), mark(2)] }, meta: { limit: MARKS_FETCH_LIMIT, offset: 0, total: 2 } });
+
+        await marksStore.fetch();
+
+        expect(getMarks.mock.calls[0][0]).toMatchObject({ limit: MARKS_FETCH_LIMIT });
+        expect(marksStore.total).toBe(2);
+        expect(marksStore.truncated).toBe(false);
+
+        getMarks.mockResolvedValue({ success: true, payload: { marks: [mark(1), mark(2)] }, meta: { limit: MARKS_FETCH_LIMIT, offset: 0, total: 900 } });
+        await marksStore.fetch();
+        expect(marksStore.truncated).toBe(true);
+
+        // an older backend answering without `meta`: what arrived is all there is
+        getMarks.mockResolvedValue({ success: true, payload: { marks: [mark(1)] } });
+        await marksStore.fetch();
+        expect(marksStore.total).toBe(1);
+        expect(marksStore.truncated).toBe(false);
+    });
+
+    it("moves `total` with an incremental sync so the truncation notice does not go stale", async () => {
+        vi.spyOn(MarksService, "getMarks")
+            .mockResolvedValue({ success: true, payload: { marks: [mark(1), mark(2)] }, meta: { limit: MARKS_FETCH_LIMIT, offset: 0, total: 900 } });
+        await marksStore.fetch();
+
+        marksStore.applyChanges({ marks: [mark(3)], deleted_ids: [1], hidden_ids: [], server_time: "2026-01-01T00:00:00Z" });
+
+        // one added, one removed: the loaded set and `total` moved by the same amount
+        expect(marksStore.marks).toHaveLength(2);
+        expect(marksStore.total).toBe(900);
+        expect(marksStore.truncated).toBe(true);
     });
 
     it("still surfaces a real network failure", async () => {

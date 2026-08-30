@@ -114,6 +114,7 @@ export const en: Partial<Dictionary> = {
     "map.heatLegendTitle": "Problems per cell",
     "map.heatLegendEmpty": "No data in this area",
     "map.myTasks": "My tasks",
+    "map.marksTruncated": "Showing {shown} of {total} marks. Narrow the filters to see the rest.",
 
     "mark.n": "#{id}",
     "mark.share": "Share",
